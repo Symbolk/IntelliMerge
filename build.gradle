@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+group 'edu.pku.intellimerge'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'com.github.javaparser', name: 'javaparser-core', version: '3.7.0'
+    compile group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.7.0'
+    compile group: 'org.jgrapht', name: 'jgrapht-core', version: '1.2.0'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.1'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
