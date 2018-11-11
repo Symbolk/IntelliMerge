@@ -152,7 +152,14 @@ public class IntelliMerge {
             fieldDeclarationNode,
             new SemanticEdge(EdgeType.DEFINES, classDeclarationNode, fieldDeclarationNode));
         // 4.1 field declaration
-
+        System.out.println(
+            fieldDeclaration
+                .getVariables()
+                .get(0)
+                .getType()
+                .resolve()
+                .asReferenceType()
+                .getQualifiedName());
       }
 
       // 5. constructor
@@ -189,15 +196,13 @@ public class IntelliMerge {
               javaParserFacade.solve(fieldAccessExpr);
           System.out.println(
               ref.getCorrespondingDeclaration().asField().declaringType().getQualifiedName());
-
-          //          System.out.println(fieldAccessExpr.resolve());
         }
 
         // 6.2 method call
         List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
         for (MethodCallExpr methodCallExpr : methodCallExprs) {
           // resolve the method declaration and draw the edge
-          //          System.out.println(methodCallExpr.resolve().getQualifiedSignature());
+          System.out.println(methodCallExpr.resolve().getQualifiedSignature());
         }
       }
     }
