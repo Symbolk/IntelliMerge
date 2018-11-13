@@ -20,6 +20,9 @@ public class SemanticNode {
         this.content = content;
     }
 
+    public Integer getNodeID() {
+        return nodeID;
+    }
 
     public void setRange(Range range) {
         this.range = range;
