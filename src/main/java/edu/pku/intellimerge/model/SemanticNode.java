@@ -7,16 +7,16 @@ public class SemanticNode {
     private Integer nodeID;
     private Integer nodeType;
     private String displayName;
-    private String canonicalName;
+    private String qualifiedName;
     private String content;
     private Range range;
     private Node astNode;
 
-    public SemanticNode(Integer nodeID, Integer nodeType, String displayName, String canonicalName, String content) {
+    public SemanticNode(Integer nodeID, Integer nodeType, String displayName, String qualifiedName, String content) {
         this.nodeID = nodeID;
         this.nodeType = nodeType;
         this.displayName = displayName;
-        this.canonicalName = canonicalName;
+        this.qualifiedName = qualifiedName;
         this.content = content;
     }
 
@@ -28,7 +28,7 @@ public class SemanticNode {
         this.range = range;
     }
 
-    public String getDisplayName(){
+    public String getDisplayName() {
         return displayName;
     }
 
@@ -38,7 +38,7 @@ public class SemanticNode {
                 "nodeID=" + nodeID +
                 ", nodeType='" + nodeType + '\'' +
                 ", displayName='" + displayName + '\'' +
-                ", canonicalName='" + canonicalName + '\'' +
+                ", qualifiedName='" + qualifiedName + '\'' +
                 ", range=" + range +
                 '}';
     }

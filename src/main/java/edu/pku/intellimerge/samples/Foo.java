@@ -2,6 +2,7 @@ package edu.pku.intellimerge.samples;
 
 class Foo {
     Bar bar;
+    int id;
     private A a;
 
     public static void main(String[] args) {
