@@ -5,7 +5,7 @@ public class EdgeType {
     public static final Integer PACKAGES = 0;
     public static final Integer IMPORTS = 1;
     // inner edges
-    public static final Integer DEFINES = 2;
+    public static final Integer NEWINSTANCEOF = 2;
     public static final Integer HASFIELD = 3;
     public static final Integer HASMETHOD = 4;
     public static final Integer HASCONSTRUCTOR = 5;
@@ -20,7 +20,7 @@ public class EdgeType {
             case 1:
                 return "IMPORTS";
             case 2:
-                return "DEFINES";
+                return "NEWINSTANCEOF";
             case 3:
                 return "HASFIELD";
             case 4:

@@ -12,8 +12,8 @@ public class APIClient {
   private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
 
   public static void main(String[] args) {
-    //        Graph<SemanticNode, SemanticEdge> semanticGraph =
-    //                SemanticGraphBuilder.buildForFile(FILE_PATH, PACKAGE_PATH);
+//            Graph<SemanticNode, SemanticEdge> semanticGraph =
+//                    SemanticGraphBuilder.buildForFile(FILE_PATH, PACKAGE_PATH);
     Graph<SemanticNode, SemanticEdge> semanticGraph =
         SemanticGraphBuilder.buildForProject(PROJECT_PATH, PACKAGE_PATH);
     if (semanticGraph == null) {
