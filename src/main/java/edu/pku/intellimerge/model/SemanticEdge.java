@@ -7,7 +7,8 @@ public class SemanticEdge {
     private SemanticNode source;
     private SemanticNode target;
 
-    public SemanticEdge(Integer edgeType, SemanticNode source, SemanticNode target) {
+    public SemanticEdge(Integer edgeID, Integer edgeType, SemanticNode source, SemanticNode target) {
+        this.edgeID = edgeID;
         this.edgeType = edgeType;
         this.source = source;
         this.target = target;
