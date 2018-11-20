@@ -1,4 +1,5 @@
 package edu.pku.intellimerge.samples;
+import edu.pku.intellimerge.samples.Bar;
 
 class Foo {
     Bar bar;

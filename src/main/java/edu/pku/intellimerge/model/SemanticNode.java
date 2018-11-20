@@ -32,7 +32,16 @@ public class SemanticNode {
         return displayName;
     }
 
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
+
+    public Integer getNodeType() {
+        return nodeType;
+    }
+
     @Override
+
     public String toString() {
         return "SemanticNode{" +
                 "nodeID=" + nodeID +
