@@ -17,47 +17,45 @@ import java.util.Map;
  */
 public class FilesEncoding {
 
-    private static Map<File, String> encodings = new HashMap<File, String>();
-    private static final String DEFAULT_ENCODING = "UTF-8";
+  private static Map<File, String> encodings = new HashMap<File, String>();
+  private static final String DEFAULT_ENCODING = "UTF-8";
 
-    public static void analyseFiles(File... files) {
+  public static void analyseFiles(File... files) {
 
-        try {
-            for (File file : files) {
-                if (file != null) {
-                    encodings.put(file, detectEncoding(file));
-                }
-            }
-
-        } catch (IOException e) {
-            System.err.println("An error occurred while opening files for encoding detection. Shutting down.");
-            System.exit(1);
+    try {
+      for (File file : files) {
+        if (file != null) {
+          encodings.put(file, detectEncoding(file));
         }
+      }
+
+    } catch (IOException e) {
+      System.err.println(
+          "An error occurred while opening files for encoding detection. Shutting down.");
+      System.exit(1);
     }
+  }
 
-    public static String retrieveEncoding(File file) {
-        return encodings.getOrDefault(file, DEFAULT_ENCODING);
+  public static String retrieveEncoding(File file) {
+    return encodings.getOrDefault(file, DEFAULT_ENCODING);
+  }
+
+  private static String detectEncoding(File file) throws IOException {
+    InputStream reader = Files.newInputStream(Paths.get(file.getAbsolutePath()));
+    UniversalDetector detector = new UniversalDetector(null);
+
+    byte[] data = new byte[4096];
+    int dataRead = reader.read(data);
+    while (dataRead > 0 && !detector.isDone()) {
+      detector.handleData(data, 0, dataRead);
+      dataRead = reader.read(data);
     }
+    detector.dataEnd();
 
-    private static String detectEncoding(File file) throws IOException {
-        InputStream reader = Files.newInputStream(Paths.get(file.getAbsolutePath()));
-        UniversalDetector detector = new UniversalDetector(null);
+    String encoding = detector.getDetectedCharset();
+    detector.reset();
 
-        byte[] data = new byte[4096];
-        int dataRead = reader.read(data);
-        while (dataRead > 0 && !detector.isDone()) {
-            detector.handleData(data, 0, dataRead);
-            dataRead = reader.read(data);
-        }
-        detector.dataEnd();
-
-        String encoding = detector.getDetectedCharset();
-        detector.reset();
-
-        if (encoding == null)
-            return DEFAULT_ENCODING;
-        else
-            return encoding;
-    }
-
+    if (encoding == null) return DEFAULT_ENCODING;
+    else return encoding;
+  }
 }
