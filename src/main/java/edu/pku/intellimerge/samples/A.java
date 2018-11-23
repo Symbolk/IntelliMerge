@@ -4,7 +4,7 @@ class A {
 
     private int full;
 
-    public static void foo() {
+    public static void foo(A a) {
         System.out.println(1);
         System.out.println("hi");
     }

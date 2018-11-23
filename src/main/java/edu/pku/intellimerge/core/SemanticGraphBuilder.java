@@ -4,11 +4,13 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
@@ -160,9 +162,8 @@ public class SemanticGraphBuilder {
 
                     // 4. field
                     List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
-                    List<String> classUsedInFieldNames = new ArrayList<>();
                     for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
-                        displayName = fieldDeclaration.getVariables().toString();
+                        displayName = fieldDeclaration.getVariables().get(0).toString();
                         qualifiedName = qualifiedClassName + "." + displayName;
                         SemanticNode fieldDeclarationNode =
                                 new SemanticNode(
@@ -181,6 +182,7 @@ public class SemanticGraphBuilder {
                                 fieldDeclarationNode,
                                 new SemanticEdge(edgeCount++, EdgeType.DEFINE_FIELD, classDeclarationNode, fieldDeclarationNode));
                         // 4.1 field declaration
+                        List<String> classUsedInFieldNames = new ArrayList<>();
                         if (!fieldDeclaration.getVariables().get(0).getType().isPrimitiveType()) {
                             String classUsedInFieldName =
                                     fieldDeclaration
@@ -242,6 +244,7 @@ public class SemanticGraphBuilder {
                         // 6.1 field access
                         List<FieldAccessExpr> fieldAccessExprs = methodDeclaration.findAll(FieldAccessExpr.class);
                         List<String> readFieldNames = new ArrayList<>();
+                        List<String> writeFieldNames = new ArrayList<>();
                         for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
                             // resolve the field declaration and draw the edge
                             final SymbolReference<? extends ResolvedValueDeclaration> ref =
@@ -253,11 +256,22 @@ public class SemanticGraphBuilder {
                                     resolvedFieldDeclaration.declaringType().getQualifiedName()
                                             + "."
                                             + resolvedFieldDeclaration.getName();
-                            // TODO read or write field
+                            // modifty the value of the field
+                            if (fieldAccessExpr.getParentNode().isPresent()) {
+                                Node parent = fieldAccessExpr.getParentNode().get();
+                                if (parent instanceof AssignExpr) {
+                                    AssignExpr parentAssign = (AssignExpr) parent;
+                                    if (parentAssign.getTarget().equals(fieldAccessExpr)) {
+                                        writeFieldNames.add(qualifiedName);
+                                    }
+                                }
+
+                            }
+
                             readFieldNames.add(qualifiedName);
                         }
                         readFieldEdges.put(methodDeclarationNode, readFieldNames);
-
+                        writeFieldEdges.put(methodDeclarationNode, writeFieldNames);
                         // 6.2 method call
                         List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
                         List<String> methodCalledNames = new ArrayList<>();
@@ -276,6 +290,7 @@ public class SemanticGraphBuilder {
             edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
             edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
             edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+            edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
             edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
 
         } catch (IOException e) {
@@ -286,6 +301,7 @@ public class SemanticGraphBuilder {
 
     /**
      * Build edges from maps
+     *
      * @param edgeCount
      * @param edges
      * @param edgeType
@@ -316,6 +332,7 @@ public class SemanticGraphBuilder {
 
     /**
      * Get the target node from vertex set according to qualified name
+     *
      * @param vertexSet
      * @param targetQualifiedName
      * @param targetNodeType
