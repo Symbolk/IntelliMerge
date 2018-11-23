@@ -269,49 +269,61 @@ public class SemanticGraphBuilder {
                     }
                 }
             }
+
             // build the external edges
-            if (!importEdges.isEmpty()) {
-                for (Map.Entry<SemanticNode, List<String>> entry : importEdges.entrySet()) {
-                    SemanticNode classDeclNode = entry.getKey();
-                    List<String> importedClassNames = entry.getValue();
-                    // TODO class types
-                    for (String importedClassName : importedClassNames) {
-                        SemanticNode importedClassNode = getTargetNode(importedClassName, NodeType.CLASS);
-                        if (importedClassNode != null) {
-                            semanticGraph.addEdge(
-                                    classDeclNode,
-                                    importedClassNode,
-                                    new SemanticEdge(edgeCount++, EdgeType.IMPORT, classDeclNode, importedClassNode));
-                        }
-                    }
-                }
-            }
-            if (!declObjectEdges.isEmpty()) {
-                for (Map.Entry<SemanticNode, List<String>> entry : declObjectEdges.entrySet()) {
-                    SemanticNode classDeclNode = entry.getKey();
-                    List<String> newInstancedClassNames = entry.getValue();
-                    for (String newInstancedClassName : newInstancedClassNames) {
-                        SemanticNode newInstancedClassNode = getTargetNode(newInstancedClassName, NodeType.CLASS);
-                        if (newInstancedClassNode != null) {
-                            // TODO decl object
-                            semanticGraph.addEdge(
-                                    classDeclNode,
-                                    newInstancedClassNode,
-                                    new SemanticEdge(edgeCount++, EdgeType.DECL_OBJECT, classDeclNode, newInstancedClassNode));
-                        }
-                    }
-                }
-            }
+            // now the vertex is determined
+            Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+            edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
+            edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
+            edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+            edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
         return semanticGraph;
     }
 
-    public static SemanticNode getTargetNode(String targetQualifiedName, Enum targetNodeType) {
+    /**
+     * Build edges from maps
+     * @param edgeCount
+     * @param edges
+     * @param edgeType
+     * @param targetNodeType
+     * @return
+     */
+    private static Integer buildEdges(Integer edgeCount, Map<SemanticNode, List<String>> edges, Enum edgeType, Enum targetNodeType) {
+        if (edges.isEmpty()) {
+            return edgeCount;
+        }
+        Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+        for (Map.Entry<SemanticNode, List<String>> entry : edges.entrySet()) {
+            SemanticNode sourceNode = entry.getKey();
+            List<String> targetNodeNames = entry.getValue();
+            // TODO class types
+            for (String targeNodeName : targetNodeNames) {
+                SemanticNode targetNode = getTargetNode(vertexSet, targeNodeName, targetNodeType);
+                if (targetNode != null) {
+                    semanticGraph.addEdge(
+                            sourceNode,
+                            targetNode,
+                            new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
+                }
+            }
+        }
+        return edgeCount;
+    }
+
+    /**
+     * Get the target node from vertex set according to qualified name
+     * @param vertexSet
+     * @param targetQualifiedName
+     * @param targetNodeType
+     * @return
+     */
+    public static SemanticNode getTargetNode(Set<SemanticNode> vertexSet, String targetQualifiedName, Enum targetNodeType) {
         Optional<SemanticNode> targetNodeOpt =
-                semanticGraph
-                        .vertexSet()
+                vertexSet
                         .stream()
                         .filter(
                                 node ->
