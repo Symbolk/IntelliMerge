@@ -12,8 +12,7 @@ public class APIClient {
   private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
 
   public static void main(String[] args) {
-//            Graph<SemanticNode, SemanticEdge> semanticGraph =
-//                    SemanticGraphBuilder.buildForFile(FILE_PATH, PACKAGE_PATH);
+
     Graph<SemanticNode, SemanticEdge> semanticGraph =
         SemanticGraphBuilder.buildForProject(PROJECT_PATH, PACKAGE_PATH);
     if (semanticGraph == null) {
@@ -28,7 +27,7 @@ public class APIClient {
       SemanticNode source = semanticGraph.getEdgeSource(edge);
       SemanticNode target = semanticGraph.getEdgeTarget(edge);
       System.out.println(
-          source.getDisplayName() + " " + edge.getLabel() + " " + target.getDisplayName());
+          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
     }
     //    System.out.println(SemanticGraphExporter.exportAsDot(semanticGraph));
   }

@@ -25,12 +25,10 @@ import edu.pku.intellimerge.model.EdgeType;
 import edu.pku.intellimerge.model.NodeType;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.util.FilesManager;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,216 +36,6 @@ import java.util.stream.Collectors;
 public class SemanticGraphBuilder {
 
     private static Graph<SemanticNode, SemanticEdge> semanticGraph;
-
-    /**
-     * Build the SemanticGraph for one java file
-     *
-     * @param filePath
-     * @param packagePath
-     * @return
-     * @throws FileNotFoundException
-     */
-    public static Graph<SemanticNode, SemanticEdge> buildForFile(
-            String filePath, String packagePath) {
-
-        TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-        TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(packagePath));
-        reflectionTypeSolver.setParent(reflectionTypeSolver);
-        CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-        combinedTypeSolver.add(reflectionTypeSolver);
-        combinedTypeSolver.add(javaParserTypeSolver);
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-        JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
-        final JavaParserFacade javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
-
-        // init the semantic graph
-        //    Graph<SemanticNode, SemanticEdge> semanticGraph = new
-        // DefaultDirectedGraph<>(SemanticEdge.class);
-        Graph<SemanticNode, SemanticEdge> semanticGraph = buildGraph();
-
-        try {
-            if (!FilesManager.isValidFile(new File(filePath))) {
-                return null;
-            }
-
-            // parse the file to get CompilationUnit
-            CompilationUnit cu = JavaParser.parse(new File(filePath));
-
-            Integer nodeCount = 0;
-            Integer edgeCount = 0;
-
-            // 1. package
-            String packageName = "";
-            if (cu.getPackageDeclaration().isPresent()) {
-                PackageDeclaration packageDeclaration = cu.getPackageDeclaration().get();
-                packageName = packageDeclaration.getNameAsString();
-                SemanticNode node =
-                        new SemanticNode(
-                                nodeCount++,
-                                NodeType.PACKAGEDECLARATION,
-                                packageDeclaration.getNameAsString(),
-                                packageDeclaration.getNameAsString(),
-                                packageDeclaration.toString());
-                semanticGraph.addVertex(node);
-            }
-
-            // 2. import
-            List<ImportDeclaration> importDeclarations = cu.getImports();
-            List<SemanticNode> importDeclarationNodes = new ArrayList<>();
-            for (ImportDeclaration importDeclaration : importDeclarations) {
-                SemanticNode node =
-                        new SemanticNode(
-                                nodeCount++,
-                                NodeType.IMPORTDECLARATION,
-                                importDeclaration.toString(),
-                                importDeclaration.toString(),
-                                importDeclaration.toString());
-                if (importDeclaration.getRange().isPresent()) {
-                    node.setRange(importDeclaration.getRange().get());
-                }
-                semanticGraph.addVertex(node);
-                importDeclarationNodes.add(node);
-            }
-
-            // 3. class or interface
-            List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
-                    cu.findAll(ClassOrInterfaceDeclaration.class);
-            for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration : classOrInterfaceDeclarations) {
-                String displayName = classOrInterfaceDeclaration.getNameAsString();
-                String qualifiedName = packageName + "." + displayName;
-                String qualifiedClassName = qualifiedName;
-                SemanticNode classDeclarationNode =
-                        new SemanticNode(
-                                nodeCount++,
-                                NodeType.CLASSORINTERFACEDECLARATION,
-                                displayName,
-                                qualifiedName,
-                                classOrInterfaceDeclaration.toString());
-                semanticGraph.addVertex(classDeclarationNode);
-                // add edges between defined class and imported class
-                for (SemanticNode imported : importDeclarationNodes) {
-                    semanticGraph.addEdge(
-                            classDeclarationNode,
-                            imported,
-                            new SemanticEdge(edgeCount++, EdgeType.IMPORTS, classDeclarationNode, imported));
-                }
-
-                // 4. field
-                List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
-                for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
-                    displayName = fieldDeclaration.getVariables().toString();
-                    qualifiedName = qualifiedClassName + "." + displayName;
-                    SemanticNode fieldDeclarationNode =
-                            new SemanticNode(
-                                    nodeCount++,
-                                    NodeType.FIELDDECLARATION,
-                                    displayName,
-                                    qualifiedName,
-                                    fieldDeclaration.toString());
-                    if (fieldDeclaration.getRange().isPresent()) {
-                        fieldDeclarationNode.setRange(fieldDeclaration.getRange().get());
-                    }
-                    semanticGraph.addVertex(fieldDeclarationNode);
-                    // add edge between field and class
-                    semanticGraph.addEdge(
-                            classDeclarationNode,
-                            fieldDeclarationNode,
-                            new SemanticEdge(edgeCount++, EdgeType.HASFIELD, classDeclarationNode, fieldDeclarationNode));
-                    // 4.1 field declaration
-                    if (!fieldDeclaration.getVariables().get(0).getType().isPrimitiveType()) {
-                        System.out.println(
-                                fieldDeclaration
-                                        .getVariables()
-                                        .get(0)
-                                        .getType()
-                                        .resolve()
-                                        .asReferenceType()
-                                        .getQualifiedName());
-                    }
-                }
-
-                // 5. constructor
-                List<ConstructorDeclaration> constructorDeclarations =
-                        classOrInterfaceDeclaration.getConstructors();
-                for (ConstructorDeclaration constructorDeclaration : constructorDeclarations) {
-                    displayName = constructorDeclaration.getSignature().toString();
-                    qualifiedName = qualifiedClassName + "." + displayName;
-                    SemanticNode constructorDeclNode =
-                            new SemanticNode(
-                                    nodeCount++,
-                                    NodeType.METHODDECLARATION,
-                                    displayName,
-                                    qualifiedName,
-                                    constructorDeclaration.toString());
-                    if (constructorDeclaration.getRange().isPresent()) {
-                        constructorDeclNode.setRange(constructorDeclaration.getRange().get());
-                    }
-                    semanticGraph.addVertex(constructorDeclNode);
-                    semanticGraph.addEdge(
-                            classDeclarationNode,
-                            constructorDeclNode,
-                            new SemanticEdge(edgeCount++, EdgeType.HASCONSTRUCTOR, classDeclarationNode, constructorDeclNode));
-                }
-                // 6. method
-                List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
-                for (MethodDeclaration methodDeclaration : methodDeclarations) {
-                    displayName = methodDeclaration.getSignature().toString();
-                    qualifiedName = qualifiedClassName + "." + displayName;
-                    SemanticNode methodDeclarationNode =
-                            new SemanticNode(
-                                    nodeCount++,
-                                    NodeType.METHODDECLARATION,
-                                    displayName,
-                                    qualifiedName,
-                                    methodDeclaration.toString());
-                    if (methodDeclaration.getRange().isPresent()) {
-                        methodDeclarationNode.setRange(methodDeclaration.getRange().get());
-                    }
-                    semanticGraph.addVertex(methodDeclarationNode);
-                    // add edge between field and class
-                    semanticGraph.addEdge(
-                            classDeclarationNode,
-                            methodDeclarationNode,
-                            new SemanticEdge(edgeCount++, EdgeType.HASMETHOD, classDeclarationNode, methodDeclarationNode));
-
-                    // 6.1 field access
-                    List<FieldAccessExpr> fieldAccessExprs = methodDeclaration.findAll(FieldAccessExpr.class);
-                    for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
-                        // resolve the field declaration and draw the edge
-                        final SymbolReference<? extends ResolvedValueDeclaration> ref =
-                                javaParserFacade.solve(fieldAccessExpr);
-                        ResolvedFieldDeclaration resolvedFieldDeclaration =
-                                ref.getCorrespondingDeclaration().asField();
-                        displayName = resolvedFieldDeclaration.getName();
-                        qualifiedName =
-                                resolvedFieldDeclaration.declaringType().getQualifiedName()
-                                        + "."
-                                        + resolvedFieldDeclaration.getName();
-                        SemanticNode resolvedFieldDeclNode =
-                                new SemanticNode(
-                                        nodeCount++, NodeType.FIELDDECLARATION, displayName, qualifiedName, "");
-                        System.out.println(
-                                resolvedFieldDeclaration.declaringType().getQualifiedName()
-                                        + "."
-                                        + resolvedFieldDeclaration.getName());
-                    }
-
-                    // 6.2 method call
-                    List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
-                    for (MethodCallExpr methodCallExpr : methodCallExprs) {
-                        // resolve the method declaration and draw the edge
-                        System.out.println(methodCallExpr.resolve().getQualifiedSignature());
-                    }
-                }
-            }
-
-            return semanticGraph;
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     /**
      * Build the SemanticGraph for a whole project
@@ -291,10 +79,12 @@ public class SemanticGraphBuilder {
             Integer nodeCount = 0;
             Integer edgeCount = 0;
             //      List<SemanticNode> semanticNodes=new ArrayList<>();
-            Map<SemanticNode, String> newInstanceEdges = new HashMap<SemanticNode, String>();
-            Map<SemanticNode, String> importEdges = new HashMap<SemanticNode, String>();
-            Map<SemanticNode, String> useFieldEdges = new HashMap<SemanticNode, String>();
-            Map<SemanticNode, String> callMethodEdges = new HashMap<SemanticNode, String>();
+            Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
+            Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
+            Map<SemanticNode, List<String>> importEdges = new HashMap<>();
+            Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
+            Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
+            Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
             for (CompilationUnit cu : compilationUnits) {
                 // 1. package
                 String packageName = "";
@@ -309,12 +99,12 @@ public class SemanticGraphBuilder {
                             .stream()
                             .noneMatch(
                                     node ->
-                                            node.getNodeType().equals(NodeType.PACKAGEDECLARATION)
+                                            node.getNodeType().equals(NodeType.PACKAGE)
                                                     && node.getQualifiedName().equals(finalPackageName))) {
                         SemanticNode packageDeclNode =
                                 new SemanticNode(
                                         nodeCount++,
-                                        NodeType.PACKAGEDECLARATION,
+                                        NodeType.PACKAGE,
                                         packageDeclaration.getNameAsString(),
                                         packageDeclaration.getNameAsString(),
                                         packageDeclaration.toString());
@@ -323,20 +113,9 @@ public class SemanticGraphBuilder {
                 }
                 // 2. import
                 List<ImportDeclaration> importDeclarations = cu.getImports();
-                List<SemanticNode> importDeclNodes = new ArrayList<>();
+                List<String> importedClassNames = new ArrayList<>();
                 for (ImportDeclaration importDeclaration : importDeclarations) {
-                    SemanticNode importDeclNode =
-                            new SemanticNode(
-                                    nodeCount++,
-                                    NodeType.IMPORTDECLARATION,
-                                    importDeclaration.toString(),
-                                    importDeclaration.toString(),
-                                    importDeclaration.toString());
-                    if (importDeclaration.getRange().isPresent()) {
-                        importDeclNode.setRange(importDeclaration.getRange().get());
-                    }
-                    semanticGraph.addVertex(importDeclNode);
-                    importDeclNodes.add(importDeclNode);
+                    importedClassNames.add(importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
                 }
                 // 3. class or interface
                 List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
@@ -346,10 +125,11 @@ public class SemanticGraphBuilder {
                     String displayName = classOrInterfaceDeclaration.getNameAsString();
                     String qualifiedName = packageName + "." + displayName;
                     String qualifiedClassName = qualifiedName;
+                    // TODO inner/local class
                     SemanticNode classDeclarationNode =
                             new SemanticNode(
                                     nodeCount++,
-                                    NodeType.CLASSORINTERFACEDECLARATION,
+                                    NodeType.CLASS,
                                     displayName,
                                     qualifiedName,
                                     classOrInterfaceDeclaration.toString());
@@ -362,7 +142,7 @@ public class SemanticGraphBuilder {
                                     .stream()
                                     .filter(
                                             node ->
-                                                    node.getNodeType().equals(NodeType.PACKAGEDECLARATION)
+                                                    node.getNodeType().equals(NodeType.PACKAGE)
                                                             && node.getQualifiedName().equals(finalPackageName1))
                                     .findAny();
                     if (packageDeclNodeOpt.isPresent()) {
@@ -370,25 +150,24 @@ public class SemanticGraphBuilder {
                         semanticGraph.addEdge(
                                 packageDeclNode,
                                 classDeclarationNode,
-                                new SemanticEdge(edgeCount++, EdgeType.PACKAGES, packageDeclNode, classDeclarationNode));
+                                new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, classDeclarationNode));
                     }
 
                     // class-imports-class(es)
-                    for (SemanticNode importDeclNode : importDeclNodes) {
-                        importEdges.put(
-                                classDeclarationNode,
-                                importDeclNode.getQualifiedName().trim().replace("import ", "").replace(";", ""));
-                    }
+                    importEdges.put(
+                            classDeclarationNode,
+                            importedClassNames);
 
                     // 4. field
                     List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
+                    List<String> classUsedInFieldNames = new ArrayList<>();
                     for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
                         displayName = fieldDeclaration.getVariables().toString();
                         qualifiedName = qualifiedClassName + "." + displayName;
                         SemanticNode fieldDeclarationNode =
                                 new SemanticNode(
                                         nodeCount++,
-                                        NodeType.FIELDDECLARATION,
+                                        NodeType.FIELD,
                                         displayName,
                                         qualifiedName,
                                         fieldDeclaration.toString());
@@ -400,10 +179,10 @@ public class SemanticGraphBuilder {
                         semanticGraph.addEdge(
                                 classDeclarationNode,
                                 fieldDeclarationNode,
-                                new SemanticEdge(edgeCount++, EdgeType.HASFIELD, classDeclarationNode, fieldDeclarationNode));
+                                new SemanticEdge(edgeCount++, EdgeType.DEFINE_FIELD, classDeclarationNode, fieldDeclarationNode));
                         // 4.1 field declaration
                         if (!fieldDeclaration.getVariables().get(0).getType().isPrimitiveType()) {
-                            String classNameUsedInField =
+                            String classUsedInFieldName =
                                     fieldDeclaration
                                             .getVariables()
                                             .get(0)
@@ -411,8 +190,10 @@ public class SemanticGraphBuilder {
                                             .resolve()
                                             .asReferenceType()
                                             .getQualifiedName();
-                            newInstanceEdges.put(fieldDeclarationNode, classNameUsedInField);
+                            // TODO decl or init object
+                            classUsedInFieldNames.add(classUsedInFieldName);
                         }
+                        declObjectEdges.put(fieldDeclarationNode, classUsedInFieldNames);
                     }
                     // 5. constructor
                     List<ConstructorDeclaration> constructorDeclarations =
@@ -423,7 +204,7 @@ public class SemanticGraphBuilder {
                         SemanticNode constructorDeclNode =
                                 new SemanticNode(
                                         nodeCount++,
-                                        NodeType.METHODDECLARATION,
+                                        NodeType.CONSTRUCTOR,
                                         displayName,
                                         qualifiedName,
                                         constructorDeclaration.toString());
@@ -434,7 +215,7 @@ public class SemanticGraphBuilder {
                         semanticGraph.addEdge(
                                 classDeclarationNode,
                                 constructorDeclNode,
-                                new SemanticEdge(edgeCount++, EdgeType.HASCONSTRUCTOR, classDeclarationNode, constructorDeclNode));
+                                new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTRUCTOR, classDeclarationNode, constructorDeclNode));
                     }
                     // 6. method
                     List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
@@ -444,7 +225,7 @@ public class SemanticGraphBuilder {
                         SemanticNode methodDeclarationNode =
                                 new SemanticNode(
                                         nodeCount++,
-                                        NodeType.METHODDECLARATION,
+                                        NodeType.METHOD,
                                         displayName,
                                         qualifiedName,
                                         methodDeclaration.toString());
@@ -456,10 +237,11 @@ public class SemanticGraphBuilder {
                         semanticGraph.addEdge(
                                 classDeclarationNode,
                                 methodDeclarationNode,
-                                new SemanticEdge(edgeCount++, EdgeType.HASMETHOD, classDeclarationNode, methodDeclarationNode));
+                                new SemanticEdge(edgeCount++, EdgeType.DEFINE_METHOD, classDeclarationNode, methodDeclarationNode));
 
                         // 6.1 field access
                         List<FieldAccessExpr> fieldAccessExprs = methodDeclaration.findAll(FieldAccessExpr.class);
+                        List<String> readFieldNames = new ArrayList<>();
                         for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
                             // resolve the field declaration and draw the edge
                             final SymbolReference<? extends ResolvedValueDeclaration> ref =
@@ -471,42 +253,52 @@ public class SemanticGraphBuilder {
                                     resolvedFieldDeclaration.declaringType().getQualifiedName()
                                             + "."
                                             + resolvedFieldDeclaration.getName();
-                            useFieldEdges.put(methodDeclarationNode, qualifiedName);
+                            // TODO read or write field
+                            readFieldNames.add(qualifiedName);
                         }
+                        readFieldEdges.put(methodDeclarationNode, readFieldNames);
 
                         // 6.2 method call
                         List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
+                        List<String> methodCalledNames = new ArrayList<>();
                         for (MethodCallExpr methodCallExpr : methodCallExprs) {
                             // resolve the method declaration and draw the edge
-                            callMethodEdges.put(methodDeclarationNode, methodCallExpr.resolve().getQualifiedSignature());
+                            methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
                         }
+                        callMethodEdges.put(methodDeclarationNode, methodCalledNames);
                     }
                 }
             }
             // build the external edges
             if (!importEdges.isEmpty()) {
-                for (Map.Entry<SemanticNode, String> entry : importEdges.entrySet()) {
+                for (Map.Entry<SemanticNode, List<String>> entry : importEdges.entrySet()) {
                     SemanticNode classDeclNode = entry.getKey();
-                    String importedClassName = entry.getValue();
-                    SemanticNode importedClassNode = getTargetNode(importedClassName, NodeType.CLASSORINTERFACEDECLARATION);
-                    if (importedClassNode != null) {
-                        semanticGraph.addEdge(
-                                classDeclNode,
-                                importedClassNode,
-                                new SemanticEdge(edgeCount++, EdgeType.IMPORTS, classDeclNode, importedClassNode));
+                    List<String> importedClassNames = entry.getValue();
+                    // TODO class types
+                    for (String importedClassName : importedClassNames) {
+                        SemanticNode importedClassNode = getTargetNode(importedClassName, NodeType.CLASS);
+                        if (importedClassNode != null) {
+                            semanticGraph.addEdge(
+                                    classDeclNode,
+                                    importedClassNode,
+                                    new SemanticEdge(edgeCount++, EdgeType.IMPORT, classDeclNode, importedClassNode));
+                        }
                     }
                 }
             }
-            if (!newInstanceEdges.isEmpty()) {
-                for (Map.Entry<SemanticNode, String> entry : newInstanceEdges.entrySet()) {
+            if (!declObjectEdges.isEmpty()) {
+                for (Map.Entry<SemanticNode, List<String>> entry : declObjectEdges.entrySet()) {
                     SemanticNode classDeclNode = entry.getKey();
-                    String newInstancedClassName = entry.getValue();
-                    SemanticNode newInstancedClassNode = getTargetNode(newInstancedClassName, NodeType.CLASSORINTERFACEDECLARATION);
-                    if (newInstancedClassNode != null) {
-                        semanticGraph.addEdge(
-                                classDeclNode,
-                                newInstancedClassNode,
-                                new SemanticEdge(edgeCount++, EdgeType.NEWINSTANCEOF, classDeclNode, newInstancedClassNode));
+                    List<String> newInstancedClassNames = entry.getValue();
+                    for (String newInstancedClassName : newInstancedClassNames) {
+                        SemanticNode newInstancedClassNode = getTargetNode(newInstancedClassName, NodeType.CLASS);
+                        if (newInstancedClassNode != null) {
+                            // TODO decl object
+                            semanticGraph.addEdge(
+                                    classDeclNode,
+                                    newInstancedClassNode,
+                                    new SemanticEdge(edgeCount++, EdgeType.DECL_OBJECT, classDeclNode, newInstancedClassNode));
+                        }
                     }
                 }
             }
@@ -516,7 +308,7 @@ public class SemanticGraphBuilder {
         return semanticGraph;
     }
 
-    public static SemanticNode getTargetNode(String targetQualifiedName, Integer targetNodeType) {
+    public static SemanticNode getTargetNode(String targetQualifiedName, Enum targetNodeType) {
         Optional<SemanticNode> targetNodeOpt =
                 semanticGraph
                         .vertexSet()

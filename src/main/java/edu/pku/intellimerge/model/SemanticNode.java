@@ -5,14 +5,14 @@ import com.github.javaparser.ast.Node;
 
 public class SemanticNode {
     private Integer nodeID;
-    private Integer nodeType;
+    private Enum nodeType;
     private String displayName;
     private String qualifiedName;
     private String content;
     private Range range;
     private Node astNode;
 
-    public SemanticNode(Integer nodeID, Integer nodeType, String displayName, String qualifiedName, String content) {
+    public SemanticNode(Integer nodeID, Enum nodeType, String displayName, String qualifiedName, String content) {
         this.nodeID = nodeID;
         this.nodeType = nodeType;
         this.displayName = displayName;
@@ -36,7 +36,7 @@ public class SemanticNode {
         return qualifiedName;
     }
 
-    public Integer getNodeType() {
+    public Enum getNodeType() {
         return nodeType;
     }
 
