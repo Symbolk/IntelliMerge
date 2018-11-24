@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.core.SemanticGraphExporter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import org.jgrapht.Graph;
@@ -24,14 +23,13 @@ public class APIClient {
     //            System.out.println(node);
     //        }
     //        System.out.println("------------------------------");
-    //        for (SemanticEdge edge : semanticGraph.edgeSet()) {
-    //            SemanticNode source = semanticGraph.getEdgeSource(edge);
-    //            SemanticNode target = semanticGraph.getEdgeTarget(edge);
-    //            System.out.println(
-    //                    source.getDisplayName() + " " + edge.getEdgeType() + " " +
-    // target.getDisplayName());
-    //        }
+    for (SemanticEdge edge : semanticGraph.edgeSet()) {
+      SemanticNode source = semanticGraph.getEdgeSource(edge);
+      SemanticNode target = semanticGraph.getEdgeTarget(edge);
+      System.out.println(
+          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+    }
     //        System.out.println("------------------------------");
-    System.out.println(SemanticGraphExporter.exportAsDot(semanticGraph));
+//    System.out.println(SemanticGraphExporter.exportAsDot(semanticGraph));
   }
 }

@@ -81,9 +81,11 @@ public class SemanticGraphBuilder {
       Integer nodeCount = 0;
       Integer edgeCount = 0;
       //      List<SemanticNode> semanticNodes=new ArrayList<>();
+      Map<SemanticNode, List<String>> importEdges = new HashMap<>();
+      Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
+      Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
       Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
       Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> importEdges = new HashMap<>();
       Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
       Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
       Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
@@ -123,21 +125,43 @@ public class SemanticGraphBuilder {
         // 3. class or interface
         List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
             cu.findAll(ClassOrInterfaceDeclaration.class);
+        List<String> implementedTypes = new ArrayList<>();
         for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration :
             classOrInterfaceDeclarations) {
           String displayName = classOrInterfaceDeclaration.getNameAsString();
           String qualifiedName = packageName + "." + displayName;
           String qualifiedClassName = qualifiedName;
-          // TODO inner/local class
+          // enum/interface/inner/local class
+          Enum nodeType=NodeType.CLASS; // default
+          nodeType=classOrInterfaceDeclaration.isInterface() ? NodeType.INTERFACE:nodeType;
+          nodeType=classOrInterfaceDeclaration.isEnumDeclaration() ? NodeType.ENUM:nodeType;
+          nodeType=classOrInterfaceDeclaration.isInnerClass() ? NodeType.INNER_CLASS:nodeType;
+          nodeType=classOrInterfaceDeclaration.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS:nodeType;
           SemanticNode classDeclarationNode =
               new SemanticNode(
                   nodeCount++,
-                  NodeType.CLASS,
+                  nodeType,
                   displayName,
                   qualifiedName,
                   classOrInterfaceDeclaration.toString());
           semanticGraph.addVertex(classDeclarationNode);
-          // package-packages-class
+
+          // extend/implement
+          if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
+            String extendedClassName =
+                classOrInterfaceDeclaration.getExtendedTypes().get(0).resolve().asReferenceType().getQualifiedName();
+            List<String> temp = new ArrayList<>();
+            temp.add(extendedClassName);
+            extendEdges.put(classDeclarationNode, temp);
+          }
+          if (classOrInterfaceDeclaration.getImplementedTypes().size() > 0) {
+            classOrInterfaceDeclaration
+                .getImplementedTypes()
+                .forEach(
+                    implementedType -> implementedTypes.add(implementedType.resolve().asReferenceType().getQualifiedName()));
+            implementEdges.put(classDeclarationNode, implementedTypes);
+          }
+
           String finalPackageName1 = packageName;
           Optional<SemanticNode> packageDeclNodeOpt =
               semanticGraph
@@ -279,7 +303,6 @@ public class SemanticGraphBuilder {
                   }
                 }
               }
-
               readFieldNames.add(qualifiedName);
             }
             readFieldEdges.put(methodDeclarationNode, readFieldNames);
@@ -299,7 +322,10 @@ public class SemanticGraphBuilder {
       // build the external edges
       // now the vertex is determined
       Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+
       edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
+      edgeCount = buildEdges(edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
+      edgeCount = buildEdges(edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
       edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
       edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
       edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);

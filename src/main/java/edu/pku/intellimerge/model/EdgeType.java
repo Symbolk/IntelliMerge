@@ -4,6 +4,8 @@ public enum EdgeType {
   // inter-file edges
   CONTAIN,
   IMPORT,
+  EXTEND,
+  IMPLEMENT,
   // internal edges
   DEFINE_FIELD,
   DEFINE_METHOD,
