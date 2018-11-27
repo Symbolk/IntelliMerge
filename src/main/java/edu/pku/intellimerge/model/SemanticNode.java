@@ -30,7 +30,7 @@ public class SemanticNode {
   }
 
   public String getDisplayName() {
-    return displayName;
+    return nodeType.toString() + ":" + displayName;
   }
 
   public String getQualifiedName() {

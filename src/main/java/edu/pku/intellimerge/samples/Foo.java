@@ -2,7 +2,8 @@ package edu.pku.intellimerge.samples;
 
 class Foo {
   Bar bar;
-  int id;
+  Bar newBar = new Bar();
+  int id, nid;
   private A a;
 
   public static void main(String[] args) {

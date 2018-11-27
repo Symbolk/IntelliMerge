@@ -2,12 +2,12 @@ package edu.pku.intellimerge.samples;
 
 class Bar {
 
-  public String a;
+  public String a, b;
 
   public void aMethod() {
     while (true) {
-      int a = 0;
-      a = a + 1;
+      String a = "0";
+      b = a + "1";
     }
   }
 }
