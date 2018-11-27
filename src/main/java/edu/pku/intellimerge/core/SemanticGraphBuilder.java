@@ -66,6 +66,11 @@ public class SemanticGraphBuilder {
       File root = new File(folderPath);
       SourceRoot sourceRoot = new SourceRoot(root.toPath());
       sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
+
+      //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
+      //      ProjectRoot projectRoot1 = new
+      // SymbolSolverCollectionStrategy().collect(root.toPath());
+
       List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
       List<CompilationUnit> compilationUnits =
           parseResults
@@ -262,6 +267,11 @@ public class SemanticGraphBuilder {
           // TODO override/overload
           List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
           for (MethodDeclaration methodDeclaration : methodDeclarations) {
+            if (methodDeclaration.getAnnotations().size() > 0) {
+              if(methodDeclaration.isAnnotationPresent("Override")){
+                // search the method signature in its superclass or interface
+              }
+            }
             displayName = methodDeclaration.getSignature().toString();
             qualifiedName = qualifiedClassName + "." + displayName;
             SemanticNode methodDeclarationNode =
