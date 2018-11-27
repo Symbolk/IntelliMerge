@@ -24,12 +24,12 @@ public class APIClient {
     //            System.out.println(node);
     //        }
     //        System.out.println("------------------------------");
-//    for (SemanticEdge edge : semanticGraph.edgeSet()) {
-//      SemanticNode source = semanticGraph.getEdgeSource(edge);
-//      SemanticNode target = semanticGraph.getEdgeTarget(edge);
-//      System.out.println(
-//          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
-//    }
+    for (SemanticEdge edge : semanticGraph.edgeSet()) {
+      SemanticNode source = semanticGraph.getEdgeSource(edge);
+      SemanticNode target = semanticGraph.getEdgeTarget(edge);
+      System.out.println(
+          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+    }
     //        System.out.println("------------------------------");
     System.out.println(SemanticGraphExporter.exportAsDot(semanticGraph));
   }

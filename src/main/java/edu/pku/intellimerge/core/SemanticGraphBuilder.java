@@ -77,7 +77,7 @@ public class SemanticGraphBuilder {
       // save nodes into SemanticGraph, keep edges in several maps to save later
       Integer nodeCount = 0;
       Integer edgeCount = 0;
-      //      List<SemanticNode> semanticNodes=new ArrayList<>();
+      // create a series of temp containers for inter-class edges
       Map<SemanticNode, List<String>> importEdges = new HashMap<>();
       Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
       Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
@@ -86,6 +86,7 @@ public class SemanticGraphBuilder {
       Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
       Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
       Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
+
       for (CompilationUnit cu : compilationUnits) {
         // 1. package
         String packageName = "";
@@ -201,11 +202,7 @@ public class SemanticGraphBuilder {
               qualifiedName = qualifiedClassName + "." + displayName;
               SemanticNode fieldDeclarationNode =
                   new SemanticNode(
-                      nodeCount++,
-                      NodeType.FIELD,
-                      displayName,
-                      qualifiedName,
-                      field.toString());
+                      nodeCount++, NodeType.FIELD, displayName, qualifiedName, field.toString());
               if (field.getRange().isPresent()) {
                 fieldDeclarationNode.setRange(field.getRange().get());
               }
@@ -220,14 +217,19 @@ public class SemanticGraphBuilder {
                       classDeclarationNode,
                       fieldDeclarationNode));
               // 4.1 field declaration
-              List<String> classUsedInFieldNames = new ArrayList<>();
+              List<String> declClassNames = new ArrayList<>();
+              List<String> initClassNames = new ArrayList<>();
               if (!field.getType().isPrimitiveType()) {
                 String classUsedInFieldName =
                     field.getType().resolve().asReferenceType().getQualifiedName();
-                // TODO decl or init object
-                classUsedInFieldNames.add(classUsedInFieldName);
+                if (field.getInitializer().isPresent()) {
+                  initClassNames.add(classUsedInFieldName);
+                } else {
+                  declClassNames.add(classUsedInFieldName);
+                }
               }
-              declObjectEdges.put(fieldDeclarationNode, classUsedInFieldNames);
+              declObjectEdges.put(fieldDeclarationNode, declClassNames);
+              initObjectEdges.put(fieldDeclarationNode, initClassNames);
             }
           }
           // 5. constructor
@@ -300,7 +302,7 @@ public class SemanticGraphBuilder {
                   resolvedFieldDeclaration.declaringType().getQualifiedName()
                       + "."
                       + resolvedFieldDeclaration.getName();
-              // modifty the value of the field
+              // whether the field is assigned a value
               if (fieldAccessExpr.getParentNode().isPresent()) {
                 Node parent = fieldAccessExpr.getParentNode().get();
                 if (parent instanceof AssignExpr) {
@@ -334,6 +336,7 @@ public class SemanticGraphBuilder {
       edgeCount = buildEdges(edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
       edgeCount = buildEdges(edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
       edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
+      edgeCount = buildEdges(edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
       edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
       edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
       edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);

@@ -2,7 +2,7 @@ package edu.pku.intellimerge.samples;
 
 class Foo {
   Bar bar;
-  Bar newBar = new Bar();
+  Child child = new Child();
   int id, nid;
   private A a;
 
