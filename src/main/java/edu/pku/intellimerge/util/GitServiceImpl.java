@@ -5,20 +5,20 @@ import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -93,6 +93,33 @@ public class GitServiceImpl implements GitService {
     //		ExternalProcess.execute(workingDir, "git", "checkout", commitID);
   }
 
+  public String getFileContentAtCommit(Repository repository, String commitID, String filePath)
+      throws Exception {
+    ObjectId commitObjectId = ObjectId.fromString(commitID);
+
+    // a RevWalk allows to walk over commits based on some filtering that is defined
+    try (RevWalk revWalk = new RevWalk(repository)) {
+      RevCommit commit = revWalk.parseCommit(commitObjectId);
+      // and using commit's tree find the path
+      RevTree tree = commit.getTree();
+
+      // now try to find a specific file
+      try (TreeWalk treeWalk = new TreeWalk(repository)) {
+        treeWalk.addTree(tree);
+        treeWalk.setRecursive(true);
+        treeWalk.setFilter(PathFilter.create(filePath));
+        if (!treeWalk.next()) {
+          throw new IllegalStateException("Did not find expected file " + filePath);
+        }
+
+        ObjectId objectId = treeWalk.getObjectId(0);
+        ObjectLoader loader = repository.open(objectId);
+        return new String(loader.getBytes(), StandardCharsets.UTF_8);
+      }
+      //      revWalk.dispose();
+    }
+  }
+
   public List<DiffEntry> listDiffJavaFiles(
       Repository repository, String oldCommit, String newCommit)
       throws GitAPIException, IOException {
@@ -113,10 +140,6 @@ public class GitServiceImpl implements GitService {
     }
   }
 
-  private boolean isJavaFile(String path) {
-    return path.endsWith(".java");
-  }
-
   private AbstractTreeIterator prepareTreeParser(Repository repository, String objectId)
       throws IOException {
     // from the commit we can build the tree which allows us to construct the TreeParser
@@ -134,5 +157,9 @@ public class GitServiceImpl implements GitService {
 
       return treeParser;
     }
+  }
+
+  private boolean isJavaFile(String path) {
+    return path.endsWith(".java");
   }
 }

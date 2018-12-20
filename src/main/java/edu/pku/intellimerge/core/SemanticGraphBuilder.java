@@ -28,7 +28,6 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,7 @@ public class SemanticGraphBuilder {
    * @return
    */
   public static Graph<SemanticNode, SemanticEdge> buildForProject(
-      String folderPath, String packagePath) {
+      String folderPath, String packagePath) throws Exception {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
@@ -61,299 +60,291 @@ public class SemanticGraphBuilder {
     semanticGraph = buildGraph();
 
     // parse all java files in project folder
-    try {
-      //        ParserConfiguration parserConfiguration
-      File root = new File(folderPath);
-      SourceRoot sourceRoot = new SourceRoot(root.toPath());
-      sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
+    //        ParserConfiguration parserConfiguration
+    File root = new File(folderPath);
+    SourceRoot sourceRoot = new SourceRoot(root.toPath());
+    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
-      //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-      //      ProjectRoot projectRoot1 = new
-      // SymbolSolverCollectionStrategy().collect(root.toPath());
+    //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
+    //      ProjectRoot projectRoot1 = new
+    // SymbolSolverCollectionStrategy().collect(root.toPath());
 
-      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
-      List<CompilationUnit> compilationUnits =
-          parseResults
-              .stream()
-              .filter(ParseResult::isSuccessful)
-              .map(r -> r.getResult().get())
-              .collect(Collectors.toList());
-      // build the graph from the cus
-      // save nodes into SemanticGraph, keep edges in several maps to save later
-      Integer nodeCount = 0;
-      Integer edgeCount = 0;
-      // create a series of temp containers for inter-class edges
-      Map<SemanticNode, List<String>> importEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
-      Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
+    List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
+    //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
+    List<CompilationUnit> compilationUnits =
+        parseResults
+            .stream()
+            .filter(ParseResult::isSuccessful)
+            .map(r -> r.getResult().get())
+            .collect(Collectors.toList());
+    // build the graph from the cus
+    // save nodes into SemanticGraph, keep edges in several maps to save later
+    Integer nodeCount = 0;
+    Integer edgeCount = 0;
+    // create a series of temp containers for inter-class edges
+    Map<SemanticNode, List<String>> importEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
+    Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
-      for (CompilationUnit cu : compilationUnits) {
-        // 1. package
-        String packageName = "";
-        if (cu.getPackageDeclaration().isPresent()) {
-          PackageDeclaration packageDeclaration = cu.getPackageDeclaration().get();
-          packageName = packageDeclaration.getNameAsString();
-          // check if the package node exists
-          // if not exist, create one
-          String finalPackageName = packageName;
-          if (semanticGraph
-              .vertexSet()
-              .stream()
-              .noneMatch(
-                  node ->
-                      node.getNodeType().equals(NodeType.PACKAGE)
-                          && node.getQualifiedName().equals(finalPackageName))) {
-            SemanticNode packageDeclNode =
-                new SemanticNode(
-                    nodeCount++,
-                    NodeType.PACKAGE,
-                    packageDeclaration.getNameAsString(),
-                    packageDeclaration.getNameAsString(),
-                    packageDeclaration.toString());
-            semanticGraph.addVertex(packageDeclNode);
-          }
-        }
-        // 2. import
-        List<ImportDeclaration> importDeclarations = cu.getImports();
-        List<String> importedClassNames = new ArrayList<>();
-        for (ImportDeclaration importDeclaration : importDeclarations) {
-          importedClassNames.add(
-              importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
-        }
-        // 3. class or interface
-        List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
-            cu.findAll(ClassOrInterfaceDeclaration.class);
-        List<String> implementedTypes = new ArrayList<>();
-        for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration :
-            classOrInterfaceDeclarations) {
-          String displayName = classOrInterfaceDeclaration.getNameAsString();
-          String qualifiedName = packageName + "." + displayName;
-          String qualifiedClassName = qualifiedName;
-          // enum/interface/inner/local class
-          Enum nodeType = NodeType.CLASS; // default
-          nodeType = classOrInterfaceDeclaration.isInterface() ? NodeType.INTERFACE : nodeType;
-          nodeType = classOrInterfaceDeclaration.isEnumDeclaration() ? NodeType.ENUM : nodeType;
-          nodeType = classOrInterfaceDeclaration.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
-          nodeType =
-              classOrInterfaceDeclaration.isLocalClassDeclaration()
-                  ? NodeType.LOCAL_CLASS
-                  : nodeType;
-          SemanticNode classDeclarationNode =
+    for (CompilationUnit cu : compilationUnits) {
+      // 1. package
+      String packageName = "";
+      if (cu.getPackageDeclaration().isPresent()) {
+        PackageDeclaration packageDeclaration = cu.getPackageDeclaration().get();
+        packageName = packageDeclaration.getNameAsString();
+        // check if the package node exists
+        // if not exist, create one
+        String finalPackageName = packageName;
+        if (semanticGraph
+            .vertexSet()
+            .stream()
+            .noneMatch(
+                node ->
+                    node.getNodeType().equals(NodeType.PACKAGE)
+                        && node.getQualifiedName().equals(finalPackageName))) {
+          SemanticNode packageDeclNode =
               new SemanticNode(
                   nodeCount++,
-                  nodeType,
-                  displayName,
-                  qualifiedName,
-                  classOrInterfaceDeclaration.toString());
-          semanticGraph.addVertex(classDeclarationNode);
+                  NodeType.PACKAGE,
+                  packageDeclaration.getNameAsString(),
+                  packageDeclaration.getNameAsString(),
+                  packageDeclaration.toString());
+          semanticGraph.addVertex(packageDeclNode);
+        }
+      }
+      // 2. import
+      List<ImportDeclaration> importDeclarations = cu.getImports();
+      List<String> importedClassNames = new ArrayList<>();
+      for (ImportDeclaration importDeclaration : importDeclarations) {
+        importedClassNames.add(
+            importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
+      }
+      // 3. class or interface
+      List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
+          cu.findAll(ClassOrInterfaceDeclaration.class);
+      List<String> implementedTypes = new ArrayList<>();
+      for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration : classOrInterfaceDeclarations) {
+        String displayName = classOrInterfaceDeclaration.getNameAsString();
+        String qualifiedName = packageName + "." + displayName;
+        String qualifiedClassName = qualifiedName;
+        // enum/interface/inner/local class
+        Enum nodeType = NodeType.CLASS; // default
+        nodeType = classOrInterfaceDeclaration.isInterface() ? NodeType.INTERFACE : nodeType;
+        nodeType = classOrInterfaceDeclaration.isEnumDeclaration() ? NodeType.ENUM : nodeType;
+        nodeType = classOrInterfaceDeclaration.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
+        nodeType =
+            classOrInterfaceDeclaration.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
+        SemanticNode classDeclarationNode =
+            new SemanticNode(
+                nodeCount++,
+                nodeType,
+                displayName,
+                qualifiedName,
+                classOrInterfaceDeclaration.toString());
+        semanticGraph.addVertex(classDeclarationNode);
 
-          // extend/implement
-          if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
-            // singleton extend
-            String extendedClassName =
-                classOrInterfaceDeclaration
-                    .getExtendedTypes()
-                    .get(0)
-                    .resolve()
-                    .asReferenceType()
-                    .getQualifiedName();
-            List<String> temp = new ArrayList<>();
-            temp.add(extendedClassName);
-            extendEdges.put(classDeclarationNode, temp);
-          }
-          if (classOrInterfaceDeclaration.getImplementedTypes().size() > 0) {
-            // multiple implements
-            classOrInterfaceDeclaration
-                .getImplementedTypes()
-                .forEach(
-                    implementedType ->
-                        implementedTypes.add(
-                            implementedType.resolve().asReferenceType().getQualifiedName()));
-            implementEdges.put(classDeclarationNode, implementedTypes);
-          }
+        // extend/implement
+        if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
+          // singleton extend
+          String extendedClassName =
+              classOrInterfaceDeclaration
+                  .getExtendedTypes()
+                  .get(0)
+                  .resolve()
+                  .asReferenceType()
+                  .getQualifiedName();
+          List<String> temp = new ArrayList<>();
+          temp.add(extendedClassName);
+          extendEdges.put(classDeclarationNode, temp);
+        }
+        if (classOrInterfaceDeclaration.getImplementedTypes().size() > 0) {
+          // multiple implements
+          classOrInterfaceDeclaration
+              .getImplementedTypes()
+              .forEach(
+                  implementedType ->
+                      implementedTypes.add(
+                          implementedType.resolve().asReferenceType().getQualifiedName()));
+          implementEdges.put(classDeclarationNode, implementedTypes);
+        }
 
-          String finalPackageName1 = packageName;
-          Optional<SemanticNode> packageDeclNodeOpt =
-              semanticGraph
-                  .vertexSet()
-                  .stream()
-                  .filter(
-                      node ->
-                          node.getNodeType().equals(NodeType.PACKAGE)
-                              && node.getQualifiedName().equals(finalPackageName1))
-                  .findAny();
-          if (packageDeclNodeOpt.isPresent()) {
-            SemanticNode packageDeclNode = packageDeclNodeOpt.get();
-            semanticGraph.addEdge(
-                packageDeclNode,
-                classDeclarationNode,
-                new SemanticEdge(
-                    edgeCount++, EdgeType.CONTAIN, packageDeclNode, classDeclarationNode));
-          }
+        String finalPackageName1 = packageName;
+        Optional<SemanticNode> packageDeclNodeOpt =
+            semanticGraph
+                .vertexSet()
+                .stream()
+                .filter(
+                    node ->
+                        node.getNodeType().equals(NodeType.PACKAGE)
+                            && node.getQualifiedName().equals(finalPackageName1))
+                .findAny();
+        if (packageDeclNodeOpt.isPresent()) {
+          SemanticNode packageDeclNode = packageDeclNodeOpt.get();
+          semanticGraph.addEdge(
+              packageDeclNode,
+              classDeclarationNode,
+              new SemanticEdge(
+                  edgeCount++, EdgeType.CONTAIN, packageDeclNode, classDeclarationNode));
+        }
 
-          // class-imports-class(es)
-          importEdges.put(classDeclarationNode, importedClassNames);
+        // class-imports-class(es)
+        importEdges.put(classDeclarationNode, importedClassNames);
 
-          // 4. field
-          List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
-          for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
-            for (VariableDeclarator field : fieldDeclaration.getVariables()) {
-              displayName = field.toString();
-              qualifiedName = qualifiedClassName + "." + displayName;
-              SemanticNode fieldDeclarationNode =
-                  new SemanticNode(
-                      nodeCount++, NodeType.FIELD, displayName, qualifiedName, field.toString());
-              if (field.getRange().isPresent()) {
-                fieldDeclarationNode.setRange(field.getRange().get());
-              }
-              semanticGraph.addVertex(fieldDeclarationNode);
-              // add edge between field and class
-              semanticGraph.addEdge(
-                  classDeclarationNode,
-                  fieldDeclarationNode,
-                  new SemanticEdge(
-                      edgeCount++,
-                      EdgeType.DEFINE_FIELD,
-                      classDeclarationNode,
-                      fieldDeclarationNode));
-              // 4.1 field declaration
-              List<String> declClassNames = new ArrayList<>();
-              List<String> initClassNames = new ArrayList<>();
-              if (!field.getType().isPrimitiveType()) {
-                String classUsedInFieldName =
-                    field.getType().resolve().asReferenceType().getQualifiedName();
-                if (field.getInitializer().isPresent()) {
-                  initClassNames.add(classUsedInFieldName);
-                } else {
-                  declClassNames.add(classUsedInFieldName);
-                }
-              }
-              declObjectEdges.put(fieldDeclarationNode, declClassNames);
-              initObjectEdges.put(fieldDeclarationNode, initClassNames);
-            }
-          }
-          // 5. constructor
-          List<ConstructorDeclaration> constructorDeclarations =
-              classOrInterfaceDeclaration.getConstructors();
-          for (ConstructorDeclaration constructorDeclaration : constructorDeclarations) {
-            displayName = constructorDeclaration.getSignature().toString();
+        // 4. field
+        List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
+        for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
+          for (VariableDeclarator field : fieldDeclaration.getVariables()) {
+            displayName = field.toString();
             qualifiedName = qualifiedClassName + "." + displayName;
-            SemanticNode constructorDeclNode =
+            SemanticNode fieldDeclarationNode =
                 new SemanticNode(
-                    nodeCount++,
-                    NodeType.CONSTRUCTOR,
-                    displayName,
-                    qualifiedName,
-                    constructorDeclaration.toString());
-            if (constructorDeclaration.getRange().isPresent()) {
-              constructorDeclNode.setRange(constructorDeclaration.getRange().get());
+                    nodeCount++, NodeType.FIELD, displayName, qualifiedName, field.toString());
+            if (field.getRange().isPresent()) {
+              fieldDeclarationNode.setRange(field.getRange().get());
             }
-            semanticGraph.addVertex(constructorDeclNode);
-            semanticGraph.addEdge(
-                classDeclarationNode,
-                constructorDeclNode,
-                new SemanticEdge(
-                    edgeCount++,
-                    EdgeType.DEFINE_CONSTRUCTOR,
-                    classDeclarationNode,
-                    constructorDeclNode));
-          }
-          // 6. method
-          // TODO override/overload
-          List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
-          for (MethodDeclaration methodDeclaration : methodDeclarations) {
-            if (methodDeclaration.getAnnotations().size() > 0) {
-              if(methodDeclaration.isAnnotationPresent("Override")){
-                // search the method signature in its superclass or interface
-              }
-            }
-            displayName = methodDeclaration.getSignature().toString();
-            qualifiedName = qualifiedClassName + "." + displayName;
-            SemanticNode methodDeclarationNode =
-                new SemanticNode(
-                    nodeCount++,
-                    NodeType.METHOD,
-                    displayName,
-                    qualifiedName,
-                    methodDeclaration.toString());
-            if (methodDeclaration.getRange().isPresent()) {
-              methodDeclarationNode.setRange(methodDeclaration.getRange().get());
-            }
-            semanticGraph.addVertex(methodDeclarationNode);
+            semanticGraph.addVertex(fieldDeclarationNode);
             // add edge between field and class
             semanticGraph.addEdge(
                 classDeclarationNode,
-                methodDeclarationNode,
+                fieldDeclarationNode,
                 new SemanticEdge(
                     edgeCount++,
-                    EdgeType.DEFINE_METHOD,
+                    EdgeType.DEFINE_FIELD,
                     classDeclarationNode,
-                    methodDeclarationNode));
-
-            // 6.1 field access
-            // TODO support self field?
-            List<FieldAccessExpr> fieldAccessExprs =
-                methodDeclaration.findAll(FieldAccessExpr.class);
-            List<String> readFieldNames = new ArrayList<>();
-            List<String> writeFieldNames = new ArrayList<>();
-            for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
-              // resolve the field declaration and draw the edge
-              final SymbolReference<? extends ResolvedValueDeclaration> ref =
-                  javaParserFacade.solve(fieldAccessExpr);
-              ResolvedFieldDeclaration resolvedFieldDeclaration =
-                  ref.getCorrespondingDeclaration().asField();
-              displayName = resolvedFieldDeclaration.getName();
-              qualifiedName =
-                  resolvedFieldDeclaration.declaringType().getQualifiedName()
-                      + "."
-                      + resolvedFieldDeclaration.getName();
-              // whether the field is assigned a value
-              if (fieldAccessExpr.getParentNode().isPresent()) {
-                Node parent = fieldAccessExpr.getParentNode().get();
-                if (parent instanceof AssignExpr) {
-                  AssignExpr parentAssign = (AssignExpr) parent;
-                  if (parentAssign.getTarget().equals(fieldAccessExpr)) {
-                    writeFieldNames.add(qualifiedName);
-                  }
-                }
+                    fieldDeclarationNode));
+            // 4.1 field declaration
+            List<String> declClassNames = new ArrayList<>();
+            List<String> initClassNames = new ArrayList<>();
+            if (!field.getType().isPrimitiveType()) {
+              String classUsedInFieldName =
+                  field.getType().resolve().asReferenceType().getQualifiedName();
+              if (field.getInitializer().isPresent()) {
+                initClassNames.add(classUsedInFieldName);
+              } else {
+                declClassNames.add(classUsedInFieldName);
               }
-              readFieldNames.add(qualifiedName);
             }
-            readFieldEdges.put(methodDeclarationNode, readFieldNames);
-            writeFieldEdges.put(methodDeclarationNode, writeFieldNames);
-            // 6.2 method call
-            List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
-            List<String> methodCalledNames = new ArrayList<>();
-            for (MethodCallExpr methodCallExpr : methodCallExprs) {
-              // resolve the method declaration and draw the edge
-              methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
-            }
-            callMethodEdges.put(methodDeclarationNode, methodCalledNames);
+            declObjectEdges.put(fieldDeclarationNode, declClassNames);
+            initObjectEdges.put(fieldDeclarationNode, initClassNames);
           }
         }
+        // 5. constructor
+        List<ConstructorDeclaration> constructorDeclarations =
+            classOrInterfaceDeclaration.getConstructors();
+        for (ConstructorDeclaration constructorDeclaration : constructorDeclarations) {
+          displayName = constructorDeclaration.getSignature().toString();
+          qualifiedName = qualifiedClassName + "." + displayName;
+          SemanticNode constructorDeclNode =
+              new SemanticNode(
+                  nodeCount++,
+                  NodeType.CONSTRUCTOR,
+                  displayName,
+                  qualifiedName,
+                  constructorDeclaration.toString());
+          if (constructorDeclaration.getRange().isPresent()) {
+            constructorDeclNode.setRange(constructorDeclaration.getRange().get());
+          }
+          semanticGraph.addVertex(constructorDeclNode);
+          semanticGraph.addEdge(
+              classDeclarationNode,
+              constructorDeclNode,
+              new SemanticEdge(
+                  edgeCount++,
+                  EdgeType.DEFINE_CONSTRUCTOR,
+                  classDeclarationNode,
+                  constructorDeclNode));
+        }
+        // 6. method
+        // TODO override/overload
+        List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
+        for (MethodDeclaration methodDeclaration : methodDeclarations) {
+          if (methodDeclaration.getAnnotations().size() > 0) {
+            if (methodDeclaration.isAnnotationPresent("Override")) {
+              // search the method signature in its superclass or interface
+            }
+          }
+          displayName = methodDeclaration.getSignature().toString();
+          qualifiedName = qualifiedClassName + "." + displayName;
+          SemanticNode methodDeclarationNode =
+              new SemanticNode(
+                  nodeCount++,
+                  NodeType.METHOD,
+                  displayName,
+                  qualifiedName,
+                  methodDeclaration.toString());
+          if (methodDeclaration.getRange().isPresent()) {
+            methodDeclarationNode.setRange(methodDeclaration.getRange().get());
+          }
+          semanticGraph.addVertex(methodDeclarationNode);
+          // add edge between field and class
+          semanticGraph.addEdge(
+              classDeclarationNode,
+              methodDeclarationNode,
+              new SemanticEdge(
+                  edgeCount++,
+                  EdgeType.DEFINE_METHOD,
+                  classDeclarationNode,
+                  methodDeclarationNode));
+
+          // 6.1 field access
+          // TODO support self field?
+          List<FieldAccessExpr> fieldAccessExprs = methodDeclaration.findAll(FieldAccessExpr.class);
+          List<String> readFieldNames = new ArrayList<>();
+          List<String> writeFieldNames = new ArrayList<>();
+          for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
+            // resolve the field declaration and draw the edge
+            final SymbolReference<? extends ResolvedValueDeclaration> ref =
+                javaParserFacade.solve(fieldAccessExpr);
+            ResolvedFieldDeclaration resolvedFieldDeclaration =
+                ref.getCorrespondingDeclaration().asField();
+            displayName = resolvedFieldDeclaration.getName();
+            qualifiedName =
+                resolvedFieldDeclaration.declaringType().getQualifiedName()
+                    + "."
+                    + resolvedFieldDeclaration.getName();
+            // whether the field is assigned a value
+            if (fieldAccessExpr.getParentNode().isPresent()) {
+              Node parent = fieldAccessExpr.getParentNode().get();
+              if (parent instanceof AssignExpr) {
+                AssignExpr parentAssign = (AssignExpr) parent;
+                if (parentAssign.getTarget().equals(fieldAccessExpr)) {
+                  writeFieldNames.add(qualifiedName);
+                }
+              }
+            }
+            readFieldNames.add(qualifiedName);
+          }
+          readFieldEdges.put(methodDeclarationNode, readFieldNames);
+          writeFieldEdges.put(methodDeclarationNode, writeFieldNames);
+          // 6.2 method call
+          List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
+          List<String> methodCalledNames = new ArrayList<>();
+          for (MethodCallExpr methodCallExpr : methodCallExprs) {
+            // resolve the method declaration and draw the edge
+            methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
+          }
+          callMethodEdges.put(methodDeclarationNode, methodCalledNames);
+        }
       }
-
-      // build the external edges
-      // now the vertex is determined
-      Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
-
-      edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
-      edgeCount = buildEdges(edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
-      edgeCount = buildEdges(edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
-      edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
-      edgeCount = buildEdges(edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
-      edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-      edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
-      edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
-
-    } catch (IOException e) {
-      e.printStackTrace();
     }
+
+    // build the external edges
+    // now the vertex is determined
+    Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+
+    edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
+    edgeCount = buildEdges(edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
+    edgeCount = buildEdges(edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
+    edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
+    edgeCount = buildEdges(edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
+    edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+    edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
+    edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
     return semanticGraph;
   }
 

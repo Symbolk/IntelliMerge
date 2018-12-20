@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.util;
 
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;
@@ -14,9 +13,11 @@ public interface GitService {
   Repository cloneIfNotExistsWithBranch(String projectPath, String cloneUrl, String branch)
       throws Exception;
 
+  String getFileContentAtCommit(Repository repository, String commitID, String filePath)
+      throws Exception;
+
   void checkout(Repository repository, String commitID) throws Exception;
 
-  List<DiffEntry> listDiffJavaFiles(
-      Repository repository, String oldCommit, String newCommit)
+  List<DiffEntry> listDiffJavaFiles(Repository repository, String oldCommit, String newCommit)
       throws GitAPIException, IOException;
 }

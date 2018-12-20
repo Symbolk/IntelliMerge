@@ -35,9 +35,12 @@ public class APIClient {
       List<DiffEntry> javaDiffs =
           gitService.listDiffJavaFiles(repository, baseCommitID, oursCommitID);
       for (DiffEntry javaDiff : javaDiffs) {
-        System.out.println(javaDiff.getChangeType() + " " + javaDiff.getNewPath());
+//        System.out.println(javaDiff.getChangeType() + " " + javaDiff.getNewPath());
       }
-      // 2. Build the 3-way graphs among changed files & their imported files (one hop)
+      System.out.println(gitService.getFileContentAtCommit(repository, oursCommitID, javaDiffs.get(0).getNewPath()));
+      // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
+
+      // 2.2 Build base/merge graphs among ours/theirs files
 
       // 3. Merge the 3-way graphs
 
