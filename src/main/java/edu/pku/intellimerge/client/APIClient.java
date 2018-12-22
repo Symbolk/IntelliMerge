@@ -7,6 +7,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.util.GitService;
 import edu.pku.intellimerge.util.GitServiceImpl;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
@@ -15,18 +16,20 @@ import java.util.List;
 
 public class APIClient {
   // this path is the root of the relative path/package
-  private static final String REPO_PATH = "D:\\workspace\\repos\\javaparser";
+  private static final String REPO_PATH = "D:\\github\\repos\\IntelliMerge";
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
   private static final String SRC_PATH = "src/main/java/";
   private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String FILE_PATH = "src/main/java/edu/pku/intellimerge/samples/Foo.java";
 
   public static void main(String[] args) {
-    String mergeCommitID = "31ece213bcac1552f14af3678396b688b0856888";
-    String oursCommitID = "73133a02272a7fa846268cc1b3d9743323455694";
-    String theirsCommitID = "56f90e1d26e0beba51bda25d1c952abe2443f85e";
-    String baseCommitID = "3a2f69e5aad82e1cc3aa2d7c934e60eb4ebcd45b";
-    BasicConfigurator.configure();
+      PropertyConfigurator.configure("log4j.properties");
+//      BasicConfigurator.configure();
+
+      String mergeCommitID = "3ceb2c9453198631adf0f49afc10ece85ccfc295";
+      String oursCommitID = "3ab30428c5c85039cafdf380627436a80386b353";
+      String theirsCommitID = "3ae7bb49d9331107b941a72c97b84042eebf9c7e";
+      String baseCommitID = "003eba5af74699132eb15343c9cb39cab51eb85c";
 
     try {
       // 1. Get changed java files between parent commit and merge base commit
@@ -35,9 +38,9 @@ public class APIClient {
       List<DiffEntry> javaDiffs =
           gitService.listDiffJavaFiles(repository, baseCommitID, oursCommitID);
       for (DiffEntry javaDiff : javaDiffs) {
-//        System.out.println(javaDiff.getChangeType() + " " + javaDiff.getNewPath());
+        System.out.println(javaDiff.getChangeType() + " " + javaDiff.getNewPath());
       }
-      System.out.println(gitService.getFileContentAtCommit(repository, oursCommitID, javaDiffs.get(0).getNewPath()));
+//      System.out.println(gitService.getFileContentAtCommit(repository, theirsCommitID, javaDiffs.get(0).getNewPath()));
       // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
 
       // 2.2 Build base/merge graphs among ours/theirs files
