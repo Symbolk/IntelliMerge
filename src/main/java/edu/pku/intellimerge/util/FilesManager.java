@@ -1,14 +1,23 @@
 package edu.pku.intellimerge.util;
 
+import edu.pku.intellimerge.model.SourceFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class FilesManager {
+
+  private static final Logger logger = LoggerFactory.getLogger(FilesManager.class);
+
   /**
    * Checks if the given file is adequate for parsing.
    *
@@ -58,5 +67,35 @@ public class FilesManager {
       // System.err.println(e.getMessage());
     }
     return content;
+  }
+
+  public static ArrayList<SourceFile> scanJavaSourceFiles(
+      String path, ArrayList<SourceFile> javaSourceFiles, String repoPath) throws Exception {
+    File file = new File(path);
+    if (file.exists()) {
+      File[] files = file.listFiles();
+      for (File f : files) {
+        if (f.isDirectory()) {
+          scanJavaSourceFiles(f.getAbsolutePath(), javaSourceFiles, repoPath);
+        } else if (f.isFile() && isJavaFile(f)) {
+          String absoultePath = f.getAbsolutePath();
+          String relativePath = absoultePath.substring(repoPath.length() + 1);
+          String qualifiedName = getQualifiedName(f);
+          SourceFile sourceFile =
+              new SourceFile(f.getName(), qualifiedName, relativePath, absoultePath);
+          javaSourceFiles.add(sourceFile);
+        }
+      }
+    } else {
+      logger.error("{} does not exist!", path);
+    }
+    return javaSourceFiles;
+  }
+
+  private static String getQualifiedName(File file) throws Exception {
+    BufferedReader reader = new BufferedReader(new FileReader(file));
+    String firstLine = reader.readLine();
+    reader.close();
+    return firstLine.replace("package ", "").replace(";", ".") + file.getName().replace(".java", "");
   }
 }

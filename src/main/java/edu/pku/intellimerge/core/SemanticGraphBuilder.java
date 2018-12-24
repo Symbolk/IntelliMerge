@@ -38,16 +38,16 @@ public class SemanticGraphBuilder {
   /**
    * Build the SemanticGraph for a whole project
    *
-   * @param folderPath
-   * @param packagePath
+   * @param repoPath
+   * @param srcPath
    * @return
    */
-  public static Graph<SemanticNode, SemanticEdge> buildForProject(
-      String folderPath, String packagePath) throws Exception {
+  public static Graph<SemanticNode, SemanticEdge> buildForRepo(
+      String repoPath, String srcPath) throws Exception {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(packagePath));
+    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(srcPath));
     reflectionTypeSolver.setParent(reflectionTypeSolver);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
     combinedTypeSolver.add(reflectionTypeSolver);
@@ -57,11 +57,11 @@ public class SemanticGraphBuilder {
     final JavaParserFacade javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
 
     // init the semantic graph
-    semanticGraph = buildGraph();
+    semanticGraph = initGraph();
 
     // parse all java files in project folder
     //        ParserConfiguration parserConfiguration
-    File root = new File(folderPath);
+    File root = new File(repoPath);
     SourceRoot sourceRoot = new SourceRoot(root.toPath());
     sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
@@ -432,7 +432,7 @@ public class SemanticGraphBuilder {
    *
    * @return
    */
-  private static Graph<SemanticNode, SemanticEdge> buildGraph() {
+  private static Graph<SemanticNode, SemanticEdge> initGraph() {
     return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
         .allowingMultipleEdges(true)
         .allowingSelfLoops(false)
