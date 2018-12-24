@@ -52,16 +52,16 @@ public class APIClient {
       GitService.checkout(repository, oursCommitID);
 
       ArrayList<SourceFile> temp = new ArrayList<>();
-      ArrayList<SourceFile> javaSourceFiles =
-          FilesManager.scanJavaSourceFiles(REPO_PATH + SRC_PATH, temp, REPO_PATH);
+//      ArrayList<SourceFile> javaSourceFiles =
+//          FilesManager.scanJavaSourceFiles(REPO_PATH + SRC_PATH, temp, REPO_PATH);
 
       String diffPath =
           DIFF_PATH + "/" + oursCommitID + "/" + Side.OURS.toString().toLowerCase() + "/";
 
-      getFilesToParse(javaSourceFiles, diffEntryList, oursCommitID, Side.OURS, diffPath);
+//      getFilesToParse(javaSourceFiles, diffEntryList, oursCommitID, Side.OURS, diffPath);
 
       Graph<SemanticNode, SemanticEdge> semanticGraph =
-          SemanticGraphBuilder.buildForRepo(diffPath, REPO_PATH);
+          SemanticGraphBuilder.buildForRepo(diffPath, REPO_PATH + SRC_PATH);
       if (semanticGraph == null) {
         System.out.println("SemanticGraph is null!");
         return;
@@ -70,12 +70,12 @@ public class APIClient {
       //            System.out.println(node);
       //        }
       //        System.out.println("------------------------------");
-      for (SemanticEdge edge : semanticGraph.edgeSet()) {
-        SemanticNode source = semanticGraph.getEdgeSource(edge);
-        SemanticNode target = semanticGraph.getEdgeTarget(edge);
-        System.out.println(
-            source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
-      }
+//      for (SemanticEdge edge : semanticGraph.edgeSet()) {
+//        SemanticNode source = semanticGraph.getEdgeSource(edge);
+//        SemanticNode target = semanticGraph.getEdgeTarget(edge);
+//        System.out.println(
+//            source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+//      }
       //        System.out.println("------------------------------");
       System.out.println(SemanticGraphExporter.exportAsDot(semanticGraph));
 

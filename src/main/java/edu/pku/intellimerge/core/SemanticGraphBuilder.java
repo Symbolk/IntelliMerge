@@ -10,7 +10,10 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.resolution.UnsolvedSymbolException;
+import com.github.javaparser.resolution.declarations.ResolvedEnumConstantDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
@@ -42,8 +45,8 @@ public class SemanticGraphBuilder {
    * @param srcPath
    * @return
    */
-  public static Graph<SemanticNode, SemanticEdge> buildForRepo(
-      String repoPath, String srcPath) throws Exception {
+  public static Graph<SemanticNode, SemanticEdge> buildForRepo(String repoPath, String srcPath)
+      throws Exception {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
@@ -220,15 +223,19 @@ public class SemanticGraphBuilder {
             // 4.1 field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
-            if (!field.getType().isPrimitiveType()) {
-              String classUsedInFieldName =
-                  field.getType().resolve().asReferenceType().getQualifiedName();
-              if (field.getInitializer().isPresent()) {
-                initClassNames.add(classUsedInFieldName);
-              } else {
-                declClassNames.add(classUsedInFieldName);
-              }
-            }
+            //            if (!field.getType().isClassOrInterfaceType()) {
+            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
+            //              SymbolReference<ResolvedTypeDeclaration> ref = javaParserFacade.solve();
+            //              if (ref.isSolved()) {
+            //                String classUsedInFieldName =
+            // ref.getCorrespondingDeclaration().getQualifiedName();
+            //                if (field.getInitializer().isPresent()) {
+            //                  initClassNames.add(classUsedInFieldName);
+            //                } else {
+            //                  declClassNames.add(classUsedInFieldName);
+            //                }
+            //              }
+            //            }
             declObjectEdges.put(fieldDeclarationNode, declClassNames);
             initObjectEdges.put(fieldDeclarationNode, initClassNames);
           }
@@ -298,15 +305,27 @@ public class SemanticGraphBuilder {
           List<String> writeFieldNames = new ArrayList<>();
           for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
             // resolve the field declaration and draw the edge
-            final SymbolReference<? extends ResolvedValueDeclaration> ref =
-                javaParserFacade.solve(fieldAccessExpr);
-            ResolvedFieldDeclaration resolvedFieldDeclaration =
-                ref.getCorrespondingDeclaration().asField();
-            displayName = resolvedFieldDeclaration.getName();
-            qualifiedName =
-                resolvedFieldDeclaration.declaringType().getQualifiedName()
-                    + "."
-                    + resolvedFieldDeclaration.getName();
+            //            final SymbolReference<? extends ResolvedValueDeclaration> ref =
+            //                javaParserFacade.solve(fieldAccessExpr);
+            SymbolReference<? extends ResolvedValueDeclaration> ref =
+                javaParserFacade.solve((fieldAccessExpr));
+            if (ref.isSolved()) {
+              ResolvedValueDeclaration resolvedDeclaration = ref.getCorrespondingDeclaration();
+              if (resolvedDeclaration.isField()) {
+                ResolvedFieldDeclaration resolvedFieldDeclaration = resolvedDeclaration.asField();
+                displayName = resolvedFieldDeclaration.getName();
+                qualifiedName =
+                    resolvedFieldDeclaration.declaringType().getQualifiedName()
+                        + "."
+                        + resolvedFieldDeclaration.getName();
+              } else if (resolvedDeclaration.isEnumConstant()) {
+                ResolvedEnumConstantDeclaration resolvedEnumConstantDeclaration =
+                    resolvedDeclaration.asEnumConstant();
+                displayName = resolvedEnumConstantDeclaration.getName();
+                // TODO: cannot get qualified name now
+                qualifiedName = resolvedEnumConstantDeclaration.getName();
+              }
+            }
             // whether the field is assigned a value
             if (fieldAccessExpr.getParentNode().isPresent()) {
               Node parent = fieldAccessExpr.getParentNode().get();
@@ -326,7 +345,15 @@ public class SemanticGraphBuilder {
           List<String> methodCalledNames = new ArrayList<>();
           for (MethodCallExpr methodCallExpr : methodCallExprs) {
             // resolve the method declaration and draw the edge
-            methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
+            try {
+              SymbolReference<ResolvedMethodDeclaration> ref =
+                  javaParserFacade.solve((methodCallExpr));
+              if (ref.isSolved()) {
+                methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
+              }
+            } catch (UnsolvedSymbolException e) {
+              continue;
+            }
           }
           callMethodEdges.put(methodDeclarationNode, methodCalledNames);
         }
