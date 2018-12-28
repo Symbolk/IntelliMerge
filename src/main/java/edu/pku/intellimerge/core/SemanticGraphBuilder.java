@@ -459,7 +459,7 @@ public class SemanticGraphBuilder {
    *
    * @return
    */
-  private static Graph<SemanticNode, SemanticEdge> initGraph() {
+  public static Graph<SemanticNode, SemanticEdge> initGraph() {
     return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
         .allowingMultipleEdges(true)
         .allowingSelfLoops(false)

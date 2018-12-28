@@ -1,6 +1,15 @@
 plugins {
     id 'java'
+    id 'idea'
 }
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
 
 group 'edu.pku.intellimerge'
 version '1.0-SNAPSHOT'

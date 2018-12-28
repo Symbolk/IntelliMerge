@@ -44,9 +44,7 @@ public class SemanticNode {
   @Override
   public String toString() {
     return "SemanticNode{"
-        + "nodeID="
-        + nodeID
-        + ", nodeType='"
+        + "nodeType='"
         + nodeType
         + '\''
         + ", displayName='"
@@ -54,9 +52,14 @@ public class SemanticNode {
         + '\''
         + ", qualifiedName='"
         + qualifiedName
-        + '\''
-        + ", range="
-        + range
-        + '}';
+        + "}";
+  }
+
+  public int hashCode() {
+    return toString().hashCode();
+  }
+
+  public boolean equals(Object o) {
+    return (o instanceof SemanticNode) && (toString().equals(o.toString()));
   }
 }
