@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.util;
 
+import edu.pku.intellimerge.core.SimpleDiffEntry;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
@@ -19,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,8 +52,8 @@ public class GitService {
     return repository;
   }
 
-  public static Repository cloneIfNotExistsWithBranch(String projectPath, String cloneUrl, String branch)
-      throws Exception {
+  public static Repository cloneIfNotExistsWithBranch(
+      String projectPath, String cloneUrl, String branch) throws Exception {
 
     Repository repository = cloneIfNotExists(projectPath, cloneUrl);
 
@@ -87,10 +90,67 @@ public class GitService {
       CheckoutCommand checkout = git.checkout().setName(commitID);
       checkout.call();
     }
-    logger.info(
-            "Check out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
+    logger.info("Check out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
     //		File workingDir = repository.getDirectory().getParentFile();
     //		ExternalProcess.execute(workingDir, "git", "checkout", commitID);
+  }
+
+  /**
+   * List all changed java files between old and new commit, other language will be supported in
+   * future
+   *
+   * @param repository
+   * @param oldCommit
+   * @param newCommit
+   * @return
+   * @throws GitAPIException
+   * @throws IOException
+   */
+  public static List<SimpleDiffEntry> listDiffFilesJava(
+      Repository repository, String oldCommit, String newCommit)
+      throws GitAPIException, IOException {
+    try (Git git = new Git(repository)) {
+
+      final List<DiffEntry> javaDiffEntries =
+          git.diff()
+              .setOldTree(prepareTreeParser(repository, oldCommit))
+              .setNewTree(prepareTreeParser(repository, newCommit))
+              .call()
+              .stream()
+              .filter(diffEntry -> isJavaFile(diffEntry.getNewPath()))
+              .collect(Collectors.toList());
+
+      List<SimpleDiffEntry> javaDiffs = new ArrayList<>(new HashSet<>());
+      for (DiffEntry diffEntry : javaDiffEntries) {
+        javaDiffs.add(
+            new SimpleDiffEntry(
+                diffEntry.getOldPath(), diffEntry.getNewPath(), diffEntry.getChangeType()));
+      }
+      return javaDiffs;
+    }
+  }
+
+  private static AbstractTreeIterator prepareTreeParser(Repository repository, String objectId)
+      throws IOException {
+    // from the commit we can build the tree which allows us to construct the TreeParser
+    //noinspection Duplicates
+    try (RevWalk walk = new RevWalk(repository)) {
+      RevCommit commit = walk.parseCommit(repository.resolve(objectId));
+      RevTree tree = walk.parseTree(commit.getTree().getId());
+
+      CanonicalTreeParser treeParser = new CanonicalTreeParser();
+      try (ObjectReader reader = repository.newObjectReader()) {
+        treeParser.reset(reader, tree.getId());
+      }
+
+      walk.dispose();
+
+      return treeParser;
+    }
+  }
+
+  private static boolean isJavaFile(String path) {
+    return path.endsWith(".java");
   }
 
   public String getFileContentAtCommit(Repository repository, String commitID, String filePath)
@@ -118,57 +178,5 @@ public class GitService {
       }
       //      revWalk.dispose();
     }
-  }
-
-  /**
-   * List all changed java files between old and new commit, other language will be supported in future
-   * @param repository
-   * @param oldCommit
-   * @param newCommit
-   * @return
-   * @throws GitAPIException
-   * @throws IOException
-   */
-  public static List<DiffEntry> listDiffFilesJava(
-      Repository repository, String oldCommit, String newCommit)
-      throws GitAPIException, IOException {
-    try (Git git = new Git(repository)) {
-
-      final List<DiffEntry> diffs =
-          git.diff()
-              .setOldTree(prepareTreeParser(repository, oldCommit))
-              .setNewTree(prepareTreeParser(repository, newCommit))
-              .call();
-
-      List<DiffEntry> javaDiffs =
-          diffs
-              .stream()
-              .filter(diffEntry -> isJavaFile(diffEntry.getNewPath()))
-              .collect(Collectors.toList());
-      return javaDiffs;
-    }
-  }
-
-  private static AbstractTreeIterator prepareTreeParser(Repository repository, String objectId)
-      throws IOException {
-    // from the commit we can build the tree which allows us to construct the TreeParser
-    //noinspection Duplicates
-    try (RevWalk walk = new RevWalk(repository)) {
-      RevCommit commit = walk.parseCommit(repository.resolve(objectId));
-      RevTree tree = walk.parseTree(commit.getTree().getId());
-
-      CanonicalTreeParser treeParser = new CanonicalTreeParser();
-      try (ObjectReader reader = repository.newObjectReader()) {
-        treeParser.reset(reader, tree.getId());
-      }
-
-      walk.dispose();
-
-      return treeParser;
-    }
-  }
-
-  private static boolean isJavaFile(String path) {
-    return path.endsWith(".java");
   }
 }
