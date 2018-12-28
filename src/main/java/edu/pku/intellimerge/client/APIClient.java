@@ -57,8 +57,8 @@ public class APIClient {
       String diffPath = DIFF_PATH + "/" + mergeCommitID + "/";
 
       // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
-//      Graph<SemanticNode, SemanticEdge> oursGraph =
-//          buildGraph(repository, oursCommitID, oursDiffEntries, diffPath, Side.OURS);
+      //      Graph<SemanticNode, SemanticEdge> oursGraph =
+      //          buildGraph(repository, oursCommitID, oursDiffEntries, diffPath, Side.OURS);
       Graph<SemanticNode, SemanticEdge> theirsGraph =
           buildGraph(repository, theirsCommitID, theirsDiffEntries, diffPath, Side.THEIRS);
 
@@ -77,7 +77,7 @@ public class APIClient {
 
       // 3. Match nodes and merge the 3-way graphs
       Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
-//      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
+      //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
       System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
       printGraph(mergedGraph);
       // 4. Prettyprint the merged graph into code
@@ -105,7 +105,7 @@ public class APIClient {
           source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
     }
     System.out.println("------------------------------");
-//    System.out.println(SemanticGraphExporter.exportAsDot(graph));
+    //    System.out.println(SemanticGraphExporter.exportAsDot(graph));
   }
   /**
    * Build the SemanticGraph for one side
@@ -167,16 +167,19 @@ public class APIClient {
 
           FileUtils.copyFile(srcFile, dstFile);
           logger.info("Copying diff file: {} ...", srcFile.getName());
+
           // copy the imported files
           CompilationUnit cu = JavaParser.parse(dstFile);
           for (ImportDeclaration importDeclaration : cu.getImports()) {
             String qualifiedName =
                 importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", "");
             for (SourceFile sourceFile : sourceFiles) {
+              // Check if the file has been copied, to avoid duplicate IO
               if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
                 srcFile = new File(sourceFile.getAbsolutePath());
                 dstFile = new File(diffPath + sourceFile.getRelativePath());
                 FileUtils.copyFile(srcFile, dstFile);
+                sourceFile.isCopied = true;
                 logger.info("Copying imported file: {} ...", srcFile.getName());
               }
             }
