@@ -4,7 +4,6 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.core.SemanticGraphExporter;
 import edu.pku.intellimerge.core.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -58,25 +57,10 @@ public class APIClient {
       String diffPath = DIFF_PATH + "/" + mergeCommitID + "/";
 
       // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
-      Graph<SemanticNode, SemanticEdge> oursGraph =
-          buildGraph(repository, oursCommitID, oursDiffEntries, diffPath, Side.OURS);
+//      Graph<SemanticNode, SemanticEdge> oursGraph =
+//          buildGraph(repository, oursCommitID, oursDiffEntries, diffPath, Side.OURS);
       Graph<SemanticNode, SemanticEdge> theirsGraph =
           buildGraph(repository, theirsCommitID, theirsDiffEntries, diffPath, Side.THEIRS);
-
-      //        for (SemanticNode node : semanticGraph.vertexSet()) {
-      //            System.out.println(node);
-      //        }
-      //        System.out.println("------------------------------");
-      //      for (SemanticEdge edge : semanticGraph.edgeSet()) {
-      //        SemanticNode source = semanticGraph.getEdgeSource(edge);
-      //        SemanticNode target = semanticGraph.getEdgeTarget(edge);
-      //        System.out.println(
-      //            source.getDisplayName() + " " + edge.getEdgeType() + " " +
-      // target.getDisplayName());
-      //      }
-      //        System.out.println("------------------------------");
-      System.out.println(SemanticGraphExporter.exportAsDot(oursGraph));
-      System.out.println(SemanticGraphExporter.exportAsDot(theirsGraph));
 
       // 2.2 Build base/merge graphs among ours/theirs files
 
@@ -93,10 +77,9 @@ public class APIClient {
 
       // 3. Match nodes and merge the 3-way graphs
       Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
-      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
+//      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
       System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
-      System.out.println(SemanticGraphExporter.exportAsDot(mergedGraph));
-
+      printGraph(mergedGraph);
       // 4. Prettyprint the merged graph into code
 
     } catch (Exception e) {
@@ -104,6 +87,26 @@ public class APIClient {
     }
   }
 
+  /**
+   * Print the graph fo debugging
+   *
+   * @param graph
+   */
+  private static void printGraph(Graph<SemanticNode, SemanticEdge> graph) {
+
+    for (SemanticNode node : graph.vertexSet()) {
+      System.out.println(node);
+    }
+    System.out.println("------------------------------");
+    for (SemanticEdge edge : graph.edgeSet()) {
+      SemanticNode source = graph.getEdgeSource(edge);
+      SemanticNode target = graph.getEdgeTarget(edge);
+      System.out.println(
+          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+    }
+    System.out.println("------------------------------");
+//    System.out.println(SemanticGraphExporter.exportAsDot(graph));
+  }
   /**
    * Build the SemanticGraph for one side
    *
@@ -128,7 +131,7 @@ public class APIClient {
 
     String sideDiffPath = diffPath + side.toString().toLowerCase() + "/";
 
-//      getFilesToParse(javaSourceFiles, diffEntries, sideDiffPath);
+    //      getFilesToParse(javaSourceFiles, diffEntries, sideDiffPath);
 
     Graph<SemanticNode, SemanticEdge> graph =
         //        SemanticGraphBuilder.initGraph();

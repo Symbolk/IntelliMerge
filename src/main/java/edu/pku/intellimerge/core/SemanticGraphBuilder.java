@@ -349,7 +349,19 @@ public class SemanticGraphBuilder {
               SymbolReference<ResolvedMethodDeclaration> ref =
                   javaParserFacade.solve((methodCallExpr));
               if (ref.isSolved()) {
-                methodCalledNames.add(methodCallExpr.resolve().getQualifiedSignature());
+                ResolvedMethodDeclaration md = methodCallExpr.resolve();
+                StringBuilder sb = new StringBuilder();
+                sb.append(md.getQualifiedName());
+                sb.append("(");
+                for (int i = 0; i < md.getNumberOfParams(); i++) {
+                  if (i != 0) {
+                    sb.append(", ");
+                  }
+                  String qualifiedType=md.getParam(i).describeType();
+                  sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".")+1));
+                }
+                sb.append(")");
+                methodCalledNames.add(sb.toString());
               }
             } catch (UnsolvedSymbolException e) {
               continue;

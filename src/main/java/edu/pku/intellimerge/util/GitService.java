@@ -90,7 +90,7 @@ public class GitService {
       CheckoutCommand checkout = git.checkout().setName(commitID);
       checkout.call();
     }
-    logger.info("Check out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
+    logger.info("Checking out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
     //		File workingDir = repository.getDirectory().getParentFile();
     //		ExternalProcess.execute(workingDir, "git", "checkout", commitID);
   }
