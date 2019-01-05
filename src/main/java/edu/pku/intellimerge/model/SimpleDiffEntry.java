@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.core;
+package edu.pku.intellimerge.model;
 
 import org.eclipse.jgit.diff.DiffEntry;
 

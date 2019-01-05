@@ -1,30 +1,19 @@
 package edu.pku.intellimerge.client;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.core.SimpleDiffEntry;
+import edu.pku.intellimerge.core.SemanticGraphExporter;
+import edu.pku.intellimerge.core.SourceFileCollector;
+import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.Side;
-import edu.pku.intellimerge.model.SourceFile;
-import edu.pku.intellimerge.util.FilesManager;
 import edu.pku.intellimerge.util.GitService;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 public class APIClient {
 
@@ -50,30 +39,27 @@ public class APIClient {
       Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
 
       // 1. Get changed java files between parent commit and merge base commit
-      List<SimpleDiffEntry> oursDiffEntries =
-          GitService.listDiffFilesJava(repository, baseCommitID, oursCommitID);
-      List<SimpleDiffEntry> theirsDiffEntries =
-          GitService.listDiffFilesJava(repository, baseCommitID, theirsCommitID);
-      String diffPath = DIFF_PATH + "/" + mergeCommitID + "/";
 
+      String diffPath = DIFF_PATH + "/" + mergeCommitID + "/";
+      MergeScenario mergeScenario =
+          new MergeScenario(mergeCommitID, oursCommitID, baseCommitID, theirsCommitID);
+      SourceFileCollector sourceFileCollector =
+          new SourceFileCollector(
+              repository, REPO_NAME, REPO_PATH, SRC_PATH, diffPath, mergeScenario);
+      sourceFileCollector.collect();
       // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
-      //      Graph<SemanticNode, SemanticEdge> oursGraph =
-      //          buildGraph(repository, oursCommitID, oursDiffEntries, diffPath, Side.OURS);
+      Graph<SemanticNode, SemanticEdge> oursGraph =
+          buildGraph(repository, oursCommitID, diffPath, Side.OURS);
       Graph<SemanticNode, SemanticEdge> theirsGraph =
-          buildGraph(repository, theirsCommitID, theirsDiffEntries, diffPath, Side.THEIRS);
+          buildGraph(repository, theirsCommitID, diffPath, Side.THEIRS);
+
+      printGraph(oursGraph);
+      printGraph(theirsGraph);
 
       // 2.2 Build base/merge graphs among ours/theirs files
 
-      // 2 ways to union the diff file list
-      //      List<SimpleDiffEntry> baseDiffEntries = oursDiffEntries;
-      //      theirsDiffEntries.removeAll(baseDiffEntries);
-      //      baseDiffEntries.addAll(theirsDiffEntries);
-      Set<SimpleDiffEntry> temp = new HashSet<>();
-      temp.addAll(oursDiffEntries);
-      temp.addAll(theirsDiffEntries);
-      List<SimpleDiffEntry> baseDiffEntries = new ArrayList<>(temp);
       Graph<SemanticNode, SemanticEdge> baseGraph =
-          buildGraph(repository, baseCommitID, baseDiffEntries, diffPath, Side.BASE);
+          buildGraph(repository, baseCommitID, diffPath, Side.BASE);
 
       // 3. Match nodes and merge the 3-way graphs
       Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
@@ -94,44 +80,31 @@ public class APIClient {
    */
   private static void printGraph(Graph<SemanticNode, SemanticEdge> graph) {
 
-    for (SemanticNode node : graph.vertexSet()) {
-      System.out.println(node);
-    }
-    System.out.println("------------------------------");
-    for (SemanticEdge edge : graph.edgeSet()) {
-      SemanticNode source = graph.getEdgeSource(edge);
-      SemanticNode target = graph.getEdgeTarget(edge);
-      System.out.println(
-          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
-    }
-    System.out.println("------------------------------");
-    //    System.out.println(SemanticGraphExporter.exportAsDot(graph));
+    //    for (SemanticNode node : graph.vertexSet()) {
+    //      System.out.println(node);
+    //    }
+    //    System.out.println("------------------------------");
+    //    for (SemanticEdge edge : graph.edgeSet()) {
+    //      SemanticNode source = graph.getEdgeSource(edge);
+    //      SemanticNode target = graph.getEdgeTarget(edge);
+    //      System.out.println(
+    //          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+    //    }
+    //    System.out.println("------------------------------");
+    System.out.println(SemanticGraphExporter.exportAsDot(graph));
   }
   /**
    * Build the SemanticGraph for one side
    *
    * @param repository
    * @param commitID
-   * @param diffEntries
    * @param side
    * @return
    * @throws Exception
    */
   private static Graph<SemanticNode, SemanticEdge> buildGraph(
-      Repository repository,
-      String commitID,
-      List<SimpleDiffEntry> diffEntries,
-      String diffPath,
-      Side side)
-      throws Exception {
-    GitService.checkout(repository, commitID);
-    ArrayList<SourceFile> temp = new ArrayList<>();
-    ArrayList<SourceFile> javaSourceFiles =
-        FilesManager.scanJavaSourceFiles(REPO_PATH + SRC_PATH, temp, REPO_PATH);
-
+      Repository repository, String commitID, String diffPath, Side side) throws Exception {
     String sideDiffPath = diffPath + side.toString().toLowerCase() + "/";
-
-    //      getFilesToParse(javaSourceFiles, diffEntries, sideDiffPath);
 
     Graph<SemanticNode, SemanticEdge> graph =
         //        SemanticGraphBuilder.initGraph();
@@ -140,54 +113,5 @@ public class APIClient {
       logger.error(side.toString() + " graph is null!");
     }
     return graph;
-  }
-  /**
-   * Copy diff java files and imported java files to the diff path, to parse later
-   *
-   * @param diffEntries
-   * @throws Exception
-   */
-  private static void getFilesToParse(
-      List<SourceFile> sourceFiles, List<SimpleDiffEntry> diffEntries, String diffPath)
-      throws Exception {
-
-    for (SimpleDiffEntry diffEntry : diffEntries) {
-      if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
-        // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
-        String relativePath = diffEntry.getNewPath();
-        logger.info(
-            "{} : {} -> {}",
-            diffEntry.getChangeType(),
-            diffEntry.getOldPath(),
-            diffEntry.getNewPath());
-        File srcFile = new File(REPO_PATH + "/" + relativePath);
-        // copy the diff files
-        if (srcFile.exists()) {
-          File dstFile = new File(diffPath + relativePath);
-
-          FileUtils.copyFile(srcFile, dstFile);
-          logger.info("Copying diff file: {} ...", srcFile.getName());
-
-          // copy the imported files
-          CompilationUnit cu = JavaParser.parse(dstFile);
-          for (ImportDeclaration importDeclaration : cu.getImports()) {
-            String qualifiedName =
-                importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", "");
-            for (SourceFile sourceFile : sourceFiles) {
-              // Check if the file has been copied, to avoid duplicate IO
-              if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
-                srcFile = new File(sourceFile.getAbsolutePath());
-                dstFile = new File(diffPath + sourceFile.getRelativePath());
-                FileUtils.copyFile(srcFile, dstFile);
-                sourceFile.isCopied = true;
-                logger.info("Copying imported file: {} ...", srcFile.getName());
-              }
-            }
-          }
-        } else {
-          logger.error("{} not exists", relativePath);
-        }
-      }
-    }
   }
 }

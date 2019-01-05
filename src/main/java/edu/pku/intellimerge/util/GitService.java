@@ -1,6 +1,6 @@
 package edu.pku.intellimerge.util;
 
-import edu.pku.intellimerge.core.SimpleDiffEntry;
+import edu.pku.intellimerge.model.SimpleDiffEntry;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
