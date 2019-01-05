@@ -38,35 +38,16 @@ public class APIClient {
     try {
       Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
 
-      // 1. Get changed java files between parent commit and merge base commit
-
-      String diffPath = DIFF_PATH + "/" + mergeCommitID + "/";
       MergeScenario mergeScenario =
-          new MergeScenario(mergeCommitID, oursCommitID, baseCommitID, theirsCommitID);
-      SourceFileCollector sourceFileCollector =
-          new SourceFileCollector(
-              repository, REPO_NAME, REPO_PATH, SRC_PATH, diffPath, mergeScenario);
-      sourceFileCollector.collect();
-      // 2.1 Build ours/theirs graphs among changed files & their imported files (one hop)
-      Graph<SemanticNode, SemanticEdge> oursGraph =
-          buildGraph(repository, oursCommitID, diffPath, Side.OURS);
-      Graph<SemanticNode, SemanticEdge> theirsGraph =
-          buildGraph(repository, theirsCommitID, diffPath, Side.THEIRS);
-
-      printGraph(oursGraph);
-      printGraph(theirsGraph);
-
-      // 2.2 Build base/merge graphs among ours/theirs files
-
-      Graph<SemanticNode, SemanticEdge> baseGraph =
-          buildGraph(repository, baseCommitID, diffPath, Side.BASE);
-
-      // 3. Match nodes and merge the 3-way graphs
-      Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
-      //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
-      System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
-      printGraph(mergedGraph);
-      // 4. Prettyprint the merged graph into code
+          new MergeScenario(
+              REPO_NAME,
+              REPO_PATH,
+              SRC_PATH,
+              mergeCommitID,
+              oursCommitID,
+              baseCommitID,
+              theirsCommitID);
+      handleOneMergeScenario(mergeScenario, repository);
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -74,44 +55,41 @@ public class APIClient {
   }
 
   /**
-   * Print the graph fo debugging
+   * Handle one single merge scenario
    *
-   * @param graph
-   */
-  private static void printGraph(Graph<SemanticNode, SemanticEdge> graph) {
-
-    //    for (SemanticNode node : graph.vertexSet()) {
-    //      System.out.println(node);
-    //    }
-    //    System.out.println("------------------------------");
-    //    for (SemanticEdge edge : graph.edgeSet()) {
-    //      SemanticNode source = graph.getEdgeSource(edge);
-    //      SemanticNode target = graph.getEdgeTarget(edge);
-    //      System.out.println(
-    //          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
-    //    }
-    //    System.out.println("------------------------------");
-    System.out.println(SemanticGraphExporter.exportAsDot(graph));
-  }
-  /**
-   * Build the SemanticGraph for one side
-   *
+   * @param mergeScenario
    * @param repository
-   * @param commitID
-   * @param side
-   * @return
    * @throws Exception
    */
-  private static Graph<SemanticNode, SemanticEdge> buildGraph(
-      Repository repository, String commitID, String diffPath, Side side) throws Exception {
-    String sideDiffPath = diffPath + side.toString().toLowerCase() + "/";
+  public static void handleOneMergeScenario(MergeScenario mergeScenario, Repository repository)
+      throws Exception {
 
-    Graph<SemanticNode, SemanticEdge> graph =
-        //        SemanticGraphBuilder.initGraph();
-        SemanticGraphBuilder.buildForRepo(sideDiffPath, REPO_PATH + SRC_PATH);
-    if (graph == null) {
-      logger.error(side.toString() + " graph is null!");
-    }
-    return graph;
+    // 1. Collect diff java files and imported files between merge parent commit and base commit
+
+    // source files collected to be parse later
+    String collectedFilePath = DIFF_PATH + "/" + mergeScenario.mergeCommitID + "/";
+
+    SourceFileCollector collector =
+        new SourceFileCollector(mergeScenario, repository, collectedFilePath);
+    //      collector.collectFilesForAllSides();
+
+    // 2.1 Build ours/theirs graphs with collected files
+    SemanticGraphBuilder builder = new SemanticGraphBuilder(mergeScenario, collectedFilePath);
+
+    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
+    Graph<SemanticNode, SemanticEdge> theirsGraph = builder.buildGraphForOneSide(Side.THEIRS);
+
+    SemanticGraphExporter.printAsDot(oursGraph);
+    SemanticGraphExporter.printAsDot(theirsGraph);
+
+    // 2.2 Build base/merge graphs among ours/theirs files
+    Graph<SemanticNode, SemanticEdge> baseGraph = builder.buildGraphForOneSide(Side.BASE);
+
+    // 3. Match nodes and merge the 3-way graphs
+    Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
+    //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
+    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
+    SemanticGraphExporter.printAsDot(mergedGraph);
+    // 4. Prettyprint the merged graph into code
   }
 }

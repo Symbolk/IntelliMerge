@@ -32,4 +32,27 @@ public class SemanticGraphExporter {
       return "";
     }
   }
+
+  /**
+   * Print the graph for debugging
+   *
+   * @param graph
+   */
+  public static void printAsDot(Graph<SemanticNode, SemanticEdge> graph) {
+    System.out.println(SemanticGraphExporter.exportAsDot(graph));
+  }
+
+  public static void printVertexAndEdge(Graph<SemanticNode, SemanticEdge> graph) {
+    for (SemanticNode node : graph.vertexSet()) {
+      System.out.println(node);
+    }
+    System.out.println("------------------------------");
+    for (SemanticEdge edge : graph.edgeSet()) {
+      SemanticNode source = graph.getEdgeSource(edge);
+      SemanticNode target = graph.getEdgeTarget(edge);
+      System.out.println(
+          source.getDisplayName() + " " + edge.getEdgeType() + " " + target.getDisplayName());
+    }
+    System.out.println("------------------------------");
+  }
 }

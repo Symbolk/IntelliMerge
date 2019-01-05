@@ -23,30 +23,72 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
-import edu.pku.intellimerge.model.EdgeType;
-import edu.pku.intellimerge.model.NodeType;
-import edu.pku.intellimerge.model.SemanticEdge;
-import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.*;
+import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class SemanticGraphBuilder {
+  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
 
   private static Graph<SemanticNode, SemanticEdge> semanticGraph;
+  private MergeScenario mergeScenario;
+  private String collectedFilePath;
+
+  public SemanticGraphBuilder(MergeScenario mergeScenario, String collectedFilePath) {
+    this.mergeScenario = mergeScenario;
+    this.collectedFilePath = collectedFilePath;
+  }
 
   /**
-   * Build the SemanticGraph for a whole project
+   * Build graphs once for all
+   *
+   * @return
+   * @throws Exception
+   */
+  public Triple<
+          Graph<SemanticNode, SemanticEdge>,
+          Graph<SemanticNode, SemanticEdge>,
+          Graph<SemanticNode, SemanticEdge>>
+      buildGraphsForAllSides() throws Exception {
+    Graph<SemanticNode, SemanticEdge> oursGraph = buildGraphForOneSide(Side.OURS);
+    Graph<SemanticNode, SemanticEdge> theirsGraph = buildGraphForOneSide(Side.THEIRS);
+    Graph<SemanticNode, SemanticEdge> baseGraph = buildGraphForOneSide(Side.BASE);
+    return Triple.of(oursGraph, baseGraph, theirsGraph);
+  }
+
+  /**
+   * Build the graph once for one side
+   *
+   * @return
+   * @throws Exception
+   */
+  public Graph<SemanticNode, SemanticEdge> buildGraphForOneSide(Side side) throws Exception {
+    String sideDiffPath = collectedFilePath + side.toString().toLowerCase() + "/";
+
+    Graph<SemanticNode, SemanticEdge> graph =
+        //        SemanticGraphBuilder.initGraph();
+        build(sideDiffPath, mergeScenario.repoPath + mergeScenario.srcPath);
+    if (graph == null) {
+      logger.error(side.toString() + " graph is null!");
+    }
+    return graph;
+  }
+
+  /**
+   * Build the graph by parsing the collected files
    *
    * @param repoPath
    * @param srcPath
    * @return
    */
-  public static Graph<SemanticNode, SemanticEdge> buildForRepo(String repoPath, String srcPath)
-      throws Exception {
+  public Graph<SemanticNode, SemanticEdge> build(String repoPath, String srcPath) throws Exception {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
@@ -357,8 +399,8 @@ public class SemanticGraphBuilder {
                   if (i != 0) {
                     sb.append(", ");
                   }
-                  String qualifiedType=md.getParam(i).describeType();
-                  sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".")+1));
+                  String qualifiedType = md.getParam(i).describeType();
+                  sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".") + 1));
                 }
                 sb.append(")");
                 methodCalledNames.add(sb.toString());
@@ -388,7 +430,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Build edges from maps
+   * Add edges between recorded nodes
    *
    * @param edgeCount
    * @param edges
@@ -396,7 +438,7 @@ public class SemanticGraphBuilder {
    * @param targetNodeType
    * @return
    */
-  private static Integer buildEdges(
+  private Integer buildEdges(
       Integer edgeCount,
       Map<SemanticNode, List<String>> edges,
       Enum edgeType,
@@ -429,7 +471,7 @@ public class SemanticGraphBuilder {
    * @param targetNodeType
    * @return
    */
-  public static SemanticNode getTargetNode(
+  public SemanticNode getTargetNode(
       Set<SemanticNode> vertexSet, String targetQualifiedName, Enum targetNodeType) {
     Optional<SemanticNode> targetNodeOpt =
         vertexSet
@@ -453,7 +495,7 @@ public class SemanticGraphBuilder {
    * @param libPath
    * @return
    */
-  private static JavaSymbolSolver setUpSymbolSolver(String packagePath, String libPath) {
+  private JavaSymbolSolver setUpSymbolSolver(String packagePath, String libPath) {
     // set up the JavaSymbolSolver
     //    TypeSolver jarTypeSolver = JarTypeSolver.getJarTypeSolver(libPath);
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
@@ -471,7 +513,7 @@ public class SemanticGraphBuilder {
    *
    * @return
    */
-  public static Graph<SemanticNode, SemanticEdge> initGraph() {
+  public Graph<SemanticNode, SemanticEdge> initGraph() {
     return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
         .allowingMultipleEdges(true)
         .allowingSelfLoops(false)

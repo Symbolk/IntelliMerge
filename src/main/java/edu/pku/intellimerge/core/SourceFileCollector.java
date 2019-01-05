@@ -28,40 +28,38 @@ public class SourceFileCollector {
   private static final Logger logger = LoggerFactory.getLogger(APIClient.class);
 
   private Repository repository;
-  private String repoName;
-  private String repoPath;
-  private String srcPath;
-  private String diffPath;
+  private String collectedFilePath;
   private MergeScenario mergeScenario;
 
   public SourceFileCollector(
-      Repository repository,
-      String repoName,
-      String repoPath,
-      String srcPath,
-      String diffPath,
-      MergeScenario mergeScenario) {
-    this.repository = repository;
-    this.repoName = repoName;
-    this.repoPath = repoPath;
-    this.srcPath = srcPath;
-    this.diffPath = diffPath;
+      MergeScenario mergeScenario, Repository repository, String collectedFilePath) {
     this.mergeScenario = mergeScenario;
+    this.repository = repository;
+    this.collectedFilePath = collectedFilePath;
   }
 
-  public void collect() {
+  /** Collect related source files to process together */
+  public void collectFilesForAllSides() {
     try {
       Triple<List<SimpleDiffEntry>, List<SimpleDiffEntry>, List<SimpleDiffEntry>>
           threewayDiffEntries = getDiffJavaFiles();
-      collectForOneSide(Side.OURS, threewayDiffEntries.getLeft());
-      collectForOneSide(Side.BASE, threewayDiffEntries.getMiddle());
-      collectForOneSide(Side.THEIRS, threewayDiffEntries.getRight());
+      collectFilesForOneSide(Side.OURS, threewayDiffEntries.getLeft());
+      collectFilesForOneSide(Side.BASE, threewayDiffEntries.getMiddle());
+      collectFilesForOneSide(Side.THEIRS, threewayDiffEntries.getRight());
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  public void collectForOneSide(Side side, List<SimpleDiffEntry> diffEntries) throws Exception {
+  /**
+   * Collect related source files to process once for one side
+   *
+   * @param side
+   * @param diffEntries
+   * @throws Exception
+   */
+  public void collectFilesForOneSide(Side side, List<SimpleDiffEntry> diffEntries)
+      throws Exception {
     String sideCommitID = null;
     switch (side) {
       case OURS:
@@ -77,13 +75,19 @@ public class SourceFileCollector {
     if (sideCommitID != null) {
 
       ArrayList<SourceFile> javaSourceFiles = scanJavaFiles(sideCommitID);
-      String sideDiffPath = diffPath + side.toString().toLowerCase() + "/";
+      String sideCollectedFilePath = collectedFilePath + side.toString().toLowerCase() + "/";
       if (diffEntries != null) {
-        copyFilesToParse(javaSourceFiles, diffEntries, sideDiffPath);
+        collect(javaSourceFiles, diffEntries, sideCollectedFilePath);
       }
     }
   }
 
+  /**
+   * Get diff java files between base and ours/theirs commit
+   *
+   * @return
+   * @throws Exception
+   */
   public Triple<List<SimpleDiffEntry>, List<SimpleDiffEntry>, List<SimpleDiffEntry>>
       getDiffJavaFiles() throws Exception {
     List<SimpleDiffEntry> oursDiffEntries =
@@ -103,23 +107,31 @@ public class SourceFileCollector {
     return Triple.of(oursDiffEntries, baseDiffEntries, theirsDiffEntries);
   }
 
+  /**
+   * Scan the whole project to index all source files
+   *
+   * @param commitID
+   * @return
+   * @throws Exception
+   */
   public ArrayList<SourceFile> scanJavaFiles(String commitID) throws Exception {
     GitService.checkout(repository, commitID);
     ArrayList<SourceFile> temp = new ArrayList<>();
     //        String targetFolder=repoPath.endsWith("/")? repoPath + srcPath:repoPath+"/"+srcPath;
-    String targetFolder = repoPath + srcPath;
+    String targetFolder = mergeScenario.repoPath + mergeScenario.srcPath;
     ArrayList<SourceFile> javaSourceFiles =
-        FilesManager.scanJavaSourceFiles(targetFolder, temp, repoPath);
+        FilesManager.scanJavaSourceFiles(targetFolder, temp, mergeScenario.repoPath);
     return javaSourceFiles;
   }
+
   /**
-   * Copy diff java files and imported java files to the diff path, to parse later
+   * Copy diff java files and imported java files to the given path, for later process
    *
    * @param diffEntries
    * @throws Exception
    */
-  private void copyFilesToParse(
-      List<SourceFile> sourceFiles, List<SimpleDiffEntry> diffEntries, String diffPath)
+  private void collect(
+      List<SourceFile> sourceFiles, List<SimpleDiffEntry> diffEntries, String sideCollectedFilePath)
       throws Exception {
 
     for (SimpleDiffEntry diffEntry : diffEntries) {
@@ -131,10 +143,10 @@ public class SourceFileCollector {
             diffEntry.getChangeType(),
             diffEntry.getOldPath(),
             diffEntry.getNewPath());
-        File srcFile = new File(repoPath + "/" + relativePath);
+        File srcFile = new File(mergeScenario.repoPath + "/" + relativePath);
         // copy the diff files
         if (srcFile.exists()) {
-          File dstFile = new File(diffPath + relativePath);
+          File dstFile = new File(sideCollectedFilePath + relativePath);
 
           FileUtils.copyFile(srcFile, dstFile);
           logger.info("Copying diff file: {} ...", srcFile.getName());
@@ -148,7 +160,7 @@ public class SourceFileCollector {
               // Check if the file has been copied, to avoid duplicate IO
               if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
                 srcFile = new File(sourceFile.getAbsolutePath());
-                dstFile = new File(diffPath + sourceFile.getRelativePath());
+                dstFile = new File(sideCollectedFilePath + sourceFile.getRelativePath());
                 FileUtils.copyFile(srcFile, dstFile);
                 sourceFile.isCopied = true;
                 logger.info("Copying imported file: {} ...", srcFile.getName());
