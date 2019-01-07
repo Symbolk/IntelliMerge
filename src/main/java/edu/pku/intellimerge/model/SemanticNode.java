@@ -62,4 +62,8 @@ public class SemanticNode {
   public boolean equals(Object o) {
     return (o instanceof SemanticNode) && (toString().equals(o.toString()));
   }
+
+  public Integer hashCodeSignature(){
+    return (nodeType + qualifiedName).hashCode();
+  }
 }

@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 public class SemanticGraphBuilder {
   private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
 
-  private static Graph<SemanticNode, SemanticEdge> semanticGraph;
   private MergeScenario mergeScenario;
   private String collectedFilePath;
 
@@ -102,7 +101,7 @@ public class SemanticGraphBuilder {
     final JavaParserFacade javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
 
     // init the semantic graph
-    semanticGraph = initGraph();
+    Graph<SemanticNode, SemanticEdge> semanticGraph = initGraph();
 
     // parse all java files in project folder
     //        ParserConfiguration parserConfiguration
@@ -416,16 +415,23 @@ public class SemanticGraphBuilder {
 
     // build the external edges
     // now the vertex is determined
-    Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
 
-    edgeCount = buildEdges(edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
-    edgeCount = buildEdges(edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
-    edgeCount = buildEdges(edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
-    edgeCount = buildEdges(edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-    edgeCount = buildEdges(edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
-    edgeCount = buildEdges(edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
+    edgeCount = buildEdges(semanticGraph, edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
+    edgeCount = buildEdges(semanticGraph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
+    edgeCount =
+        buildEdges(
+            semanticGraph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
+    edgeCount =
+        buildEdges(semanticGraph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
+    edgeCount =
+        buildEdges(semanticGraph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
+    edgeCount =
+        buildEdges(semanticGraph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+    edgeCount =
+        buildEdges(semanticGraph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
+    edgeCount =
+        buildEdges(
+            semanticGraph, edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
     return semanticGraph;
   }
 
@@ -439,6 +445,7 @@ public class SemanticGraphBuilder {
    * @return
    */
   private Integer buildEdges(
+      Graph<SemanticNode, SemanticEdge> semanticGraph,
       Integer edgeCount,
       Map<SemanticNode, List<String>> edges,
       Enum edgeType,

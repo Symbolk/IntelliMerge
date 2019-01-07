@@ -3,7 +3,6 @@ package edu.pku.intellimerge.core;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
-import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.Side;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
@@ -25,7 +24,7 @@ import java.util.Set;
 
 public class SourceFileCollector {
 
-  private static final Logger logger = LoggerFactory.getLogger(APIClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(SourceFileCollector.class);
 
   private Repository repository;
   private String collectedFilePath;

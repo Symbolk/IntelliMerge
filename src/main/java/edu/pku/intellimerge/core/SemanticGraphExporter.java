@@ -15,7 +15,6 @@ public class SemanticGraphExporter {
   /** Export a graph into DOT format. */
   public static String exportAsDot(Graph<SemanticNode, SemanticEdge> semanticGraph) {
     try {
-
       // use helper classes to define how vertices should be rendered,
       // adhering to the DOT language restrictions
       ComponentNameProvider<SemanticNode> vertexIdProvider = node -> node.getNodeID().toString();
