@@ -1,6 +1,6 @@
 package edu.pku.intellimerge.client;
 
-import edu.pku.intellimerge.core.GraphMapper;
+import edu.pku.intellimerge.core.ThreewayGraphMapper;
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
 import edu.pku.intellimerge.core.SemanticGraphExporter;
 import edu.pku.intellimerge.core.SourceFileCollector;
@@ -12,7 +12,6 @@ import edu.pku.intellimerge.util.GitService;
 import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +90,7 @@ public class APIClient {
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
 //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
 //    SemanticGraphExporter.printAsDot(mergedGraph);
-    GraphMapper mapper = new GraphMapper(oursGraph, baseGraph, theirsGraph);
+    ThreewayGraphMapper mapper = new ThreewayGraphMapper(oursGraph, baseGraph, theirsGraph);
     // 4. Print the merged graph into code, keep the original format as possible
 
 

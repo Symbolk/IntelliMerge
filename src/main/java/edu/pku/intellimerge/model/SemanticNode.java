@@ -5,6 +5,7 @@ import com.github.javaparser.ast.Node;
 
 public class SemanticNode {
   private Integer nodeID;
+  private Side side;
   private Enum nodeType;
   private String displayName;
   private String qualifiedName;
@@ -12,9 +13,12 @@ public class SemanticNode {
   private Range range;
   private Node astNode;
 
+  public SemanticNode() {}
+
   public SemanticNode(
-      Integer nodeID, Enum nodeType, String displayName, String qualifiedName, String content) {
+      Integer nodeID, Side side, Enum nodeType, String displayName, String qualifiedName, String content) {
     this.nodeID = nodeID;
+    this.side = side;
     this.nodeType = nodeType;
     this.displayName = displayName;
     this.qualifiedName = qualifiedName;
@@ -63,7 +67,7 @@ public class SemanticNode {
     return (o instanceof SemanticNode) && (toString().equals(o.toString()));
   }
 
-  public Integer hashCodeSignature(){
+  public Integer hashCodeSignature() {
     return (nodeType + qualifiedName).hashCode();
   }
 }
