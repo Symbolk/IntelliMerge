@@ -1,9 +1,6 @@
 package edu.pku.intellimerge.client;
 
-import edu.pku.intellimerge.core.ThreewayGraphMapper;
-import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.core.SemanticGraphExporter;
-import edu.pku.intellimerge.core.SourceFileCollector;
+import edu.pku.intellimerge.core.*;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -90,7 +87,8 @@ public class APIClient {
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
 //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
 //    SemanticGraphExporter.printAsDot(mergedGraph);
-    ThreewayGraphMapper mapper = new ThreewayGraphMapper(oursGraph, baseGraph, theirsGraph);
+//    ThreewayGraphMapper mapper = new ThreewayGraphMapper(oursGraph, baseGraph, theirsGraph);
+    TwowayGraphMapper mapper = new TwowayGraphMapper(baseGraph, oursGraph);
     // 4. Print the merged graph into code, keep the original format as possible
 
 
