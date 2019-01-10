@@ -4,7 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import edu.pku.intellimerge.model.MergeScenario;
-import edu.pku.intellimerge.model.Side;
+import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.util.FilesManager;

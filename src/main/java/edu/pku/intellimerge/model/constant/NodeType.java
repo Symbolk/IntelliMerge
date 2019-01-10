@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.model;
+package edu.pku.intellimerge.model.constant;
 
 public enum NodeType {
   PROJECT(0, "project"),
@@ -21,8 +21,7 @@ public enum NodeType {
     this.label = label;
   }
 
-  @Override
-  public String toString() {
+  public String asString() {
     return label;
   }
 }

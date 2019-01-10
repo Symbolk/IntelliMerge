@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.core;
+package edu.pku.intellimerge.io;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;

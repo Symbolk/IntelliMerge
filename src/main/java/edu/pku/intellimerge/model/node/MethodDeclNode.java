@@ -1,22 +1,22 @@
-package edu.pku.intellimerge.model.ast;
+package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.EdgeType;
-import edu.pku.intellimerge.model.NodeType;
+import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.SemanticNode;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MethodDeclNode extends SemanticNode {
+  private String access;
   private List<String> modifiers;
   private String returnType;
   private String methodName;
   private List<String> parameterTypes;
 
-  private Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
-  private Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
+  public MethodDeclNode() {
+    super();
+  }
 
   public MethodDeclNode(
       Integer nodeID,
@@ -24,11 +24,13 @@ public class MethodDeclNode extends SemanticNode {
       String displayName,
       String qualifiedName,
       String content,
+      String access,
       List<String> modifiers,
       String returnType,
       String methodName,
       List<String> parameterTypes) {
     super(nodeID, nodeType, displayName, qualifiedName, content);
+    this.access = access;
     this.modifiers = modifiers;
     this.returnType = returnType;
     this.methodName = methodName;

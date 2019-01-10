@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.core;
+package edu.pku.intellimerge.io;
 
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;

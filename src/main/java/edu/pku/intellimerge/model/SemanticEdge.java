@@ -1,5 +1,7 @@
 package edu.pku.intellimerge.model;
 
+import edu.pku.intellimerge.model.constant.EdgeType;
+
 public class SemanticEdge {
   private Integer edgeID;
   private EdgeType edgeType;

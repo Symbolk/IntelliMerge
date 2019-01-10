@@ -2,10 +2,7 @@ package edu.pku.intellimerge.core;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
@@ -26,7 +23,10 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
 import edu.pku.intellimerge.model.*;
-import edu.pku.intellimerge.model.ast.MethodDeclNode;
+import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.node.MethodDeclNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
@@ -129,7 +129,7 @@ public class SemanticGraphBuilder {
             .map(r -> r.getResult().get())
             .collect(Collectors.toList());
     // build the graph from the cus
-    // save nodes into SemanticGraph, keep edges in several maps to save later
+    // save node into SemanticGraph, keep edges in several maps to save later
     Integer nodeCount = 0;
     Integer edgeCount = 0;
 
@@ -347,6 +347,7 @@ public class SemanticGraphBuilder {
                   .map(Parameter::getType)
                   .map(Type::asString)
                   .collect(Collectors.toList());
+          String access = Modifier.getAccessSpecifier(methodDeclaration.getModifiers()).asString();
           MethodDeclNode methodDeclarationNode =
               new MethodDeclNode(
                   nodeCount++,
@@ -354,6 +355,7 @@ public class SemanticGraphBuilder {
                   displayName,
                   qualifiedName,
                   methodDeclaration.toString(),
+                      access,
                   modifiers,
                   methodDeclaration.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
@@ -502,7 +504,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Add edges between recorded nodes
+   * Add edges between recorded node
    *
    * @param edgeCount edge id
    * @param edges collected temp mapping from source node to qualified name of target node
@@ -519,7 +521,7 @@ public class SemanticGraphBuilder {
     if (edges.isEmpty()) {
       return edgeCount;
     }
-    // TODO create edge for other nodes
+    // TODO create edge for other node
 
     Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
     for (Map.Entry<SemanticNode, List<String>> entry : edges.entrySet()) {

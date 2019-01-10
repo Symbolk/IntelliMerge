@@ -1,10 +1,11 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.*;
+import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.Side;
+import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.GitService;
 import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jgit.lib.Repository;
@@ -73,24 +74,25 @@ public class APIClient {
     // 2.1 Build ours/theirs graphs with collected files
     SemanticGraphBuilder builder = new SemanticGraphBuilder(mergeScenario, collectedFilePath);
 
-    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
+//    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
     Graph<SemanticNode, SemanticEdge> theirsGraph = builder.buildGraphForOneSide(Side.THEIRS);
 
-    SemanticGraphExporter.printAsDot(oursGraph);
+//    SemanticGraphExporter.printAsDot(oursGraph);
     SemanticGraphExporter.printAsDot(theirsGraph);
 
     // 2.2 Build base/merge graphs among ours/theirs files
     Graph<SemanticNode, SemanticEdge> baseGraph = builder.buildGraphForOneSide(Side.BASE);
 
-    // 3. Match nodes and merge the 3-way graphs
+    // 3. Match node and merge the 3-way graphs
     Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
 //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
 //    SemanticGraphExporter.printAsDot(mergedGraph);
-//    ThreewayGraphMapper mapper = new ThreewayGraphMapper(oursGraph, baseGraph, theirsGraph);
-    TwowayGraphMapper mapper = new TwowayGraphMapper(baseGraph, oursGraph);
+//    ThreewayGraphMatcher mapper = new ThreewayGraphMatcher(oursGraph, baseGraph, theirsGraph);
+    TwowayGraphMatcher matcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
+    matcher.topDownMatch();
+    matcher.mappings.forEach(System.out::println);
     // 4. Print the merged graph into code, keep the original format as possible
-
 
   }
 }

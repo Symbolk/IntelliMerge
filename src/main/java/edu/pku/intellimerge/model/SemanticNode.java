@@ -2,6 +2,12 @@ package edu.pku.intellimerge.model;
 
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.Node;
+import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.constant.NodeType;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SemanticNode {
   private Integer nodeID;
@@ -11,6 +17,8 @@ public class SemanticNode {
   private String content;
   private Range range;
   private Node astNode;
+  public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
+  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
 
   public SemanticNode() {}
 
