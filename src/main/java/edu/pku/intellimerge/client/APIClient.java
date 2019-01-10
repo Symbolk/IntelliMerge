@@ -93,6 +93,6 @@ public class APIClient {
     matcher.topDownMatch();
     matcher.mappings.forEach(System.out::println);
     // 4. Print the merged graph into code, keep the original format as possible
-
+//    baseGraph.incomingEdgesOf()
   }
 }

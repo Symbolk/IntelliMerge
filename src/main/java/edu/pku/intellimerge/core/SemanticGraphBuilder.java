@@ -84,11 +84,12 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results: 1.
-   * Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined in
-   * other java files in the current project, so create one edge for the def-use 1.2 By
-   * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
-   * qualified name, for the symbol is defined in unavailable jars
+   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results:
+   * 1. Solved: qualified name got
+   *    1.1 By JavaParserTypeSolver(internal): the symbol is defined in
+   * other java files in the current project, so create one edge for the def-use
+   *    1.2 By ReflectionTypeSolver(JDK): the symbol is defined in jdk libs
+   * 2. UnsolvedSymbolException: no qualified name, for the symbol is defined in unavailable jars
    *
    * @param repoPath
    * @param srcPath
