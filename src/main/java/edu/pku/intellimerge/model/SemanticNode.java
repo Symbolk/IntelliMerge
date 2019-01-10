@@ -5,7 +5,7 @@ import com.github.javaparser.ast.Node;
 
 public class SemanticNode {
   private Integer nodeID;
-  private Enum nodeType;
+  private NodeType nodeType;
   private String displayName;
   private String qualifiedName;
   private String content;
@@ -15,7 +15,7 @@ public class SemanticNode {
   public SemanticNode() {}
 
   public SemanticNode(
-      Integer nodeID, Enum nodeType, String displayName, String qualifiedName, String content) {
+      Integer nodeID, NodeType nodeType, String displayName, String qualifiedName, String content) {
     this.nodeID = nodeID;
     this.nodeType = nodeType;
     this.displayName = displayName;
@@ -39,7 +39,7 @@ public class SemanticNode {
     return qualifiedName;
   }
 
-  public Enum getNodeType() {
+  public NodeType getNodeType() {
     return nodeType;
   }
 
