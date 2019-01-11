@@ -19,7 +19,7 @@ public class SemanticGraphExporter {
       // adhering to the DOT language restrictions
       ComponentNameProvider<SemanticNode> vertexIdProvider = node -> node.getNodeID().toString();
       ComponentNameProvider<SemanticNode> vertexLabelProvider = node -> node.getDisplayName();
-      ComponentNameProvider<SemanticEdge> edgeLabelProvider = edge -> edge.getEdgeType().toString();
+      ComponentNameProvider<SemanticEdge> edgeLabelProvider = edge -> edge.getEdgeType().asString();
       GraphExporter<SemanticNode, SemanticEdge> exporter =
           new DOTExporter<>(vertexIdProvider, vertexLabelProvider, edgeLabelProvider);
       Writer writer = new StringWriter();

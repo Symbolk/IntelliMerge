@@ -5,7 +5,8 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 public class SemanticEdge {
   private Integer edgeID;
   private EdgeType edgeType;
-  private String label;
+  private Integer weight; // how many times the same edge
+  // not good to keep vertex here, since the edge and the connectivity are suggested to be separated
   private SemanticNode source;
   private SemanticNode target;
 
@@ -22,12 +23,14 @@ public class SemanticEdge {
 
   @Override
   public String toString() {
-    return "SemanticEdge{" +
-            "edgeType=" + edgeType +
-            ", label='" + label + '\'' +
-            ", source=" + source +
-            ", target=" + target +
-            '}';
+    return "SemanticEdge{"
+        + "edgeType="
+        + edgeType
+        + ", source="
+        + source
+        + ", target="
+        + target
+        + '}';
   }
 
   public int hashCode() {

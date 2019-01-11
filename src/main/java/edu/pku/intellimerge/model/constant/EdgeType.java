@@ -27,6 +27,6 @@ public enum EdgeType {
   }
 
   public String asString() {
-    return label;
+    return label.toUpperCase();
   }
 }

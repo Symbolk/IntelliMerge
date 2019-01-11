@@ -22,7 +22,9 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
-import edu.pku.intellimerge.model.*;
+import edu.pku.intellimerge.model.MergeScenario;
+import edu.pku.intellimerge.model.SemanticEdge;
+import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
@@ -34,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -84,12 +87,11 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results:
-   * 1. Solved: qualified name got
-   *    1.1 By JavaParserTypeSolver(internal): the symbol is defined in
-   * other java files in the current project, so create one edge for the def-use
-   *    1.2 By ReflectionTypeSolver(JDK): the symbol is defined in jdk libs
-   * 2. UnsolvedSymbolException: no qualified name, for the symbol is defined in unavailable jars
+   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results: 1.
+   * Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined in
+   * other java files in the current project, so create one edge for the def-use 1.2 By
+   * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
+   * qualified name, for the symbol is defined in unavailable jars
    *
    * @param repoPath
    * @param srcPath
@@ -109,7 +111,7 @@ public class SemanticGraphBuilder {
     final JavaParserFacade javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
 
     // init the semantic graph
-    Graph<SemanticNode, SemanticEdge> semanticGraph = initGraph();
+    Graph<SemanticNode, SemanticEdge> graph = initGraph();
 
     // parse all java files in project folder
     //        ParserConfiguration parserConfiguration
@@ -149,6 +151,15 @@ public class SemanticGraphBuilder {
     Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
     for (CompilationUnit cu : compilationUnits) {
+      SemanticNode cuNode =
+          new SemanticNode(
+              nodeCount++,
+              NodeType.CU,
+              cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse(""),
+              cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""),
+              cu.toString());
+
+      graph.addVertex(cuNode);
       // 1. package
       String packageName = "";
       if (cu.getPackageDeclaration().isPresent()) {
@@ -157,13 +168,16 @@ public class SemanticGraphBuilder {
         // check if the package node exists
         // if not exist, create one
         String finalPackageName = packageName;
-        if (semanticGraph
-            .vertexSet()
-            .stream()
-            .noneMatch(
-                node ->
-                    node.getNodeType().equals(NodeType.PACKAGE)
-                        && node.getQualifiedName().equals(finalPackageName))) {
+        Optional<SemanticNode> packageDeclNodeOpt =
+            graph
+                .vertexSet()
+                .stream()
+                .filter(
+                    node ->
+                        node.getNodeType().equals(NodeType.PACKAGE)
+                            && node.getQualifiedName().equals(finalPackageName))
+                .findAny();
+        if (!packageDeclNodeOpt.isPresent()) {
           SemanticNode packageDeclNode =
               new SemanticNode(
                   nodeCount++,
@@ -171,7 +185,16 @@ public class SemanticGraphBuilder {
                   packageDeclaration.getNameAsString(),
                   packageDeclaration.getNameAsString(),
                   packageDeclaration.toString());
-          semanticGraph.addVertex(packageDeclNode);
+          graph.addVertex(packageDeclNode);
+          graph.addEdge(
+              packageDeclNode,
+              cuNode,
+              new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
+        } else {
+          graph.addEdge(
+              packageDeclNodeOpt.get(),
+              cuNode,
+              new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNodeOpt.get(), cuNode));
         }
       }
       // 2. import
@@ -203,7 +226,11 @@ public class SemanticGraphBuilder {
                 displayName,
                 qualifiedName,
                 classOrInterfaceDeclaration.toString());
-        semanticGraph.addVertex(classDeclarationNode);
+        graph.addVertex(classDeclarationNode);
+        graph.addEdge(
+            cuNode,
+            classDeclarationNode,
+            new SemanticEdge(edgeCount++, EdgeType.CONTAIN, cuNode, classDeclarationNode));
 
         // extend/implement
         if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
@@ -230,25 +257,6 @@ public class SemanticGraphBuilder {
           implementEdges.put(classDeclarationNode, implementedTypes);
         }
 
-        String finalPackageName1 = packageName;
-        Optional<SemanticNode> packageDeclNodeOpt =
-            semanticGraph
-                .vertexSet()
-                .stream()
-                .filter(
-                    node ->
-                        node.getNodeType().equals(NodeType.PACKAGE)
-                            && node.getQualifiedName().equals(finalPackageName1))
-                .findAny();
-        if (packageDeclNodeOpt.isPresent()) {
-          SemanticNode packageDeclNode = packageDeclNodeOpt.get();
-          semanticGraph.addEdge(
-              packageDeclNode,
-              classDeclarationNode,
-              new SemanticEdge(
-                  edgeCount++, EdgeType.CONTAIN, packageDeclNode, classDeclarationNode));
-        }
-
         // class-imports-class(es)
         importEdges.put(classDeclarationNode, importedClassNames);
 
@@ -264,9 +272,9 @@ public class SemanticGraphBuilder {
             if (field.getRange().isPresent()) {
               fieldDeclarationNode.setRange(field.getRange().get());
             }
-            semanticGraph.addVertex(fieldDeclarationNode);
+            graph.addVertex(fieldDeclarationNode);
             // add edge between field and class
-            semanticGraph.addEdge(
+            graph.addEdge(
                 classDeclarationNode,
                 fieldDeclarationNode,
                 new SemanticEdge(
@@ -314,8 +322,8 @@ public class SemanticGraphBuilder {
           if (constructorDeclaration.getRange().isPresent()) {
             constructorDeclNode.setRange(constructorDeclaration.getRange().get());
           }
-          semanticGraph.addVertex(constructorDeclNode);
-          semanticGraph.addEdge(
+          graph.addVertex(constructorDeclNode);
+          graph.addEdge(
               classDeclarationNode,
               constructorDeclNode,
               new SemanticEdge(
@@ -356,7 +364,7 @@ public class SemanticGraphBuilder {
                   displayName,
                   qualifiedName,
                   methodDeclaration.toString(),
-                      access,
+                  access,
                   modifiers,
                   methodDeclaration.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
@@ -364,9 +372,9 @@ public class SemanticGraphBuilder {
           if (methodDeclaration.getRange().isPresent()) {
             methodDeclarationNode.setRange(methodDeclaration.getRange().get());
           }
-          semanticGraph.addVertex(methodDeclarationNode);
+          graph.addVertex(methodDeclarationNode);
           // add edge between field and class
-          semanticGraph.addEdge(
+          graph.addEdge(
               classDeclarationNode,
               methodDeclarationNode,
               new SemanticEdge(
@@ -485,23 +493,17 @@ public class SemanticGraphBuilder {
     // now the vertex set is unchanged
     // build the external edges
 
-    edgeCount = buildEdges(semanticGraph, edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
-    edgeCount = buildEdges(semanticGraph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
     edgeCount =
-        buildEdges(
-            semanticGraph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
+        buildEdges(graph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
+    edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
     edgeCount =
-        buildEdges(semanticGraph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
-    edgeCount =
-        buildEdges(semanticGraph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
-    edgeCount =
-        buildEdges(semanticGraph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-    edgeCount =
-        buildEdges(semanticGraph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
-    edgeCount =
-        buildEdges(
-            semanticGraph, edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
-    return semanticGraph;
+        buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
+    return graph;
   }
 
   /**
@@ -605,7 +607,7 @@ public class SemanticGraphBuilder {
   public Graph<SemanticNode, SemanticEdge> initGraph() {
     return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
         .allowingMultipleEdges(true)
-        .allowingSelfLoops(false)
+        .allowingSelfLoops(true) // recursion
         .edgeClass(SemanticEdge.class)
         .weighted(true)
         .buildGraph();

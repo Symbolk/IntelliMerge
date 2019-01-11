@@ -88,7 +88,7 @@ public class APIClient {
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
 //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
 //    SemanticGraphExporter.printAsDot(mergedGraph);
-//    ThreewayGraphMatcher mapper = new ThreewayGraphMatcher(oursGraph, baseGraph, theirsGraph);
+//    ThreewayGraphMerger merger = new ThreewayGraphMerger(oursGraph, baseGraph, theirsGraph);
     TwowayGraphMatcher matcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
     matcher.topDownMatch();
     matcher.mappings.forEach(System.out::println);

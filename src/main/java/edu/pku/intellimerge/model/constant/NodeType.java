@@ -1,9 +1,9 @@
 package edu.pku.intellimerge.model.constant;
 
 public enum NodeType {
-  PROJECT(0, "project"),
+  PROJECT(0, "project"), // logical node to represent folder
   PACKAGE(1, "package"),
-  FILE(2, "file"),
+  CU(2, "compilation_unit"), // logical node to represent file
   CLASS(3, "class"),
   INTERFACE(3, "interface"),
   ENUM(3, "enum"),
@@ -22,6 +22,6 @@ public enum NodeType {
   }
 
   public String asString() {
-    return label;
+    return label.toUpperCase();
   }
 }

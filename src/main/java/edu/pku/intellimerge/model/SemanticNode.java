@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 public class SemanticNode {
+  public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
+  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
   private Integer nodeID;
   private NodeType nodeType;
   private String displayName;
@@ -17,8 +19,6 @@ public class SemanticNode {
   private String content;
   private Range range;
   private Node astNode;
-  public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
-  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
 
   public SemanticNode() {}
 
@@ -35,12 +35,8 @@ public class SemanticNode {
     return nodeID;
   }
 
-  public void setRange(Range range) {
-    this.range = range;
-  }
-
   public String getDisplayName() {
-    return nodeType.toString() + ":" + displayName;
+    return displayName;
   }
 
   public String getQualifiedName() {
@@ -49,6 +45,22 @@ public class SemanticNode {
 
   public NodeType getNodeType() {
     return nodeType;
+  }
+
+  public String getContent() {
+    return content;
+  }
+
+  public Range getRange() {
+    return range;
+  }
+
+  public void setRange(Range range) {
+    this.range = range;
+  }
+
+  public Node getAstNode() {
+    return astNode;
   }
 
   @Override
@@ -63,6 +75,10 @@ public class SemanticNode {
         + ", qualifiedName='"
         + qualifiedName
         + "}";
+  }
+
+  public String asString() {
+    return nodeType.asString() + "::" + displayName;
   }
 
   public int hashCode() {
