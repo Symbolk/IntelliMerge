@@ -28,6 +28,8 @@ dependencies {
     compile group: 'com.googlecode.juniversalchardet', name: 'juniversalchardet', version: '1.0.3'
     compile group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '5.2.0.201812061821-r'
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
+    compile group: 'info.debatty', name: 'java-string-similarity', version: '1.1.0'
+
 
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'

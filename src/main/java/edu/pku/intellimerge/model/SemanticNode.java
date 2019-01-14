@@ -8,8 +8,9 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class SemanticNode {
+public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
   public Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
   private Integer nodeID;
@@ -17,8 +18,7 @@ public class SemanticNode {
   private String displayName;
   private String qualifiedName;
   private String content;
-  private Range range;
-  private Node astNode;
+  private Range range; // Optional<>
 
   public SemanticNode() {}
 
@@ -35,6 +35,12 @@ public class SemanticNode {
     return nodeID;
   }
 
+  public NodeType getNodeType() {
+    return nodeType;
+  }
+
+  public Integer getLevel(){ return nodeType.level; }
+
   public String getDisplayName() {
     return displayName;
   }
@@ -43,8 +49,8 @@ public class SemanticNode {
     return qualifiedName;
   }
 
-  public NodeType getNodeType() {
-    return nodeType;
+  public void setQualifiedName(String qualifiedName) {
+    this.qualifiedName = qualifiedName;
   }
 
   public String getContent() {
@@ -57,10 +63,6 @@ public class SemanticNode {
 
   public void setRange(Range range) {
     this.range = range;
-  }
-
-  public Node getAstNode() {
-    return astNode;
   }
 
   @Override
@@ -77,10 +79,18 @@ public class SemanticNode {
         + "}";
   }
 
+  /**
+   * Mainly for visualization
+   * @return
+   */
   public String asString() {
     return nodeType.asString() + "::" + displayName;
   }
 
+  /**
+   * To compare if two nodes are equal
+   * @return
+   */
   public int hashCode() {
     return toString().hashCode();
   }
@@ -89,7 +99,14 @@ public class SemanticNode {
     return (o instanceof SemanticNode) && (toString().equals(o.toString()));
   }
 
-  public Integer hashCodeSignature() {
-    return (nodeType + qualifiedName).hashCode();
+  /**
+   * Get the unique fully qualified signature in this project
+   * Concretely implemented in subclasses.
+   */
+  public abstract String getSignature();
+
+  public Integer hashCodeSignature(){
+    return getSignature().hashCode();
   }
+
 }

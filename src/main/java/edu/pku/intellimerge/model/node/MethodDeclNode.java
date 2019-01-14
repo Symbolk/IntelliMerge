@@ -1,8 +1,8 @@
 package edu.pku.intellimerge.model.node;
 
+import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
-import edu.pku.intellimerge.model.SemanticNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,7 @@ public class MethodDeclNode extends SemanticNode {
   private String returnType;
   private String methodName;
   private List<String> parameterTypes;
-
-  public MethodDeclNode() {
-    super();
-  }
+  private List<String> throwExceptions;
 
   public MethodDeclNode(
       Integer nodeID,
@@ -44,11 +41,39 @@ public class MethodDeclNode extends SemanticNode {
     this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
   }
 
-  public void addIncommingEdge(EdgeType edgeType, SemanticNode semanticNode) {
-    this.incomingEdges.get(edgeType).add(semanticNode);
+  @Override
+  public String toString() {
+    return "MethodDeclNode{"
+        + "access='"
+        + access
+        + '\''
+        + ", modifiers="
+        + modifiers
+        + ", returnType='"
+        + returnType
+        + '\''
+        + ", methodName='"
+        + methodName
+        + '\''
+        + ", parameterTypes="
+        + parameterTypes
+        + '}';
   }
 
-  public void addOutgoingEdge(EdgeType edgeType, SemanticNode semanticNode) {
-    this.outgoingEdges.get(edgeType).add(semanticNode);
+  @Override
+  public String getSignature() {
+    // qualified signature of method, without the parameter names/spaces/commmas/brackets
+    StringBuilder builder = new StringBuilder();
+    builder.append(access);
+    modifiers.forEach(modifier -> builder.append(modifier));
+    builder.append(returnType);
+    builder.append(methodName);
+    if(parameterTypes.size() > 0){
+      parameterTypes.forEach(type -> builder.append(type));
+    }
+    if(throwExceptions.size() > 0){
+      throwExceptions.forEach(exception -> builder.append(exception));
+    }
+    return toString();
   }
 }

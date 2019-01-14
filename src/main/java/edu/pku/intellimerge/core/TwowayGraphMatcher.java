@@ -1,8 +1,10 @@
 package edu.pku.intellimerge.core;
 
-import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.core.matcher.ChangeSignatureMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.model.node.FieldDeclNode;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
 import org.jgrapht.Graph;
 
@@ -12,14 +14,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TwowayGraphMatcher {
-  private Graph<SemanticNode, SemanticEdge> graph1;
-  private Graph<SemanticNode, SemanticEdge> graph2;
+  // keep nodes in the hierachy order
   public List<Map<SemanticNode, SemanticNode>> mappings;
-  public List<SemanticNode> unmatchedNodes1;
-  public List<SemanticNode> unmatchedNodes2;
+  public List<SemanticNode> unmatchedNodes1; // possibly deleted nodes
+  public List<SemanticNode> unmatchedNodes2; // possibly added nodes
+  private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
+  private Graph<SemanticNode, SemanticEdge> graph2; // new graph(ours/theirs)
+
 
   public TwowayGraphMatcher(
-          Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
+      Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
     this.graph1 = graph1;
     this.graph2 = graph2;
     this.mappings = new ArrayList<>();
@@ -27,7 +31,10 @@ public class TwowayGraphMatcher {
     this.unmatchedNodes2 = new ArrayList<>();
   }
 
-  /** Map node between base and other graph, simply top-down by signature */
+  /**
+   * Map all node between 2 graphs, simply top-down by signature Assumption: nodes with the same
+   * signature are matched
+   */
   public void topDownMatch() {
     Map<Integer, SemanticNode> map1;
     Map<Integer, SemanticNode> map2;
@@ -66,17 +73,44 @@ public class TwowayGraphMatcher {
     map2.entrySet().forEach(entry -> unmatchedNodes2.add(entry.getValue()));
   }
 
-  // quickly test methods
-  private List<MethodDeclNode> getAllMethodDeclNodes(Graph<SemanticNode, SemanticEdge> graph) {
-    return graph
-        .vertexSet()
-        .stream()
-        .filter(node -> node.getNodeType().equals(NodeType.METHOD))
-        .map(node -> (MethodDeclNode) node)
-        .collect(Collectors.toList());
+  /** Bottom-up match unmatched nodes in the last step, considering some kinds of refactorings */
+  public void bottomUpMatch() {
+    //       Split the node list into concrete node lists with different node type
+    ArrayList<FieldDeclNode> fieldDeclNodes1 = new ArrayList<>();
+    ArrayList<FieldDeclNode> fieldDeclNodes2 = new ArrayList<>();
+    ArrayList<MethodDeclNode> methodDeclNodes1 = new ArrayList<>();
+    ArrayList<MethodDeclNode> methodDeclNodes2 = new ArrayList<>();
+    splitUnmatchedNodesByType(unmatchedNodes1, fieldDeclNodes1, methodDeclNodes1);
+    splitUnmatchedNodesByType(unmatchedNodes2, fieldDeclNodes2, methodDeclNodes2);
+
+    ChangeSignatureMatcher.matchChangeMethodSignature(mappings, methodDeclNodes1, methodDeclNodes2);
   }
 
-  public void bottomUpMatch() {
-
+  private void splitUnmatchedNodesByType(
+      List<SemanticNode> unmatchedNodes,
+      List<FieldDeclNode> fieldDeclNodes,
+      List<MethodDeclNode> methodDeclNodes) {
+    for (SemanticNode node : unmatchedNodes) {
+      if (node.getNodeType().equals(NodeType.FIELD) && node instanceof FieldDeclNode) {
+        fieldDeclNodes.add((FieldDeclNode) node);
+      } else if (node.getNodeType().equals(NodeType.METHOD) && node instanceof MethodDeclNode) {
+        methodDeclNodes.add((MethodDeclNode) node);
+      }
+    }
+  }
+  /**
+   * Sort the node list in the reverse hierachy order, i.e. bottom up in AST
+   *
+   * @param unmatchedNodes
+   * @return
+   */
+  private ArrayList<SemanticNode> sortUnmatchedNodes(List<SemanticNode> unmatchedNodes) {
+    ArrayList<SemanticNode> unMatchedNodesSorted =
+        new ArrayList(
+            unmatchedNodes
+                .stream()
+                .sorted(Comparator.comparing(SemanticNode::getLevel).reversed())
+                .collect(Collectors.toList()));
+    return unMatchedNodesSorted;
   }
 }
