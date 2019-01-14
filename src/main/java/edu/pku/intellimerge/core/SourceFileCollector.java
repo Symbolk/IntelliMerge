@@ -4,13 +4,12 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import edu.pku.intellimerge.model.MergeScenario;
-import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
+import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.FilesManager;
 import edu.pku.intellimerge.util.GitService;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.slf4j.Logger;
@@ -40,11 +39,10 @@ public class SourceFileCollector {
   /** Collect related source files to process together */
   public void collectFilesForAllSides() {
     try {
-      Triple<List<SimpleDiffEntry>, List<SimpleDiffEntry>, List<SimpleDiffEntry>>
-          threewayDiffEntries = getDiffJavaFiles();
-      collectFilesForOneSide(Side.OURS, threewayDiffEntries.getLeft());
-      collectFilesForOneSide(Side.BASE, threewayDiffEntries.getMiddle());
-      collectFilesForOneSide(Side.THEIRS, threewayDiffEntries.getRight());
+      getDiffJavaFiles();
+//      collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
+//      collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
+//      collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -72,9 +70,9 @@ public class SourceFileCollector {
         break;
     }
     if (sideCommitID != null) {
-
       ArrayList<SourceFile> javaSourceFiles = scanJavaFiles(sideCommitID);
-      String sideCollectedFilePath = collectedFilePath + side.toString().toLowerCase() + "/";
+      String sideCollectedFilePath =
+          collectedFilePath + side.toString().toLowerCase() + File.separator;
       if (diffEntries != null) {
         collect(javaSourceFiles, diffEntries, sideCollectedFilePath);
       }
@@ -87,12 +85,11 @@ public class SourceFileCollector {
    * @return
    * @throws Exception
    */
-  public Triple<List<SimpleDiffEntry>, List<SimpleDiffEntry>, List<SimpleDiffEntry>>
-      getDiffJavaFiles() throws Exception {
-    List<SimpleDiffEntry> oursDiffEntries =
+  public void getDiffJavaFiles() throws Exception {
+    mergeScenario.oursDiffEntries =
         GitService.listDiffFilesJava(
             repository, mergeScenario.baseCommitID, mergeScenario.oursCommitID);
-    List<SimpleDiffEntry> theirsDiffEntries =
+    mergeScenario.theirsDiffEntries =
         GitService.listDiffFilesJava(
             repository, mergeScenario.baseCommitID, mergeScenario.theirsCommitID);
     // 2 ways to union the diff file list
@@ -100,10 +97,9 @@ public class SourceFileCollector {
     //      theirsDiffEntries.removeAll(baseDiffEntries);
     //      baseDiffEntries.addAll(theirsDiffEntries);
     Set<SimpleDiffEntry> temp = new HashSet<>();
-    temp.addAll(oursDiffEntries);
-    temp.addAll(theirsDiffEntries);
-    List<SimpleDiffEntry> baseDiffEntries = new ArrayList<>(temp);
-    return Triple.of(oursDiffEntries, baseDiffEntries, theirsDiffEntries);
+    temp.addAll(mergeScenario.oursDiffEntries);
+    temp.addAll(mergeScenario.theirsDiffEntries);
+    mergeScenario.baseDiffEntries = new ArrayList<>(temp);
   }
 
   /**
@@ -116,7 +112,6 @@ public class SourceFileCollector {
   public ArrayList<SourceFile> scanJavaFiles(String commitID) throws Exception {
     GitService.checkout(repository, commitID);
     ArrayList<SourceFile> temp = new ArrayList<>();
-    //        String targetFolder=repoPath.endsWith("/")? repoPath + srcPath:repoPath+"/"+srcPath;
     String targetFolder = mergeScenario.repoPath + mergeScenario.srcPath;
     ArrayList<SourceFile> javaSourceFiles =
         FilesManager.scanJavaSourceFiles(targetFolder, temp, mergeScenario.repoPath);
@@ -142,7 +137,7 @@ public class SourceFileCollector {
             diffEntry.getChangeType(),
             diffEntry.getOldPath(),
             diffEntry.getNewPath());
-        File srcFile = new File(mergeScenario.repoPath + "/" + relativePath);
+        File srcFile = new File(mergeScenario.repoPath + File.separator + relativePath);
         // copy the diff files
         if (srcFile.exists()) {
           File dstFile = new File(sideCollectedFilePath + relativePath);

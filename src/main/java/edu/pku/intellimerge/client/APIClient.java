@@ -1,6 +1,9 @@
 package edu.pku.intellimerge.client;
 
-import edu.pku.intellimerge.core.*;
+import edu.pku.intellimerge.core.SemanticGraphBuilder;
+import edu.pku.intellimerge.core.SourceFileCollector;
+import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.core.TwowayGraphMatcher;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -13,6 +16,8 @@ import org.jgrapht.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+
 public class APIClient {
 
   private static final Logger logger = LoggerFactory.getLogger(APIClient.class);
@@ -20,9 +25,10 @@ public class APIClient {
   private static final String REPO_NAME = "IntelliMerge";
   private static final String REPO_PATH = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
-  private static final String SRC_PATH = "/src/main/java/";
+  private static final String SRC_PATH = "/src/main/java/"; // java project source folder
   //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String DIFF_PATH = "D:\\github\\diffs\\" + REPO_NAME;
+  private static final String RESULT_PATH = "D:\\github\\merged\\" + REPO_NAME;
 
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
@@ -65,11 +71,12 @@ public class APIClient {
     // 1. Collect diff java files and imported files between merge parent commit and base commit
 
     // source files collected to be parse later
-    String collectedFilePath = DIFF_PATH + "/" + mergeScenario.mergeCommitID + "/";
+    String collectedFilePath =
+        DIFF_PATH + File.separator + mergeScenario.mergeCommitID + File.separator;
 
     SourceFileCollector collector =
         new SourceFileCollector(mergeScenario, repository, collectedFilePath);
-    //      collector.collectFilesForAllSides();
+    collector.collectFilesForAllSides();
 
     // 2.1 Build ours/theirs graphs with collected files
     SemanticGraphBuilder builder = new SemanticGraphBuilder(mergeScenario, collectedFilePath);
@@ -77,7 +84,7 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
     Graph<SemanticNode, SemanticEdge> theirsGraph = builder.buildGraphForOneSide(Side.THEIRS);
 
-//    SemanticGraphExporter.printAsDot(oursGraph);
+    //    SemanticGraphExporter.printAsDot(oursGraph);
     SemanticGraphExporter.printAsDot(theirsGraph);
 
     // 2.2 Build base/merge graphs among ours/theirs files
@@ -86,8 +93,8 @@ public class APIClient {
     // 3. Match node and merge the 3-way graphs
     Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
-//    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
-//    SemanticGraphExporter.printAsDot(mergedGraph);
+    //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
+    //    SemanticGraphExporter.printAsDot(mergedGraph);
     // two way matching, and three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
@@ -95,8 +102,8 @@ public class APIClient {
     b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
-//    ThreewayGraphMerger merger = new ThreewayGraphMerger(oursGraph, baseGraph, theirsGraph);
+    ThreewayGraphMerger merger = new ThreewayGraphMerger(oursGraph, baseGraph, theirsGraph);
     // 4. Print the merged graph into code, keep the original format as possible
-//    baseGraph.incomingEdgesOf()
+    //    baseGraph.incomingEdgesOf()
   }
 }

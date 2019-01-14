@@ -1,14 +1,12 @@
 package edu.pku.intellimerge.model;
 
 import com.github.javaparser.Range;
-import com.github.javaparser.ast.Node;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
@@ -19,6 +17,7 @@ public abstract class SemanticNode {
   private String qualifiedName;
   private String content;
   private Range range; // Optional<>
+  private Boolean needToMerge; // only nodes in modified files need to be merged
 
   public SemanticNode() {}
 
@@ -39,7 +38,9 @@ public abstract class SemanticNode {
     return nodeType;
   }
 
-  public Integer getLevel(){ return nodeType.level; }
+  public Integer getLevel() {
+    return nodeType.level;
+  }
 
   public String getDisplayName() {
     return displayName;
@@ -65,6 +66,7 @@ public abstract class SemanticNode {
     this.range = range;
   }
 
+
   @Override
   public String toString() {
     return "SemanticNode{"
@@ -81,6 +83,7 @@ public abstract class SemanticNode {
 
   /**
    * Mainly for visualization
+   *
    * @return
    */
   public String asString() {
@@ -89,6 +92,7 @@ public abstract class SemanticNode {
 
   /**
    * To compare if two nodes are equal
+   *
    * @return
    */
   public int hashCode() {
@@ -100,13 +104,11 @@ public abstract class SemanticNode {
   }
 
   /**
-   * Get the unique fully qualified signature in this project
-   * Concretely implemented in subclasses.
+   * Get the unique fully qualified signature in this project Concretely implemented in subclasses.
    */
   public abstract String getSignature();
 
-  public Integer hashCodeSignature(){
+  public Integer hashCodeSignature() {
     return getSignature().hashCode();
   }
-
 }

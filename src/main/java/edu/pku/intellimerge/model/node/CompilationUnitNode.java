@@ -9,9 +9,10 @@ import java.util.ArrayList;
 
 public class CompilationUnitNode extends SemanticNode {
   private String fileName;
-  private String relativePath;
-  private String absolutePath;
+  private String relativePath; // the same as absolute path currently
+  private String absolutePath; // file path in the collected folder, not the original repo
   private CompilationUnit cu; // corresponding AST node
+  private Boolean needToMerge;
 
   public CompilationUnitNode(
       Integer nodeID,
@@ -22,7 +23,8 @@ public class CompilationUnitNode extends SemanticNode {
       String fileName,
       String relativePath,
       String absolutePath,
-      CompilationUnit cu) {
+      CompilationUnit cu,
+      Boolean needToMerge) {
     super(nodeID, nodeType, displayName, qualifiedName, content);
     this.fileName = fileName;
     this.relativePath = relativePath;
@@ -30,21 +32,28 @@ public class CompilationUnitNode extends SemanticNode {
     this.cu = cu;
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
+    this.needToMerge = needToMerge;
   }
 
-    @Override
-    public String toString() {
-        return "CompilationUnitNode{" +
-                "fileName='" + fileName + '\'' +
-                ", relativePath='" + relativePath + '\'' +
-                ", absolutePath='" + absolutePath + '\'' +
-                ", cu=" + cu +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "CompilationUnitNode{"
+        + "fileName='"
+        + fileName
+        + '\''
+        + ", relativePath='"
+        + relativePath
+        + '\''
+        + ", absolutePath='"
+        + absolutePath
+        + '\''
+        + ", cu="
+        + cu
+        + '}';
+  }
 
   @Override
   public String getSignature() {
     return getQualifiedName();
   }
-
 }

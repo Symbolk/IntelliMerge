@@ -1,6 +1,7 @@
 package edu.pku.intellimerge.model;
 
 import edu.pku.intellimerge.model.constant.MappingType;
+import edu.pku.intellimerge.model.constant.Side;
 
 import java.util.Optional;
 

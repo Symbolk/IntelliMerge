@@ -2,6 +2,7 @@ package edu.pku.intellimerge.model;
 
 import org.eclipse.jgit.diff.DiffEntry;
 
+/** Simplified version of JGit DiffEntry, all paths are linux style(/)*/
 public class SimpleDiffEntry {
   /** File name of the old (pre-image). */
   protected String oldPath;
@@ -96,6 +97,12 @@ public class SimpleDiffEntry {
     return toString().hashCode();
   }
 
+  /**
+   * If the old file is changed into the new file by the same operation on file, treat as the same
+   *
+   * @param o
+   * @return
+   */
   public boolean equals(Object o) {
     return (o instanceof SimpleDiffEntry) && (toString().equals(o.toString()));
   }

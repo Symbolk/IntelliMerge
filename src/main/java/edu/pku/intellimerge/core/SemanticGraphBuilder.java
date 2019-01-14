@@ -75,11 +75,10 @@ public class SemanticGraphBuilder {
    * @throws Exception
    */
   public Graph<SemanticNode, SemanticEdge> buildGraphForOneSide(Side side) throws Exception {
-    String sideDiffPath = collectedFilePath + side.toString().toLowerCase() + "/";
 
     Graph<SemanticNode, SemanticEdge> graph =
         //        SemanticGraphBuilder.initGraph();
-        build(sideDiffPath, mergeScenario.repoPath + mergeScenario.srcPath);
+        build(side, mergeScenario.repoPath + mergeScenario.srcPath);
     if (graph == null) {
       logger.error(side.toString() + " graph is null!");
     }
@@ -87,17 +86,21 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results: 1.
-   * Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined in
-   * other java files in the current project, so create one edge for the def-use 1.2 By
+   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results:
+   *
+   * <p>1. Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined
+   * in other java files in the current project, so create one edge for the def-use 1.2 By
    * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
    * qualified name, for the symbol is defined in unavailable jars
    *
-   * @param repoPath
-   * @param srcPath
+   * @param side
+   * @param srcPath the context files for symbolsolving, i.e. the source folder of this java project
    * @return
    */
-  public Graph<SemanticNode, SemanticEdge> build(String repoPath, String srcPath) throws Exception {
+  public Graph<SemanticNode, SemanticEdge> build(Side side, String srcPath) throws Exception {
+
+    // the folder path which contains collected files to build the graph upon
+    String sideDiffPath = collectedFilePath + side.toString().toLowerCase() + File.separator;
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
@@ -115,7 +118,7 @@ public class SemanticGraphBuilder {
 
     // parse all java files in project folder
     //        ParserConfiguration parserConfiguration
-    File root = new File(repoPath);
+    File root = new File(sideDiffPath);
     SourceRoot sourceRoot = new SourceRoot(root.toPath());
     sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
@@ -131,8 +134,8 @@ public class SemanticGraphBuilder {
             .filter(ParseResult::isSuccessful)
             .map(r -> r.getResult().get())
             .collect(Collectors.toList());
-    // build the graph from the cus
-    // save node into SemanticGraph, keep edges in several maps to save later
+
+    // incremental id, unique in one side's graph
     Integer nodeCount = 0;
     Integer edgeCount = 0;
 
@@ -150,10 +153,18 @@ public class SemanticGraphBuilder {
     Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
     Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
+    /*
+     * build the graph by analyzing every CU
+     */
     for (CompilationUnit cu : compilationUnits) {
       String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
-      String absPath =
+      String absolutePath =
           cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
+      String relativePath = absolutePath.replace(sideDiffPath, "");
+
+      // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
+      Boolean isChangedFile = mergeScenario.isChangedFile(side, relativePath);
+
       CompilationUnitNode cuNode =
           new CompilationUnitNode(
               nodeCount++,
@@ -162,9 +173,10 @@ public class SemanticGraphBuilder {
               fileName,
               cu.toString(),
               fileName,
-              absPath,
-              absPath,
-              cu);
+              relativePath,
+              absolutePath,
+              cu,
+              isChangedFile);
 
       graph.addVertex(cuNode);
       // 1. package
@@ -412,12 +424,14 @@ public class SemanticGraphBuilder {
             methodDeclarationNode.setRange(methodDeclaration.getRange().get());
           }
           graph.addVertex(methodDeclarationNode);
-          // add edge between field and class
           graph.addEdge(
               typeDeclNode,
               methodDeclarationNode,
               new SemanticEdge(
                   edgeCount++, EdgeType.DEFINE_METHOD, typeDeclNode, methodDeclarationNode));
+
+          // 6.0 throw exceptions
+          if (methodDeclaration.getThrownExceptions().size() > 0) {}
 
           // 6.1 new instance
           List<ObjectCreationExpr> objectCreationExprs =

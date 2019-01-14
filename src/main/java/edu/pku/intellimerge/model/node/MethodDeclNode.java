@@ -32,6 +32,7 @@ public class MethodDeclNode extends SemanticNode {
     this.returnType = returnType;
     this.methodName = methodName;
     this.parameterTypes = parameterTypes;
+    this.throwExceptions = new ArrayList<>();
     this.incomingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
