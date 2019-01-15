@@ -63,11 +63,9 @@ public class SimilarityAlg {
     Set<String> union = new HashSet<>();
     union.addAll(s1);
     union.addAll(s2);
-    System.out.println(union);
     Set<String> intersection = new HashSet<>();
     intersection.addAll(s1);
     intersection.retainAll(s2);
-    System.out.println(intersection);
 
     return (double) intersection.size() / union.size();
   }

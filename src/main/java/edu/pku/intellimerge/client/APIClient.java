@@ -85,25 +85,15 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> theirsGraph = builder.buildGraphForOneSide(Side.THEIRS);
 
     //    SemanticGraphExporter.printAsDot(oursGraph);
-    SemanticGraphExporter.printAsDot(theirsGraph);
+//    SemanticGraphExporter.printAsDot(theirsGraph);
 
     // 2.2 Build base/merge graphs among ours/theirs files
     Graph<SemanticNode, SemanticEdge> baseGraph = builder.buildGraphForOneSide(Side.BASE);
 
     // 3. Match node and merge the 3-way graphs
-    Graph<SemanticNode, SemanticEdge> mergedGraph = baseGraph;
-    //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
-    //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
-    //    SemanticGraphExporter.printAsDot(mergedGraph);
-    // two way matching, and three way mapping
-    TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
-    TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-    b2oMatcher.topDownMatch();
-    b2oMatcher.bottomUpMatch();
-    b2tMatcher.topDownMatch();
-    b2tMatcher.bottomUpMatch();
     ThreewayGraphMerger merger = new ThreewayGraphMerger(oursGraph, baseGraph, theirsGraph);
+    merger.threewayMerge();
     // 4. Print the merged graph into code, keep the original format as possible
-    //    baseGraph.incomingEdgesOf()
+
   }
 }

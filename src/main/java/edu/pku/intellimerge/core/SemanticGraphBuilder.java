@@ -260,7 +260,7 @@ public class SemanticGraphBuilder {
                 access,
                 modifiers,
                 nodeType.asString(),
-                displayName);
+                displayName, isChangedFile);
         graph.addVertex(typeDeclNode);
         graph.addEdge(
             cuNode,
@@ -324,7 +324,7 @@ public class SemanticGraphBuilder {
                     access,
                     modifiers,
                     field.getTypeAsString(),
-                    field.getNameAsString());
+                    field.getNameAsString(), isChangedFile);
             if (field.getRange().isPresent()) {
               fieldDeclarationNode.setRange(field.getRange().get());
             }
@@ -372,7 +372,7 @@ public class SemanticGraphBuilder {
                   displayName,
                   qualifiedName,
                   constructorDeclaration.toString(),
-                  displayName);
+                  displayName, isChangedFile);
           if (constructorDeclaration.getRange().isPresent()) {
             constructorDeclNode.setRange(constructorDeclaration.getRange().get());
           }
@@ -419,7 +419,7 @@ public class SemanticGraphBuilder {
                   modifiers,
                   methodDeclaration.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
-                  parameterTypes);
+                  parameterTypes, isChangedFile);
           if (methodDeclaration.getRange().isPresent()) {
             methodDeclarationNode.setRange(methodDeclaration.getRange().get());
           }

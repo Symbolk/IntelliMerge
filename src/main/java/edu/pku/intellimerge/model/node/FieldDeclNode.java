@@ -12,6 +12,7 @@ public class FieldDeclNode extends SemanticNode {
   private List<String> modifiers;
   private String fieldType;
   private String fieldName;
+  private Boolean needToMerge;
 
   public FieldDeclNode(
       Integer nodeID,
@@ -22,12 +23,15 @@ public class FieldDeclNode extends SemanticNode {
       String access,
       List<String> modifiers,
       String fieldType,
-      String fieldName) {
+      String fieldName,
+      Boolean needToMerge) {
     super(nodeID, nodeType, displayName, qualifiedName, content);
     this.access = access;
     this.modifiers = modifiers;
     this.fieldType = fieldType;
     this.fieldName = fieldName;
+    this.needToMerge = needToMerge;
+
     this.incomingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());

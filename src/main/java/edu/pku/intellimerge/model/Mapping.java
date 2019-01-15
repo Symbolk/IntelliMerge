@@ -12,6 +12,22 @@ public class Mapping {
     private Optional<SemanticNode> oursNode;
     private Optional<SemanticNode> baseNode;
     private Optional<SemanticNode> theirsNode;
-    private MappingType mappingType;
+//    private MappingType mappingType;
 
+    public Mapping() {}
+
+    public Mapping(Optional<SemanticNode> oursNode, Optional<SemanticNode> baseNode, Optional<SemanticNode> theirsNode) {
+        this.oursNode = oursNode;
+        this.baseNode = baseNode;
+        this.theirsNode = theirsNode;
+    }
+
+    @Override
+    public String toString() {
+        return "Mapping{" +
+                "oursNode=" + oursNode +
+                ", baseNode=" + baseNode +
+                ", theirsNode=" + theirsNode +
+                '}';
+    }
 }

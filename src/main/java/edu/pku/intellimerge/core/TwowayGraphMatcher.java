@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class TwowayGraphMatcher {
   // keep nodes in the hierachy order
-  public List<Map<SemanticNode, SemanticNode>> mappings;
+  public Map<SemanticNode, SemanticNode> matchings;
   public List<SemanticNode> unmatchedNodes1; // possibly deleted nodes
   public List<SemanticNode> unmatchedNodes2; // possibly added nodes
   private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
@@ -26,7 +26,7 @@ public class TwowayGraphMatcher {
       Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
     this.graph1 = graph1;
     this.graph2 = graph2;
-    this.mappings = new ArrayList<>();
+    this.matchings = new HashMap<>();
     this.unmatchedNodes1 = new ArrayList<>();
     this.unmatchedNodes2 = new ArrayList<>();
   }
@@ -61,9 +61,7 @@ public class TwowayGraphMatcher {
                     HashMap::new));
     for (Entry<Integer, SemanticNode> entry : map1.entrySet()) {
       if (map2.containsKey(entry.getKey())) {
-        Map<SemanticNode, SemanticNode> mapping = new HashMap<>();
-        mapping.put(entry.getValue(), map2.get(entry.getKey()));
-        mappings.add(mapping);
+        matchings.put(entry.getValue(), map2.get(entry.getKey()));
         // remove the mapped node from other
         map2.remove(entry.getKey());
       } else {
@@ -83,7 +81,7 @@ public class TwowayGraphMatcher {
     splitUnmatchedNodesByType(unmatchedNodes1, fieldDeclNodes1, methodDeclNodes1);
     splitUnmatchedNodesByType(unmatchedNodes2, fieldDeclNodes2, methodDeclNodes2);
 
-    ChangeSignatureMatcher.matchChangeMethodSignature(mappings, methodDeclNodes1, methodDeclNodes2);
+    ChangeSignatureMatcher.matchChangeMethodSignature(matchings, methodDeclNodes1, methodDeclNodes2);
   }
 
   private void splitUnmatchedNodesByType(

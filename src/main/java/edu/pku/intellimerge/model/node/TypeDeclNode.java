@@ -14,6 +14,7 @@ public class TypeDeclNode extends SemanticNode {
   private String typeName;
   private String extendType; // java only allows single extending
   private List<String> implementTypes;
+  private Boolean needToMerge;
 
   public TypeDeclNode(
       Integer nodeID,
@@ -24,12 +25,15 @@ public class TypeDeclNode extends SemanticNode {
       String access,
       List<String> modifiers,
       String typeType,
-      String typeName) {
+      String typeName,
+      Boolean needToMerge) {
     super(nodeID, nodeType, displayName, qualifiedName, content);
     this.access = access;
     this.modifiers = modifiers;
     this.typeType = typeType;
     this.typeName = typeName;
+    this.needToMerge = needToMerge;
+
     this.implementTypes = new ArrayList<>();
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
     this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());

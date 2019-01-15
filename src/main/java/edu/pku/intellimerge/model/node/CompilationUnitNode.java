@@ -11,8 +11,8 @@ public class CompilationUnitNode extends SemanticNode {
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
-  private CompilationUnit cu; // corresponding AST node
-  private Boolean needToMerge;
+  private CompilationUnit cu; // corresponding AST node, to get package and import contents in merging
+  public Boolean needToMerge;
 
   public CompilationUnitNode(
       Integer nodeID,
@@ -46,9 +46,6 @@ public class CompilationUnitNode extends SemanticNode {
         + '\''
         + ", absolutePath='"
         + absolutePath
-        + '\''
-        + ", cu="
-        + cu
         + '}';
   }
 

@@ -129,6 +129,7 @@ public class SourceFileCollector {
       throws Exception {
 
     for (SimpleDiffEntry diffEntry : diffEntries) {
+      // TODO change type may should be ignored, since they may be imprecise
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
         // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
         String relativePath = diffEntry.getNewPath();

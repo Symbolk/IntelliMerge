@@ -10,14 +10,17 @@ import org.jgrapht.graph.DefaultUndirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ChangeSignatureMatcher {
   // check field and method signature change first
   public static void matchChangeFieldSignature(List<FieldDeclNode> fieldDeclNodes) {}
 
   public static void matchChangeMethodSignature(
-      List<Map<SemanticNode, SemanticNode>> mappings,
+      Map<SemanticNode, SemanticNode> matchings,
       List<MethodDeclNode> methodDeclNodes1,
       List<MethodDeclNode> methodDeclNodes2) {
     // build a bipartite to match
@@ -46,11 +49,9 @@ public class ChangeSignatureMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
 
-      Map<SemanticNode, SemanticNode> mapping = new HashMap<>();
       methodDeclNodes1.remove(sourceNode);
       methodDeclNodes1.remove(targetNode);
-      mapping.put(sourceNode, targetNode);
-      mappings.add(mapping);
+      matchings.put(sourceNode, targetNode);
     }
   }
 

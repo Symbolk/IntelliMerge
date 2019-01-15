@@ -14,6 +14,7 @@ public class MethodDeclNode extends SemanticNode {
   private String methodName;
   private List<String> parameterTypes;
   private List<String> throwExceptions;
+  private Boolean needToMerge;
 
   public MethodDeclNode(
       Integer nodeID,
@@ -25,13 +26,16 @@ public class MethodDeclNode extends SemanticNode {
       List<String> modifiers,
       String returnType,
       String methodName,
-      List<String> parameterTypes) {
+      List<String> parameterTypes,
+      Boolean needToMerge) {
     super(nodeID, nodeType, displayName, qualifiedName, content);
     this.access = access;
     this.modifiers = modifiers;
     this.returnType = returnType;
     this.methodName = methodName;
     this.parameterTypes = parameterTypes;
+    this.needToMerge = needToMerge;
+
     this.throwExceptions = new ArrayList<>();
     this.incomingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
