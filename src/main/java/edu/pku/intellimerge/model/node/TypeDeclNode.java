@@ -35,14 +35,13 @@ public class TypeDeclNode extends SemanticNode {
     this.needToMerge = needToMerge;
 
     this.implementTypes = new ArrayList<>();
-    this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
     this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
     this.incomingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.EXTEND, new ArrayList<>());
 
-    this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.EXTEND, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());

@@ -30,8 +30,11 @@ public class CompilationUnitNode extends SemanticNode {
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
     this.cu = cu;
+    this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
+
+    this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
     this.needToMerge = needToMerge;
   }
 

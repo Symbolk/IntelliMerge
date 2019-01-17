@@ -9,9 +9,9 @@ import java.util.Optional;
  * Nodes are not one-to-one matched
  */
 public class Mapping {
-    private Optional<SemanticNode> oursNode;
-    private Optional<SemanticNode> baseNode;
-    private Optional<SemanticNode> theirsNode;
+    public Optional<SemanticNode> oursNode;
+    public Optional<SemanticNode> baseNode;
+    public Optional<SemanticNode> theirsNode;
 //    private MappingType mappingType;
 
     public Mapping() {}

@@ -226,7 +226,14 @@ public class SemanticGraphBuilder {
         importedClassNames.add(
             importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
       }
-      // 3. class or interface
+      // 3. type declaration: enum, class/interface
+      List<EnumDeclaration> enumDeclarations = cu.findAll(EnumDeclaration.class);
+      for(EnumDeclaration enumDeclaration : enumDeclarations){
+        String displayName = enumDeclaration.getNameAsString();
+        String qualifiedName = packageName + "." + displayName;
+        String qualifiedClassName = qualifiedName;
+      }
+
       List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
           cu.findAll(ClassOrInterfaceDeclaration.class);
       for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration : classOrInterfaceDeclarations) {
@@ -262,10 +269,11 @@ public class SemanticGraphBuilder {
                 nodeType.asString(),
                 displayName, isChangedFile);
         graph.addVertex(typeDeclNode);
+
         graph.addEdge(
             cuNode,
             typeDeclNode,
-            new SemanticEdge(edgeCount++, EdgeType.CONTAIN, cuNode, typeDeclNode));
+            new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, typeDeclNode));
 
         // extend/implement
         if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
@@ -296,7 +304,7 @@ public class SemanticGraphBuilder {
         }
 
         // class-imports-class(es)
-        importEdges.put(typeDeclNode, importedClassNames);
+        importEdges.put(cuNode, importedClassNames);
 
         // 4. field
         List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
@@ -542,6 +550,7 @@ public class SemanticGraphBuilder {
     // now vertices are fixed
 
     // build the recorded edges actually
+    // TODO import can be any type, even inner type
     edgeCount = buildEdges(graph, edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
     edgeCount =
