@@ -7,7 +7,7 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PackageDeclNode extends SemanticNode {
+public class PackageDeclNode extends NonTerminalNode {
   private String packageName;
   private List<String> packageNameHierachy; // qualified_package_name.split(".").remove(";")
 
@@ -16,10 +16,9 @@ public class PackageDeclNode extends SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String content,
       String packageName,
       List<String> packageNameHierachy) {
-    super(nodeID, nodeType, displayName, qualifiedName, content);
+    super(nodeID, nodeType, displayName, qualifiedName);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());

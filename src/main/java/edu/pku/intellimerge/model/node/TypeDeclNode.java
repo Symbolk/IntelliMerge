@@ -7,7 +7,7 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TypeDeclNode extends SemanticNode {
+public class TypeDeclNode extends NonTerminalNode {
   private String access; // can be empty for most inner class
   private List<String> modifiers; // abstract
   private String typeType; // class/enum/interface
@@ -21,13 +21,12 @@ public class TypeDeclNode extends SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String content,
       String access,
       List<String> modifiers,
       String typeType,
       String typeName,
       Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, content);
+    super(nodeID, nodeType, displayName, qualifiedName);
     this.access = access;
     this.modifiers = modifiers;
     this.typeType = typeType;

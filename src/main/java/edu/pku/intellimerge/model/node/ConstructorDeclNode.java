@@ -1,14 +1,14 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 
 /** access == public, no return type */
-public class ConstructorDeclNode extends SemanticNode {
-  private String constructorName;
+public class ConstructorDeclNode extends TerminalNode {
+  private String constructorName; // signature
+  private String body;
   private Boolean needToMerge;
 
   public ConstructorDeclNode(
@@ -16,11 +16,12 @@ public class ConstructorDeclNode extends SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String content,
       String constructorName,
+      String body,
       Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, content);
+    super(nodeID, nodeType, displayName, qualifiedName);
     this.constructorName = constructorName;
+    this.body = body;
     this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
@@ -37,6 +38,14 @@ public class ConstructorDeclNode extends SemanticNode {
 
   @Override
   public String getSignature() {
-    return getQualifiedName();
+    return constructorName;
+  }
+
+  public String getBody() {
+    return body;
+  }
+
+  public void setBody(String body) {
+    this.body = body;
   }
 }

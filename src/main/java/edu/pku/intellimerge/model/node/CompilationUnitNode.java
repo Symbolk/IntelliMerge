@@ -1,31 +1,29 @@
 package edu.pku.intellimerge.model.node;
 
 import com.github.javaparser.ast.CompilationUnit;
-import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 
-public class CompilationUnitNode extends SemanticNode {
+public class CompilationUnitNode extends NonTerminalNode {
+  public Boolean needToMerge;
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
   private CompilationUnit cu; // corresponding AST node, to get package and import contents in merging
-  public Boolean needToMerge;
 
   public CompilationUnitNode(
       Integer nodeID,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String content,
       String fileName,
       String relativePath,
       String absolutePath,
       CompilationUnit cu,
       Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, content);
+    super(nodeID, nodeType, displayName, qualifiedName);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
