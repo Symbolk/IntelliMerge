@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.core;
+package edu.pku.intellimerge.util;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -7,8 +7,6 @@ import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.FilesManager;
-import edu.pku.intellimerge.util.GitService;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;

@@ -14,6 +14,7 @@ public abstract class SemanticNode {
   private NodeType nodeType;
   private String displayName;
   private String qualifiedName;
+  private String originalSignature; // original signature in code, here we generalize the definition of signature
 
   public SemanticNode() {}
 
@@ -22,6 +23,19 @@ public abstract class SemanticNode {
     this.nodeType = nodeType;
     this.displayName = displayName;
     this.qualifiedName = qualifiedName;
+  }
+
+  public SemanticNode(
+      Integer nodeID,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature) {
+    this.nodeID = nodeID;
+    this.nodeType = nodeType;
+    this.displayName = displayName;
+    this.qualifiedName = qualifiedName;
+    this.originalSignature = originalSignature;
   }
 
   public Integer getNodeID() {
@@ -77,27 +91,40 @@ public abstract class SemanticNode {
    * @return
    */
   public int hashCode() {
-    return toString().hashCode();
+    return asString().hashCode();
   }
 
   public boolean equals(Object o) {
     return (o instanceof SemanticNode) && (toString().equals(o.toString()));
   }
 
+  public String getOriginalSignature() {
+    return originalSignature;
+  }
+
   /**
-   * Get the unique fully qualified signature in this project Concretely implemented in subclasses.
+   * Get the unique fully qualified signature in this project
    */
   public abstract String getSignature();
 
+  public Integer hashCodeSignature() {
+    return getSignature().hashCode();
+  }
+
+  /**
+   * Clone the object without children
+   * @return
+   */
   public abstract SemanticNode shallowClone();
 
+  /**
+   * Clone the object with cloning children
+   * @return
+   */
   public abstract SemanticNode deepClone();
 
   public abstract SemanticNode getParent();
 
   public abstract List<SemanticNode> getChildren();
 
-  public Integer hashCodeSignature() {
-    return getSignature().hashCode();
-  }
 }

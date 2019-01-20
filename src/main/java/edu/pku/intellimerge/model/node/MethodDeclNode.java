@@ -1,10 +1,12 @@
 package edu.pku.intellimerge.model.node;
 
+import com.github.javaparser.Range;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class MethodDeclNode extends TerminalNode {
   private String access;
@@ -14,7 +16,6 @@ public class MethodDeclNode extends TerminalNode {
   private List<String> parameterTypes;
   private List<String> parameterNames;
   private List<String> throwExceptions;
-  private String body; // block or ""(abstract method or interface)
   private Boolean needToMerge;
 
   public MethodDeclNode(
@@ -22,6 +23,7 @@ public class MethodDeclNode extends TerminalNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
+      String originalSignature,
       String access,
       List<String> modifiers,
       String returnType,
@@ -30,8 +32,9 @@ public class MethodDeclNode extends TerminalNode {
       List<String> parameterNames,
       List<String> throwExceptions,
       String body,
+      Optional<Range> range,
       Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+    super(nodeID, nodeType, displayName, qualifiedName, originalSignature, body, range);  // block or ""(abstract method or interface)
     this.access = access;
     this.modifiers = modifiers;
     this.returnType = returnType;
@@ -39,7 +42,6 @@ public class MethodDeclNode extends TerminalNode {
     this.parameterTypes = parameterTypes;
     this.parameterNames = parameterNames;
     this.throwExceptions = throwExceptions;
-    this.body = body;
     this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
@@ -85,13 +87,5 @@ public class MethodDeclNode extends TerminalNode {
       throwExceptions.forEach(exception -> builder.append(exception));
     }
     return toString();
-  }
-
-  public String getBody() {
-    return body;
-  }
-
-  public void setBody(String body) {
-    this.body = body;
   }
 }

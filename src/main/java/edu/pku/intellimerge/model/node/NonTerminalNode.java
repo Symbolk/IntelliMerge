@@ -20,15 +20,28 @@ public class NonTerminalNode extends SemanticNode {
     super(nodeID, nodeType, displayName, qualifiedName);
   }
 
+  public NonTerminalNode(
+      Integer nodeID,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature) {
+    super(nodeID, nodeType, displayName, qualifiedName, originalSignature);
+  }
+
   @Override
   public String getSignature() {
-    return null;
+    return getOriginalSignature();
   }
 
   @Override
   public SemanticNode shallowClone() {
     return new NonTerminalNode(
-        this.getNodeID(), this.getNodeType(), this.getDisplayName(), this.getQualifiedName());
+        this.getNodeID(),
+        this.getNodeType(),
+        this.getDisplayName(),
+        this.getQualifiedName(),
+        this.getOriginalSignature());
   }
 
   @Override
@@ -78,5 +91,12 @@ public class NonTerminalNode extends SemanticNode {
       childrenEntries.forEach(entry -> children.addAll(entry.getValue()));
     }
     return this.children;
+  }
+
+  public void addChild(SemanticNode child) {
+    if (this.children == null) {
+      this.children = new ArrayList<>();
+    }
+    this.children.add(child);
   }
 }

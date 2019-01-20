@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.model.node;
 
 import com.github.javaparser.Range;
-import edu.pku.intellimerge.exception.RangeNullException;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
@@ -15,7 +14,6 @@ public class FieldDeclNode extends TerminalNode {
   private String fieldType;
   private String fieldName;
   private String signature;
-  private String body; // initializer or ""
   private Boolean needToMerge;
 
   public FieldDeclNode(
@@ -23,18 +21,19 @@ public class FieldDeclNode extends TerminalNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
+      String originalSignature,
       String access,
       List<String> modifiers,
       String fieldType,
       String fieldName,
       String body,
+      Optional<Range> range,
       Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+    super(nodeID, nodeType, displayName, qualifiedName, originalSignature, body, range); // body initializer or ""
     this.access = access;
     this.modifiers = modifiers;
     this.fieldType = fieldType;
     this.fieldName = fieldName;
-    this.body = body;
     this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
@@ -74,14 +73,4 @@ public class FieldDeclNode extends TerminalNode {
     }
     return this.signature;
   }
-
-  public String getBody() {
-    return body;
-  }
-
-  public void setBody(String body) {
-    this.body = body;
-  }
-
-
 }

@@ -1,14 +1,13 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.core.SourceFileCollector;
+import edu.pku.intellimerge.util.SourceFileCollector;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
-import edu.pku.intellimerge.core.TwowayGraphMatcher;
-import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.util.FilesManager;
 import edu.pku.intellimerge.util.GitService;
 import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jgit.lib.Repository;
@@ -28,7 +27,7 @@ public class APIClient {
   private static final String SRC_PATH = "/src/main/java/"; // java project source folder
   //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String DIFF_PATH = "D:\\github\\diffs\\" + REPO_NAME;
-  private static final String RESULT_PATH = "D:\\github\\merged\\" + REPO_NAME;
+  private static final String RESULT_PATH = "D:\\github\\merges\\" + REPO_NAME;
 
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
@@ -91,7 +90,10 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> baseGraph = builder.buildGraphForOneSide(Side.BASE);
 
     // 3. Match node and merge the 3-way graphs
-    ThreewayGraphMerger merger = new ThreewayGraphMerger(oursGraph, baseGraph, theirsGraph);
+    String resultFolder = RESULT_PATH + File.separator + mergeScenario.mergeCommitID + File.separator
+            + "intelliMerged";
+    FilesManager.prepareResultFolder(resultFolder);
+    ThreewayGraphMerger merger = new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
     merger.threewayMerge();
     // 4. Print the merged graph into code, keep the original format as possible
 

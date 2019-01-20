@@ -4,13 +4,12 @@ import edu.pku.intellimerge.model.SourceFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -69,6 +68,49 @@ public class FilesManager {
     return content;
   }
 
+  /**
+   * Writes the given content in the file of the given file path.
+   * @param filePath
+   * @param content
+   * @return boolean indicating the success of the write operation.
+   */
+  public static boolean writeContent(String filePath, String content){
+    if(!content.isEmpty()){
+      try{
+        File file = new File(filePath);
+        if(!file.exists()){
+          file.getParentFile().mkdirs();
+          file.createNewFile();
+        }
+        BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath));
+        writer.write(content);
+        writer.flush();	writer.close();
+      } catch(NullPointerException ne){
+        ne.printStackTrace();
+        //empty, necessary for integration with git version control system
+      } catch(Exception e){
+        e.printStackTrace();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Append content to a file
+   * @param filePath
+   * @param content
+   */
+  private static void appendContent(String filePath, String content) {
+    Path path = Paths.get(filePath);
+    byte[] contentBytes = (content + System.lineSeparator()).getBytes();
+    try {
+      Files.write(path, contentBytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public static ArrayList<SourceFile> scanJavaSourceFiles(
       String path, ArrayList<SourceFile> javaSourceFiles, String repoPath) throws Exception {
     File file = new File(path);
@@ -92,10 +134,62 @@ public class FilesManager {
     return javaSourceFiles;
   }
 
+  /**
+   * Get qualified name of a java file, by reading its package declaration
+   * @param file
+   * @return
+   * @throws Exception
+   */
   private static String getQualifiedName(File file) throws Exception {
     BufferedReader reader = new BufferedReader(new FileReader(file));
     String firstLine = reader.readLine();
     reader.close();
-    return firstLine.replace("package ", "").replace(";", ".") + file.getName().replace(".java", "");
+    return firstLine.replace("package ", "").replace(";", ".")
+        + file.getName().replace(".java", "");
+  }
+
+  /**
+   * Prepare the result folder
+   *
+   * @param folderPath absolute path
+   * @return
+   */
+  public static void prepareResultFolder(String folderPath) {
+    // if exist, remove all files under it
+    File folderFile = new File(folderPath);
+    if (folderFile.exists()) {
+      emptyFolder(folderPath);
+    } else {
+      // if not exist, create
+      folderFile.mkdirs();
+    }
+  }
+
+  /**
+   * Delete all files and subfolders to empty the folder
+   *
+   * @param path absolute path
+   * @return
+   */
+  public static boolean emptyFolder(String path) {
+    File file = new File(path);
+    if (!file.exists()) {
+      System.err.println("The dir are not exists!");
+      return false;
+    }
+
+    String[] content = file.list();
+    for (String name : content) {
+      File temp = new File(path, name);
+      if (temp.isDirectory()) {
+        emptyFolder(temp.getAbsolutePath());
+        temp.delete();
+      } else {
+        if (!temp.delete()) {
+          System.err.println("Failed to delete " + name);
+        }
+      }
+    }
+    return true;
   }
 }

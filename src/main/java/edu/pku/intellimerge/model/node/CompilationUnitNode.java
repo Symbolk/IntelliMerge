@@ -5,13 +5,16 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 public class CompilationUnitNode extends NonTerminalNode {
+  private String packageStatement;
+  private Set<String> importStatements;
   public Boolean needToMerge;
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
-  private CompilationUnit cu; // corresponding AST node, to get package and import contents in merging
+//  private CompilationUnit cu; // corresponding AST node, to get package and import contents in merging
 
   public CompilationUnitNode(
       Integer nodeID,
@@ -21,13 +24,15 @@ public class CompilationUnitNode extends NonTerminalNode {
       String fileName,
       String relativePath,
       String absolutePath,
-      CompilationUnit cu,
+      String packageStatement,
+      Set<String> importStatements,
       Boolean needToMerge) {
     super(nodeID, nodeType, displayName, qualifiedName);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
-    this.cu = cu;
+    this.packageStatement = packageStatement;
+    this.importStatements = importStatements;
     this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
 
@@ -53,5 +58,29 @@ public class CompilationUnitNode extends NonTerminalNode {
   @Override
   public String getSignature() {
     return getQualifiedName();
+  }
+
+  public String getPackageStatement() {
+    return packageStatement;
+  }
+
+  public Set<String> getImportStatements() {
+    return importStatements;
+  }
+
+  public void setPackageStatement(String packageStatement) {
+    this.packageStatement = packageStatement;
+  }
+
+  public void setImportStatements(Set<String> importStatements) {
+    this.importStatements = importStatements;
+  }
+
+  public String getRelativePath() {
+    return relativePath;
+  }
+
+  public String getAbsolutePath() {
+    return absolutePath;
   }
 }

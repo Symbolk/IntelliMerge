@@ -4,10 +4,9 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedEnumConstantDeclaration;
@@ -170,12 +169,12 @@ public class SemanticGraphBuilder {
               nodeCount++,
               NodeType.CU,
               fileName,
-              fileName,
-              cu.toString(),
+              absolutePath,
               fileName,
               relativePath,
               absolutePath,
-              cu,
+              cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
+              cu.getImports().stream().map(ImportDeclaration::toString).collect(Collectors.toSet()),
               isChangedFile);
 
       graph.addVertex(cuNode);
@@ -203,7 +202,6 @@ public class SemanticGraphBuilder {
                   nodeCount++,
                   NodeType.PACKAGE,
                   finalPackageName,
-                  finalPackageName,
                   packageDeclaration.toString(),
                   finalPackageName,
                   Arrays.asList(finalPackageName.split(".")));
@@ -228,7 +226,7 @@ public class SemanticGraphBuilder {
       }
       // 3. type declaration: enum, class/interface
       List<EnumDeclaration> enumDeclarations = cu.findAll(EnumDeclaration.class);
-      for(EnumDeclaration enumDeclaration : enumDeclarations){
+      for (EnumDeclaration enumDeclaration : enumDeclarations) {
         String displayName = enumDeclaration.getNameAsString();
         String qualifiedName = packageName + "." + displayName;
         String qualifiedClassName = qualifiedName;
@@ -256,6 +254,7 @@ public class SemanticGraphBuilder {
                 .collect(Collectors.toList());
         String access =
             Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
+        String originalSignature = getTypeOriginalSignature(classOrInterfaceDeclaration);
 
         TypeDeclNode typeDeclNode =
             new TypeDeclNode(
@@ -263,11 +262,12 @@ public class SemanticGraphBuilder {
                 nodeType,
                 displayName,
                 qualifiedName,
-                classOrInterfaceDeclaration.toString(),
+                originalSignature,
                 access,
                 modifiers,
                 nodeType.asString(),
-                displayName, isChangedFile);
+                displayName,
+                isChangedFile);
         graph.addVertex(typeDeclNode);
 
         graph.addEdge(
@@ -321,6 +321,7 @@ public class SemanticGraphBuilder {
           for (VariableDeclarator field : fieldDeclaration.getVariables()) {
             displayName = field.toString();
             qualifiedName = qualifiedClassName + "." + displayName;
+            originalSignature = getFieldOriginalSignature(fieldDeclaration);
 
             FieldDeclNode fieldDeclarationNode =
                 new FieldDeclNode(
@@ -328,14 +329,14 @@ public class SemanticGraphBuilder {
                     NodeType.FIELD,
                     displayName,
                     qualifiedName,
-                    field.toString(),
+                    originalSignature,
                     access,
                     modifiers,
                     field.getTypeAsString(),
-                    field.getNameAsString(), isChangedFile);
-            if (field.getRange().isPresent()) {
-              fieldDeclarationNode.setRange(field.getRange().get());
-            }
+                    field.getNameAsString(),
+                    field.getInitializer().map(Expression::toString).orElse(""),
+                    field.getRange(),
+                    isChangedFile);
             graph.addVertex(fieldDeclarationNode);
             // add edge between field and class
             graph.addEdge(
@@ -379,11 +380,11 @@ public class SemanticGraphBuilder {
                   NodeType.CONSTRUCTOR,
                   displayName,
                   qualifiedName,
+                  constructorDeclaration.getDeclarationAsString(),
+                  displayName,
                   constructorDeclaration.toString(),
-                  displayName, isChangedFile);
-          if (constructorDeclaration.getRange().isPresent()) {
-            constructorDeclNode.setRange(constructorDeclaration.getRange().get());
-          }
+                  constructorDeclaration.getRange(),
+                  isChangedFile);
           graph.addVertex(constructorDeclNode);
           graph.addEdge(
               typeDeclNode,
@@ -415,31 +416,42 @@ public class SemanticGraphBuilder {
                   .map(Parameter::getType)
                   .map(Type::asString)
                   .collect(Collectors.toList());
+          List<String> parameterNames =
+              methodDeclaration
+                  .getParameters()
+                  .stream()
+                  .map(Parameter::getNameAsString)
+                  .collect(Collectors.toList());
           access = Modifier.getAccessSpecifier(methodDeclaration.getModifiers()).asString();
+          List<String> throwsExceptions =
+              methodDeclaration
+                  .getThrownExceptions()
+                  .stream()
+                  .map(ReferenceType::toString)
+                  .collect(Collectors.toList());
           MethodDeclNode methodDeclarationNode =
               new MethodDeclNode(
                   nodeCount++,
                   NodeType.METHOD,
                   displayName,
                   qualifiedName,
-                  methodDeclaration.toString(),
+                  methodDeclaration.getDeclarationAsString(),
                   access,
                   modifiers,
                   methodDeclaration.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
-                  parameterTypes, isChangedFile);
-          if (methodDeclaration.getRange().isPresent()) {
-            methodDeclarationNode.setRange(methodDeclaration.getRange().get());
-          }
+                  parameterTypes,
+                  parameterNames,
+                  throwsExceptions,
+                  methodDeclaration.getBody().map(BlockStmt::toString).orElse(""),
+                  methodDeclaration.getRange(),
+                  isChangedFile);
           graph.addVertex(methodDeclarationNode);
           graph.addEdge(
               typeDeclNode,
               methodDeclarationNode,
               new SemanticEdge(
                   edgeCount++, EdgeType.DEFINE_METHOD, typeDeclNode, methodDeclarationNode));
-
-          // 6.0 throw exceptions
-          if (methodDeclaration.getThrownExceptions().size() > 0) {}
 
           // 6.1 new instance
           List<ObjectCreationExpr> objectCreationExprs =
@@ -584,6 +596,16 @@ public class SemanticGraphBuilder {
     }
 
     return graph;
+  }
+
+  private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
+    String source = fieldDeclaration.toString();
+    return source.substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";"))).trim();
+  }
+
+  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
+    String source = typeDeclaration.toString();
+    return source.substring(0, source.indexOf("{")).trim();
   }
 
   /**

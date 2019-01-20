@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
@@ -25,13 +24,16 @@ public class PackageDeclNode extends NonTerminalNode {
     this.outgoingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
   }
 
-    @Override
-    public String toString() {
-        return "PackageDeclNode{" +
-                "packageName='" + packageName + '\'' +
-                ", packageNameHierachy=" + packageNameHierachy +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "PackageDeclNode{"
+        + "packageName='"
+        + packageName
+        + '\''
+        + ", packageNameHierachy="
+        + packageNameHierachy
+        + '}';
+  }
 
   @Override
   public String getSignature() {

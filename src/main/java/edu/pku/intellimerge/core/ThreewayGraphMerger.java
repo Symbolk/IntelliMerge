@@ -1,11 +1,13 @@
 package edu.pku.intellimerge.core;
 
+import com.github.javaparser.ast.stmt.BlockStmt;
+import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.Mapping;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
-import edu.pku.intellimerge.model.node.FieldDeclNode;
-import edu.pku.intellimerge.model.node.MethodDeclNode;
+import edu.pku.intellimerge.model.node.NonTerminalNode;
+import edu.pku.intellimerge.model.node.TerminalNode;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Constants;
@@ -15,13 +17,12 @@ import org.eclipse.jgit.merge.MergeResult;
 import org.jgrapht.Graph;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
+  private String resultFolder; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
@@ -30,9 +31,11 @@ public class ThreewayGraphMerger {
   private List<Mapping> mappings;
 
   public ThreewayGraphMerger(
+          String resultFolder,
       Graph<SemanticNode, SemanticEdge> oursGraph,
       Graph<SemanticNode, SemanticEdge> baseGraph,
       Graph<SemanticNode, SemanticEdge> theirsGraph) {
+    this.resultFolder = resultFolder;
     this.oursGraph = oursGraph;
     this.baseGraph = baseGraph;
     this.theirsGraph = theirsGraph;
@@ -73,16 +76,44 @@ public class ThreewayGraphMerger {
     // bottom up merge children of the needToMerge CU
     for (Mapping mapping : mappings) {
       if (mapping.baseNode.isPresent()) {
-        mergeSingleNode(mapping.baseNode.get());
+        // merge the CU by merging its content
+        SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
+        // merge the package declaration and imports
+        CompilationUnitNode  mergedPackageAndImports= mergePackageAndImports(mapping.baseNode.get());
+        if (mergedCU != null) {
+          // save the merged result to file
+          Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultFolder);
+        }
       }
     }
-    // save the content to a clone CU node
-    mappings.size();
-    // once merging done, save the CU content to result file
+  }
+
+  private CompilationUnitNode mergePackageAndImports(SemanticNode node) {
+    if (node instanceof CompilationUnitNode) {
+      CompilationUnitNode mergedCU = (CompilationUnitNode) node;
+      SemanticNode oursNode = b2oMatchings.getOrDefault(node, null);
+      SemanticNode theirsNode = b2oMatchings.getOrDefault(node, null);
+      if (oursNode != null && theirsNode != null) {
+        CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
+        CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
+        mergedCU.setPackageStatement(
+            mergeTextually(
+                oursCU.getPackageStatement(),
+                mergedCU.getPackageStatement(),
+                theirsCU.getPackageStatement()));
+
+        Set<String> union = new HashSet<>();
+        union.addAll(oursCU.getImportStatements());
+        union.addAll(theirsCU.getImportStatements());
+        mergedCU.setImportStatements(union);
+        return mergedCU;
+      }
+    }
+    return null;
   }
 
   /** Merge 3 graphs simply with jgrapht functions */
-  private void mergeSimply() {
+  private void mergeByAdding() {
     Graph<SemanticNode, SemanticEdge> mergedGraph =
         baseGraph; // inference copy, in fact mergedGraph points to baseGraph
     //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
@@ -90,33 +121,44 @@ public class ThreewayGraphMerger {
     //    SemanticGraphExporter.printAsDot(mergedGraph);
   }
 
-  private void mergeSingleNode(SemanticNode node) {
+  private SemanticNode mergeSingleNode(SemanticNode node) {
     // if node is terminal: merge and return result
-    if (node instanceof FieldDeclNode || node instanceof MethodDeclNode) {
+    SemanticNode mergedNode = node.shallowClone();
+    if (node instanceof TerminalNode) {
+      TerminalNode mergedTerminal = (TerminalNode) mergedNode;
       SemanticNode oursNode = b2oMatchings.getOrDefault(node, null);
       SemanticNode theirsNode = b2tMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         // exist in both side
+        TerminalNode oursTerminal = (TerminalNode) oursNode;
+        TerminalNode baseTerminal = (TerminalNode) node;
+        TerminalNode theirsTerminal = (TerminalNode) theirsNode;
         String mergeResult =
-            mergeNodeContent(oursNode.getContent(), node.getContent(), theirsNode.getContent());
-        node.setContent(mergeResult);
+            mergeTextually(
+                oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
+        mergedTerminal.setBody(mergeResult);
       } else {
-        // deleted in one side
-        node.setContent("");
+        // deleted in one side --> delete
+        mergedTerminal.setBody("");
       }
+      return mergedTerminal;
     } else {
       // nonterminal: iteratively merge its children
       List<SemanticNode> children = node.getChildren();
-      children.forEach(this::mergeSingleNode);
+      NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
+      for (SemanticNode child : children) {
+        mergedNonTerminal.addChild(mergeSingleNode(child));
+      }
+      return mergedNonTerminal;
     }
   }
 
-  private String mergeNodeContent(String leftContent, String baseContent, String rightContent) {
+  private String mergeTextually(String leftContent, String baseContent, String rightContent) {
     String textualMergeResult = null;
     try {
       RawTextComparator textComparator = RawTextComparator.WS_IGNORE_ALL; //  ignoreWhiteSpaces
       @SuppressWarnings("rawtypes")
-      MergeResult mergeCommand =
+      MergeResult mergeResult =
           new MergeAlgorithm()
               .merge(
                   textComparator,
@@ -125,8 +167,8 @@ public class ThreewayGraphMerger {
                   new RawText(Constants.encode(rightContent)));
       ByteArrayOutputStream output = new ByteArrayOutputStream();
       (new MergeFormatter())
-          .formatMerge(output, mergeCommand, "BASE", "MINE", "YOURS", Constants.CHARACTER_ENCODING);
-      textualMergeResult = new String(output.toByteArray(), Constants.CHARACTER_ENCODING);
+          .formatMerge(output, mergeResult, "BASE", "MINE", "YOURS", StandardCharsets.UTF_8);
+      textualMergeResult = new String(output.toByteArray(), StandardCharsets.UTF_8);
     } catch (Exception e) {
       e.printStackTrace();
     }
