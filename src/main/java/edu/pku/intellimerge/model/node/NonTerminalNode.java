@@ -16,17 +16,22 @@ public class NonTerminalNode extends SemanticNode {
   private List<SemanticNode> children;
 
   public NonTerminalNode(
-      Integer nodeID, NodeType nodeType, String displayName, String qualifiedName) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
   }
 
   public NonTerminalNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
       String originalSignature) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
   }
 
   @Override
@@ -38,6 +43,7 @@ public class NonTerminalNode extends SemanticNode {
   public SemanticNode shallowClone() {
     return new NonTerminalNode(
         this.getNodeID(),
+        this.needToMerge,
         this.getNodeType(),
         this.getDisplayName(),
         this.getQualifiedName(),

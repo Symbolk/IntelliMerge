@@ -16,10 +16,10 @@ public class MethodDeclNode extends TerminalNode {
   private List<String> parameterTypes;
   private List<String> parameterNames;
   private List<String> throwExceptions;
-  private Boolean needToMerge;
 
   public MethodDeclNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
@@ -32,9 +32,8 @@ public class MethodDeclNode extends TerminalNode {
       List<String> parameterNames,
       List<String> throwExceptions,
       String body,
-      Optional<Range> range,
-      Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature, body, range);  // block or ""(abstract method or interface)
+      Optional<Range> range) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range);  // block or ""(abstract method or interface)
     this.access = access;
     this.modifiers = modifiers;
     this.returnType = returnType;
@@ -42,7 +41,6 @@ public class MethodDeclNode extends TerminalNode {
     this.parameterTypes = parameterTypes;
     this.parameterNames = parameterNames;
     this.throwExceptions = throwExceptions;
-    this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());

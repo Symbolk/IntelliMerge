@@ -10,7 +10,6 @@ import java.util.Set;
 public class CompilationUnitNode extends NonTerminalNode {
   private String packageStatement;
   private Set<String> importStatements;
-  public Boolean needToMerge;
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
@@ -18,6 +17,7 @@ public class CompilationUnitNode extends NonTerminalNode {
 
   public CompilationUnitNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
@@ -25,9 +25,8 @@ public class CompilationUnitNode extends NonTerminalNode {
       String relativePath,
       String absolutePath,
       String packageStatement,
-      Set<String> importStatements,
-      Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+      Set<String> importStatements) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
@@ -38,7 +37,6 @@ public class CompilationUnitNode extends NonTerminalNode {
 
     this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
-    this.needToMerge = needToMerge;
   }
 
   @Override

@@ -14,10 +14,10 @@ public class TypeDeclNode extends NonTerminalNode {
   private String typeName;
   private String extendType; // java only allows single extending
   private List<String> implementTypes;
-  private Boolean needToMerge;
 
   public TypeDeclNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
@@ -25,9 +25,8 @@ public class TypeDeclNode extends NonTerminalNode {
       String access,
       List<String> modifiers,
       String typeType,
-      String typeName,
-      Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature);
+      String typeName) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
     this.access = access;
     this.modifiers = modifiers;
     this.typeType = typeType;

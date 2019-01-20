@@ -50,7 +50,7 @@ public class ChangeSignatureMatcher {
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
 
       methodDeclNodes1.remove(sourceNode);
-      methodDeclNodes1.remove(targetNode);
+      methodDeclNodes2.remove(targetNode);
       matchings.put(sourceNode, targetNode);
     }
   }

@@ -18,25 +18,27 @@ public class TerminalNode extends SemanticNode {
 
   public TerminalNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
       String body,
       Optional<Range> range) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
     this.body = body;
     this.range = range;
   }
 
   public TerminalNode(
-          Integer nodeID,
-          NodeType nodeType,
-          String displayName,
-          String qualifiedName,
-          String originalSignature,
-          String body,
-          Optional<Range> range) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature);
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature,
+      String body,
+      Optional<Range> range) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
     this.body = body;
     this.range = range;
   }
@@ -50,6 +52,7 @@ public class TerminalNode extends SemanticNode {
   public SemanticNode shallowClone() {
     return new TerminalNode(
         this.getNodeID(),
+        this.needToMerge,
         this.getNodeType(),
         this.getDisplayName(),
         this.getQualifiedName(),
@@ -60,7 +63,7 @@ public class TerminalNode extends SemanticNode {
 
   @Override
   public SemanticNode deepClone() {
-    return null;
+    return shallowClone();
   }
 
   /**

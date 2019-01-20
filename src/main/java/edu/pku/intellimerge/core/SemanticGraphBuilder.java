@@ -167,6 +167,7 @@ public class SemanticGraphBuilder {
       CompilationUnitNode cuNode =
           new CompilationUnitNode(
               nodeCount++,
+              isChangedFile,
               NodeType.CU,
               fileName,
               absolutePath,
@@ -174,8 +175,10 @@ public class SemanticGraphBuilder {
               relativePath,
               absolutePath,
               cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
-              cu.getImports().stream().map(ImportDeclaration::toString).collect(Collectors.toSet()),
-              isChangedFile);
+              cu.getImports()
+                  .stream()
+                  .map(ImportDeclaration::toString)
+                  .collect(Collectors.toSet()));
 
       graph.addVertex(cuNode);
       // 1. package
@@ -200,6 +203,7 @@ public class SemanticGraphBuilder {
           PackageDeclNode packageDeclNode =
               new PackageDeclNode(
                   nodeCount++,
+                  isChangedFile,
                   NodeType.PACKAGE,
                   finalPackageName,
                   packageDeclaration.toString(),
@@ -259,6 +263,7 @@ public class SemanticGraphBuilder {
         TypeDeclNode typeDeclNode =
             new TypeDeclNode(
                 nodeCount++,
+                isChangedFile,
                 nodeType,
                 displayName,
                 qualifiedName,
@@ -266,8 +271,7 @@ public class SemanticGraphBuilder {
                 access,
                 modifiers,
                 nodeType.asString(),
-                displayName,
-                isChangedFile);
+                displayName);
         graph.addVertex(typeDeclNode);
 
         graph.addEdge(
@@ -326,6 +330,7 @@ public class SemanticGraphBuilder {
             FieldDeclNode fieldDeclarationNode =
                 new FieldDeclNode(
                     nodeCount++,
+                    isChangedFile,
                     NodeType.FIELD,
                     displayName,
                     qualifiedName,
@@ -335,8 +340,7 @@ public class SemanticGraphBuilder {
                     field.getTypeAsString(),
                     field.getNameAsString(),
                     field.getInitializer().map(Expression::toString).orElse(""),
-                    field.getRange(),
-                    isChangedFile);
+                    field.getRange());
             graph.addVertex(fieldDeclarationNode);
             // add edge between field and class
             graph.addEdge(
@@ -377,14 +381,14 @@ public class SemanticGraphBuilder {
           ConstructorDeclNode constructorDeclNode =
               new ConstructorDeclNode(
                   nodeCount++,
+                  isChangedFile,
                   NodeType.CONSTRUCTOR,
                   displayName,
                   qualifiedName,
                   constructorDeclaration.getDeclarationAsString(),
                   displayName,
                   constructorDeclaration.toString(),
-                  constructorDeclaration.getRange(),
-                  isChangedFile);
+                  constructorDeclaration.getRange());
           graph.addVertex(constructorDeclNode);
           graph.addEdge(
               typeDeclNode,
@@ -432,6 +436,7 @@ public class SemanticGraphBuilder {
           MethodDeclNode methodDeclarationNode =
               new MethodDeclNode(
                   nodeCount++,
+                  isChangedFile,
                   NodeType.METHOD,
                   displayName,
                   qualifiedName,
@@ -444,8 +449,7 @@ public class SemanticGraphBuilder {
                   parameterNames,
                   throwsExceptions,
                   methodDeclaration.getBody().map(BlockStmt::toString).orElse(""),
-                  methodDeclaration.getRange(),
-                  isChangedFile);
+                  methodDeclaration.getRange());
           graph.addVertex(methodDeclarationNode);
           graph.addEdge(
               typeDeclNode,
@@ -600,7 +604,9 @@ public class SemanticGraphBuilder {
 
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
     String source = fieldDeclaration.toString();
-    return source.substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";"))).trim();
+    return source
+        .substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";")))
+        .trim();
   }
 
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {

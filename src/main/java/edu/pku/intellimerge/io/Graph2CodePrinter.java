@@ -20,7 +20,7 @@ public class Graph2CodePrinter {
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getPackageStatement());
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
-    // merged content
+    // merged content, field-constructor-method
     builder.append(printNode(node));
     FilesManager.writeContent(resultFilePath, builder.toString());
     logger.info("Merge result: {}", resultFilePath);

@@ -14,10 +14,10 @@ public class FieldDeclNode extends TerminalNode {
   private String fieldType;
   private String fieldName;
   private String signature;
-  private Boolean needToMerge;
 
   public FieldDeclNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
@@ -27,14 +27,12 @@ public class FieldDeclNode extends TerminalNode {
       String fieldType,
       String fieldName,
       String body,
-      Optional<Range> range,
-      Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature, body, range); // body initializer or ""
+      Optional<Range> range) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range); // body initializer or ""
     this.access = access;
     this.modifiers = modifiers;
     this.fieldType = fieldType;
     this.fieldName = fieldName;
-    this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
     this.incomingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());

@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.model;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
@@ -15,11 +16,13 @@ public abstract class SemanticNode {
   private String displayName;
   private String qualifiedName;
   private String originalSignature; // original signature in code, here we generalize the definition of signature
+  public Boolean needToMerge;
 
   public SemanticNode() {}
 
-  public SemanticNode(Integer nodeID, NodeType nodeType, String displayName, String qualifiedName) {
+  public SemanticNode(Integer nodeID, Boolean needToMerge, NodeType nodeType, String displayName, String qualifiedName) {
     this.nodeID = nodeID;
+    this.needToMerge = needToMerge;
     this.nodeType = nodeType;
     this.displayName = displayName;
     this.qualifiedName = qualifiedName;
@@ -27,11 +30,13 @@ public abstract class SemanticNode {
 
   public SemanticNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
       String originalSignature) {
     this.nodeID = nodeID;
+    this.needToMerge = needToMerge;
     this.nodeType = nodeType;
     this.displayName = displayName;
     this.qualifiedName = qualifiedName;
@@ -127,4 +132,7 @@ public abstract class SemanticNode {
 
   public abstract List<SemanticNode> getChildren();
 
+  public Boolean getNeedToMerge() {
+    return needToMerge;
+  }
 }

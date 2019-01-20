@@ -12,12 +12,13 @@ public class PackageDeclNode extends NonTerminalNode {
 
   public PackageDeclNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
       String packageName,
       List<String> packageNameHierachy) {
-    super(nodeID, nodeType, displayName, qualifiedName);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());

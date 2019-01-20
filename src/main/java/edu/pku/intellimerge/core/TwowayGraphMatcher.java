@@ -21,7 +21,6 @@ public class TwowayGraphMatcher {
   private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
   private Graph<SemanticNode, SemanticEdge> graph2; // new graph(ours/theirs)
 
-
   public TwowayGraphMatcher(
       Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
     this.graph1 = graph1;
@@ -44,6 +43,7 @@ public class TwowayGraphMatcher {
     map1 =
         baseNodes
             .stream()
+            .filter(SemanticNode::getNeedToMerge)
             .collect(
                 Collectors.toMap(
                     SemanticNode::hashCodeSignature,
@@ -53,6 +53,7 @@ public class TwowayGraphMatcher {
     map2 =
         otherNodes
             .stream()
+            .filter(SemanticNode::getNeedToMerge)
             .collect(
                 Collectors.toMap(
                     SemanticNode::hashCodeSignature,
@@ -81,7 +82,8 @@ public class TwowayGraphMatcher {
     splitUnmatchedNodesByType(unmatchedNodes1, fieldDeclNodes1, methodDeclNodes1);
     splitUnmatchedNodesByType(unmatchedNodes2, fieldDeclNodes2, methodDeclNodes2);
 
-    ChangeSignatureMatcher.matchChangeMethodSignature(matchings, methodDeclNodes1, methodDeclNodes2);
+    ChangeSignatureMatcher.matchChangeMethodSignature(
+        matchings, methodDeclNodes1, methodDeclNodes2);
   }
 
   private void splitUnmatchedNodesByType(

@@ -14,15 +14,15 @@ public class ConstructorDeclNode extends TerminalNode {
 
   public ConstructorDeclNode(
       Integer nodeID,
+      Boolean needToMerge,
       NodeType nodeType,
       String displayName,
       String qualifiedName,
       String originalSignature,
       String constructorName,
       String body,
-      Optional<Range> range,
-      Boolean needToMerge) {
-    super(nodeID, nodeType, displayName, qualifiedName, originalSignature, body, range);
+      Optional<Range> range) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range);
     this.constructorName = constructorName;
     this.needToMerge = needToMerge;
 
