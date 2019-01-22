@@ -1,6 +1,6 @@
 package edu.pku.intellimerge.core;
 
-import edu.pku.intellimerge.core.matcher.ChangeSignatureMatcher;
+import edu.pku.intellimerge.core.matcher.MethodDeclMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
@@ -82,8 +82,9 @@ public class TwowayGraphMatcher {
     splitUnmatchedNodesByType(unmatchedNodes1, fieldDeclNodes1, methodDeclNodes1);
     splitUnmatchedNodesByType(unmatchedNodes2, fieldDeclNodes2, methodDeclNodes2);
 
-    ChangeSignatureMatcher.matchChangeMethodSignature(
-        matchings, methodDeclNodes1, methodDeclNodes2);
+    MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
+    methodDeclMatcher.matchChangeMethodSignature(matchings, methodDeclNodes1, methodDeclNodes2);
+    methodDeclMatcher.matchExtractMethod(matchings, methodDeclNodes1, methodDeclNodes2);
   }
 
   private void splitUnmatchedNodesByType(

@@ -38,7 +38,7 @@ public class SimilarityAlg {
     return cosine.similarity(s1, s2);
   }
 
-  private static double methodContext(
+  public static double methodContext(
       Map<EdgeType, List<SemanticNode>> edges1, Map<EdgeType, List<SemanticNode>> edges2) {
     double similarity = 0.0;
     for (Map.Entry<EdgeType, List<SemanticNode>> entry : edges1.entrySet()) {

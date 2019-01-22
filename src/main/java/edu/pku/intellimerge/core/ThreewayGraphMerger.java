@@ -47,8 +47,8 @@ public class ThreewayGraphMerger {
     // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-    b2oMatcher.topDownMatch();
-    b2oMatcher.bottomUpMatch();
+//    b2oMatcher.topDownMatch();
+//    b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
     b2oMatchings = b2oMatcher.matchings;
