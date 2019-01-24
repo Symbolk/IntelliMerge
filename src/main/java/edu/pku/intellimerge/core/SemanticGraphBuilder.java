@@ -339,7 +339,7 @@ public class SemanticGraphBuilder {
                     modifiers,
                     field.getTypeAsString(),
                     field.getNameAsString(),
-                    field.getInitializer().map(Expression::toString).orElse(""),
+                    field.getInitializer().map(Expression::toString).orElse(";"),
                     field.getRange());
             graph.addVertex(fieldDeclarationNode);
             // add edge between field and class

@@ -5,6 +5,7 @@ import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.Mapping;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
@@ -47,8 +48,8 @@ public class ThreewayGraphMerger {
     // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-//    b2oMatcher.topDownMatch();
-//    b2oMatcher.bottomUpMatch();
+    b2oMatcher.topDownMatch();
+    b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
     b2oMatchings = b2oMatcher.matchings;
@@ -167,7 +168,7 @@ public class ThreewayGraphMerger {
                   new RawText(Constants.encode(rightContent)));
       ByteArrayOutputStream output = new ByteArrayOutputStream();
       (new MergeFormatter())
-          .formatMerge(output, mergeResult, "BASE", "MINE", "YOURS", StandardCharsets.UTF_8);
+          .formatMerge(output, mergeResult, Side.BASE.asString(), Side.OURS.asString(), Side.THEIRS.asString(), StandardCharsets.UTF_8);
       textualMergeResult = new String(output.toByteArray(), StandardCharsets.UTF_8);
     } catch (Exception e) {
       e.printStackTrace();
