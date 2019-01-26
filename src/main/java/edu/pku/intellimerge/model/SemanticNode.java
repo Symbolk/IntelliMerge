@@ -117,13 +117,13 @@ public abstract class SemanticNode {
   }
 
   /**
-   * Clone the object without children
+   * Clone the object without children and edges
    * @return
    */
   public abstract SemanticNode shallowClone();
 
   /**
-   * Clone the object with cloning children
+   * Clone the object with cloning children and edges
    * @return
    */
   public abstract SemanticNode deepClone();

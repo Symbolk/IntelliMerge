@@ -641,10 +641,17 @@ public class SemanticGraphBuilder {
         SemanticNode targetNode = getTargetNode(vertexSet, targeNodeName, targetNodeType);
         if (targetNode != null) {
           // TODO check if the edge already exists
-          semanticGraph.addEdge(
-              sourceNode,
-              targetNode,
-              new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
+          // if the edge was added to the graph, returns true; if the edges already exists, returns
+          // false
+          boolean isSuccessful =
+              semanticGraph.addEdge(
+                  sourceNode,
+                  targetNode,
+                  new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
+          if (!isSuccessful) {
+            SemanticEdge edge = semanticGraph.getEdge(sourceNode, targetNode);
+            edge.setWeight(edge.getWeight() + 1);
+          }
         }
       }
     }
@@ -669,11 +676,7 @@ public class SemanticGraphBuilder {
                     node.getNodeType().equals(targetNodeType)
                         && node.getQualifiedName().equals(targetQualifiedName))
             .findAny();
-    if (targetNodeOpt.isPresent()) {
-      return targetNodeOpt.get();
-    } else {
-      return null;
-    }
+    return targetNodeOpt.orElse(null);
   }
 
   /**
