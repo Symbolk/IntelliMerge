@@ -1,10 +1,17 @@
 package edu.pku.intellimerge.util;
 
+import com.github.gumtreediff.gen.jdt.JdtTreeGenerator;
+import com.github.gumtreediff.matchers.Matcher;
+import com.github.gumtreediff.matchers.Matchers;
+import com.github.gumtreediff.tree.ITree;
+import com.github.gumtreediff.tree.TreeContext;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
 import info.debatty.java.stringsimilarity.Cosine;
+import org.eclipse.jdt.core.dom.ASTParser;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +33,18 @@ public class SimilarityAlg {
     // naive average in all dimensions of context(incoming and outgoing edges)
     similarity += methodContext(n1.incomingEdges, n2.incomingEdges);
     similarity += methodContext(n1.outgoingEdges, n2.outgoingEdges);
-    similarity /= (n1.incomingEdges.size() + n1.outgoingEdges.size());
     // navie string similarity of method signature
     similarity += methodSignature(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity /= 2;
+    similarity /= 3;
     return similarity;
   }
 
+  /**
+   * Signature textual similarity, but method name and parameter types should be the most important
+   * @param s1
+   * @param s2
+   * @return
+   */
   private static double methodSignature(String s1, String s2) {
     Cosine cosine = new Cosine();
     return cosine.similarity(s1, s2);
@@ -41,6 +53,7 @@ public class SimilarityAlg {
   public static double methodContext(
       Map<EdgeType, List<SemanticNode>> edges1, Map<EdgeType, List<SemanticNode>> edges2) {
     double similarity = 0.0;
+    // for every type of edge, calculate the similarity
     for (Map.Entry<EdgeType, List<SemanticNode>> entry : edges1.entrySet()) {
       Set<String> targetQNames1 =
           entry.getValue().stream().map(SemanticNode::getQualifiedName).collect(Collectors.toSet());
@@ -59,6 +72,40 @@ public class SimilarityAlg {
     return similarity;
   }
 
+  /**
+   * Compute method body subtree similarity based on gumtree
+   * @param node1
+   * @param node2
+   * @return
+   */
+  public static double methodBody(MethodDeclNode node1, MethodDeclNode node2){
+    double similarity = 0D;
+    try {
+      JdtTreeGenerator generator = new JdtTreeGenerator();
+      generator.setKind(ASTParser.K_STATEMENTS);
+      TreeContext baseContext = generator.generateFromString(node1.getBody());
+      TreeContext othersContext = generator.generateFromString(node2.getBody());
+//            TreeContext src = Generators.getInstance().getTree(fSrc.getAbsolutePath());
+//            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
+      ITree baseRoot = baseContext.getRoot();
+      ITree othersRoot = othersContext.getRoot();
+      baseRoot.getDescendants();
+      Matcher matcher = Matchers.getInstance().getMatcher(baseRoot, othersRoot);
+      baseContext.importTypeLabels(othersContext);
+      matcher.match();
+      similarity = matcher.jaccardSimilarity(baseRoot, othersRoot);
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return similarity;
+  }
+  /**
+   * Jaccard = Intersection/Union [0,1]
+   * @param s1
+   * @param s2
+   * @return
+   */
   private static double jaccard(Set s1, Set s2) {
     Set<String> union = new HashSet<>();
     union.addAll(s1);

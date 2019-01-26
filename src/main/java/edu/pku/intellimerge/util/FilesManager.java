@@ -56,39 +56,39 @@ public class FilesManager {
    */
   public static String readFileContent(File file) {
     String content = "";
-    try {
-      String fileEncoding = FilesEncoding.retrieveEncoding(file);
-
-      BufferedReader reader =
-          Files.newBufferedReader(Paths.get(file.getAbsolutePath()), Charset.forName(fileEncoding));
+    String fileEncoding = FilesEncoding.retrieveEncoding(file);
+    try (BufferedReader reader =
+        Files.newBufferedReader(Paths.get(file.getAbsolutePath()), Charset.forName(fileEncoding))) {
       content = reader.lines().collect(Collectors.joining("\n"));
     } catch (Exception e) {
-      // System.err.println(e.getMessage());
+      e.printStackTrace();
     }
     return content;
   }
 
   /**
    * Writes the given content in the file of the given file path.
+   *
    * @param filePath
    * @param content
    * @return boolean indicating the success of the write operation.
    */
-  public static boolean writeContent(String filePath, String content){
-    if(!content.isEmpty()){
-      try{
+  public static boolean writeContent(String filePath, String content) {
+    if (!content.isEmpty()) {
+      try {
         File file = new File(filePath);
-        if(!file.exists()){
+        if (!file.exists()) {
           file.getParentFile().mkdirs();
           file.createNewFile();
         }
         BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath));
         writer.write(content);
-        writer.flush();	writer.close();
-      } catch(NullPointerException ne){
+        writer.flush();
+        writer.close();
+      } catch (NullPointerException ne) {
         ne.printStackTrace();
-        //empty, necessary for integration with git version control system
-      } catch(Exception e){
+        // empty, necessary for integration with git version control system
+      } catch (Exception e) {
         e.printStackTrace();
         return false;
       }
@@ -98,6 +98,7 @@ public class FilesManager {
 
   /**
    * Append content to a file
+   *
    * @param filePath
    * @param content
    */
@@ -136,6 +137,7 @@ public class FilesManager {
 
   /**
    * Get qualified name of a java file, by reading its package declaration
+   *
    * @param file
    * @return
    * @throws Exception
