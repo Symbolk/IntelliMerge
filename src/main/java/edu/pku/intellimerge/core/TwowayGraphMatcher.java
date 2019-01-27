@@ -4,8 +4,7 @@ import edu.pku.intellimerge.core.matcher.MethodDeclMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
-import edu.pku.intellimerge.model.node.FieldDeclNode;
-import edu.pku.intellimerge.model.node.MethodDeclNode;
+import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import org.jgrapht.Graph;
 
 import java.util.*;
@@ -14,8 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TwowayGraphMatcher {
-  // keep nodes in the hierachy order
-  public Map<SemanticNode, SemanticNode> matchings;
+  public TwowayMatching matchings;
   public List<SemanticNode> unmatchedNodes1; // possibly deleted nodes
   public List<SemanticNode> unmatchedNodes2; // possibly added nodes
   private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
@@ -25,7 +23,7 @@ public class TwowayGraphMatcher {
       Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
     this.graph1 = graph1;
     this.graph2 = graph2;
-    this.matchings = new HashMap<>();
+    this.matchings = new TwowayMatching();
     this.unmatchedNodes1 = new ArrayList<>();
     this.unmatchedNodes2 = new ArrayList<>();
   }
@@ -35,13 +33,10 @@ public class TwowayGraphMatcher {
    * signature are matched
    */
   public void topDownMatch() {
-    Map<Integer, SemanticNode> map1;
-    Map<Integer, SemanticNode> map2;
-
-    Set<SemanticNode> baseNodes = graph1.vertexSet();
-    Set<SemanticNode> otherNodes = graph2.vertexSet();
-    map1 =
-        baseNodes
+    Set<SemanticNode> nodeSet1 = graph1.vertexSet();
+    Set<SemanticNode> nodeSet2 = graph2.vertexSet();
+    Map<Integer, SemanticNode> map1 =
+        nodeSet1
             .stream()
             .filter(SemanticNode::getNeedToMerge)
             .collect(
@@ -50,8 +45,8 @@ public class TwowayGraphMatcher {
                     Function.identity(),
                     (o, n) -> o,
                     HashMap::new));
-    map2 =
-        otherNodes
+    Map<Integer, SemanticNode> map2 =
+        nodeSet2
             .stream()
             .filter(SemanticNode::getNeedToMerge)
             .collect(
@@ -62,7 +57,8 @@ public class TwowayGraphMatcher {
                     HashMap::new));
     for (Entry<Integer, SemanticNode> entry : map1.entrySet()) {
       if (map2.containsKey(entry.getKey())) {
-        matchings.put(entry.getValue(), map2.get(entry.getKey()));
+        // add the matched nodes into the matchings relationships
+        matchings.exactMatchings.put(entry.getValue(), map2.get(entry.getKey()));
         // remove the mapped node from other
         map2.remove(entry.getKey());
       } else {
@@ -74,33 +70,45 @@ public class TwowayGraphMatcher {
 
   /** Bottom-up match unmatched nodes in the last step, considering some kinds of refactorings */
   public void bottomUpMatch() {
-    //       Split the node list into concrete node lists with different node type
-    ArrayList<FieldDeclNode> fieldDeclNodes1 = new ArrayList<>();
-    ArrayList<FieldDeclNode> fieldDeclNodes2 = new ArrayList<>();
-    ArrayList<MethodDeclNode> methodDeclNodes1 = new ArrayList<>();
-    ArrayList<MethodDeclNode> methodDeclNodes2 = new ArrayList<>();
-    splitUnmatchedNodesByType(unmatchedNodes1, fieldDeclNodes1, methodDeclNodes1);
-    splitUnmatchedNodesByType(unmatchedNodes2, fieldDeclNodes2, methodDeclNodes2);
+    // divide and conquer: match each type of nodes separately
+    Map<NodeType, List<SemanticNode>> unmatchedNodesByType1 =
+        splitUnmatchedNodesByType(unmatchedNodes1);
+    Map<NodeType, List<SemanticNode>> unmatchedNodesByType2 =
+        splitUnmatchedNodesByType(unmatchedNodes2);
 
-    MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
-    methodDeclMatcher.matchChangeMethodSignature(matchings, methodDeclNodes1, methodDeclNodes2);
-    methodDeclMatcher.matchExtractMethod(matchings, methodDeclNodes1, methodDeclNodes2);
-  }
-
-  private void splitUnmatchedNodesByType(
-      List<SemanticNode> unmatchedNodes,
-      List<FieldDeclNode> fieldDeclNodes,
-      List<MethodDeclNode> methodDeclNodes) {
-    for (SemanticNode node : unmatchedNodes) {
-      if (node.getNodeType().equals(NodeType.FIELD) && node instanceof FieldDeclNode) {
-        fieldDeclNodes.add((FieldDeclNode) node);
-      } else if (node.getNodeType().equals(NodeType.METHOD) && node instanceof MethodDeclNode) {
-        methodDeclNodes.add((MethodDeclNode) node);
-      }
+    // if only there are unmatched nodes, try to match
+    List<SemanticNode> unmatchedMethods1 =
+        unmatchedNodesByType1.getOrDefault(NodeType.METHOD, null);
+    List<SemanticNode> unmatchedMethods2 =
+        unmatchedNodesByType2.getOrDefault(NodeType.METHOD, null);
+    if (unmatchedMethods1 != null || unmatchedMethods2 != null) {
+      MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
+      methodDeclMatcher.matchChangeMethodSignature(matchings, unmatchedMethods1, unmatchedMethods2);
+      methodDeclMatcher.matchExtractMethod(matchings, unmatchedMethods1, unmatchedMethods2);
     }
   }
+
   /**
-   * Sort the node list in the reverse hierachy order, i.e. bottom up in AST
+   * Split the unmatched nodes by type
+   *
+   * @param unmatchedNodes
+   * @return
+   */
+  private Map<NodeType, List<SemanticNode>> splitUnmatchedNodesByType(
+      List<SemanticNode> unmatchedNodes) {
+    Map<NodeType, List<SemanticNode>> unmatchedNodesByType = new HashMap<>();
+    for (SemanticNode node : unmatchedNodes) {
+      if (unmatchedNodesByType.containsKey(node.getNodeType())) {
+        unmatchedNodesByType.get(node.getNodeType()).add(node);
+      } else {
+        unmatchedNodesByType.put(node.getNodeType(), new ArrayList<>());
+        unmatchedNodesByType.get(node.getNodeType()).add(node);
+      }
+    }
+    return unmatchedNodesByType;
+  }
+  /**
+   * Sort the node list in the reverse hierarchy order, i.e. bottom up in AST
    *
    * @param unmatchedNodes
    * @return

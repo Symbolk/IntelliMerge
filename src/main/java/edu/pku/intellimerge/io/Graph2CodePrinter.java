@@ -19,16 +19,18 @@ public class Graph2CodePrinter {
   private static final Logger logger = LoggerFactory.getLogger(Graph2CodePrinter.class);
 
   public static void printCU(SemanticNode node, CompilationUnitNode cu, String resultFolder) {
-    String resultFilePath = resultFolder + File.separator + cu.getRelativePath();
-    // merged package imports
-    StringBuilder builder = new StringBuilder();
-    builder.append(cu.getPackageStatement());
-    cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
-    // merged content, field-constructor-method, and reformat in google-java-format
-    builder.append(printNode(node));
-    String reformattedCode = reformatCode(builder.toString());
-    FilesManager.writeContent(resultFilePath, reformattedCode);
-    logger.info("Merge result saved in: {}", resultFilePath);
+    if (node != null && cu != null) {
+      String resultFilePath = resultFolder + File.separator + cu.getRelativePath();
+      // merged package imports
+      StringBuilder builder = new StringBuilder();
+      builder.append(cu.getPackageStatement());
+      cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
+      // merged content, field-constructor-method, and reformat in google-java-format
+      builder.append(printNode(node));
+      String reformattedCode = reformatCode(builder.toString());
+      FilesManager.writeContent(resultFilePath, reformattedCode);
+      logger.info("Merge result saved in: {}", resultFilePath);
+    }
   }
 
   /**

@@ -2,22 +2,21 @@ package edu.pku.intellimerge.core.matcher;
 
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
 import edu.pku.intellimerge.util.SimilarityAlg;
-import org.jgrapht.Graph;
 import org.jgrapht.alg.matching.MaximumWeightBipartiteMatching;
 import org.jgrapht.graph.DefaultUndirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.builder.GraphTypeBuilder;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodDeclMatcher {
-  // build a bipartite to match
-  private Set<MethodDeclNode> partition1 = new HashSet<>();
-  private Set<MethodDeclNode> partition2 = new HashSet<>();
-  private DefaultUndirectedWeightedGraph<MethodDeclNode, DefaultWeightedEdge> biPartite;
+  // use bipartite to match methods
+  private Set<SemanticNode> partition1 = new HashSet<>();
+  private Set<SemanticNode> partition2 = new HashSet<>();
+  private DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite;
 
   public MethodDeclMatcher() {
     this.biPartite = new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -25,58 +24,51 @@ public class MethodDeclMatcher {
 
   // check field and method signature change first
   public void matchChangeMethodSignature(
-      Map<SemanticNode, SemanticNode> matchings,
-      List<MethodDeclNode> methodDeclNodes1,
-      List<MethodDeclNode> methodDeclNodes2) {
-    for (MethodDeclNode node1 : methodDeclNodes1) {
-      for (MethodDeclNode node2 : methodDeclNodes2) {
+      TwowayMatching matchings,
+      List<SemanticNode> methodDeclNodes1,
+      List<SemanticNode> methodDeclNodes2) {
+    for (SemanticNode node1 : methodDeclNodes1) {
+      for (SemanticNode node2 : methodDeclNodes2) {
         biPartite.addVertex(node1);
         partition1.add(node1);
         biPartite.addVertex(node2);
         partition2.add(node2);
         biPartite.addEdge(node1, node2);
-        double similarity = SimilarityAlg.method(node1, node2);
+        double similarity =
+            SimilarityAlg.methodBody((MethodDeclNode) node1, (MethodDeclNode) node2);
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
-    // bipartite matching to match most likely renamed methods
-    // find the maximum matching, one method cannot be renamed to two
+    // bipartite matchings to match most likely renamed methods
+    // find the maximum matchings, one method cannot be renamed to two
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
-    // add matchings found and remove from unmatched
+    // add exactMatchings found and remove from unmatched
     for (DefaultWeightedEdge edge : edges) {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
-
+      double confidence = biPartite.getEdgeWeight(edge);
       methodDeclNodes1.remove(sourceNode);
       methodDeclNodes2.remove(targetNode);
-      matchings.put(sourceNode, targetNode);
+      matchings.addMatchingEdge(sourceNode, targetNode, "change_signature", confidence);
     }
   }
 
-  private Graph<SemanticNode, DefaultWeightedEdge> initBiGraph() {
-    return GraphTypeBuilder.<SemanticNode, DefaultWeightedEdge>undirected()
-        .allowingMultipleEdges(false)
-        .allowingSelfLoops(false) // recursion
-        .edgeClass(DefaultWeightedEdge.class)
-        .weighted(true)
-        .buildGraph();
-  }
-
   public void matchExtractMethod(
-      Map<SemanticNode, SemanticNode> matchings,
-      ArrayList<MethodDeclNode> methodDeclNodes1,
-      ArrayList<MethodDeclNode> methodDeclNodes2) {
+      TwowayMatching matchings,
+      List<SemanticNode> methodDeclNodes1,
+      List<SemanticNode> methodDeclNodes2) {
     Map<SemanticNode, SemanticNode> reversedMatchings =
         matchings
+            .exactMatchings
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-    // Rule: one of callers in the matching && original caller's parent==current parent&&union
+    // Rule: one of callers in the matchings && original caller's parent==current parent&&union
     // context confidence > confidence before
     Map<MethodDeclNode, List<MethodDeclNode>> alternates = new HashMap<>();
-    for (MethodDeclNode possiblyAddedMethod : methodDeclNodes2) {
+    for (SemanticNode possiblyAddedMethod : methodDeclNodes2) {
       List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL_METHOD);
       List<MethodDeclNode> possiblyExtractedFromMethods = new ArrayList<>();
       for (SemanticNode caller : callers) {
@@ -86,22 +78,33 @@ public class MethodDeclMatcher {
           possiblyExtractedFromMethods.add((MethodDeclNode) caller);
         }
       }
-      alternates.put(possiblyAddedMethod, possiblyExtractedFromMethods);
+      alternates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
     }
-    alternates.size();
-    // try union the context of added method to the caller
-    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> entry : alternates.entrySet()) {
-      MethodDeclNode callee = entry.getKey();
-      List<MethodDeclNode> callers = entry.getValue();
+    // try to inline the new method to the caller
+    // if the similarity improves, we think it is extracted from the caller
+    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : alternates.entrySet()) {
+      MethodDeclNode callee = alternate.getKey();
+      List<MethodDeclNode> callers = alternate.getValue();
       for (MethodDeclNode caller : callers) {
+        MethodDeclNode callerBase = (MethodDeclNode) reversedMatchings.get(caller);
+        double similarityBefore = biPartite.getEdgeWeight(biPartite.getEdge(caller, callerBase));
+
+        // TODO: how to inline the callee to the caller?
         Map<EdgeType, List<SemanticNode>> inUnion = new HashMap<>();
         inUnion.putAll(callee.incomingEdges);
-        inUnion.putAll(caller.incomingEdges);
+        caller
+            .incomingEdges
+            .entrySet()
+            .stream()
+            .forEach(entry -> inUnion.get(entry.getKey()).addAll(entry.getValue()));
         Map<EdgeType, List<SemanticNode>> outUnion = new HashMap<>();
         outUnion.putAll(callee.outgoingEdges);
         outUnion.putAll(caller.outgoingEdges);
+        caller.incomingEdges = inUnion;
+        caller.outgoingEdges = outUnion;
+        double similarityAfter = SimilarityAlg.method(caller, callerBase);
+        if (similarityAfter > similarityBefore) {}
       }
     }
-    // if the context similarity improves, it is extracted from the caller
   }
 }

@@ -1,11 +1,10 @@
 package edu.pku.intellimerge.core;
 
-import com.github.javaparser.ast.stmt.BlockStmt;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
-import edu.pku.intellimerge.model.Mapping;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
@@ -29,10 +28,10 @@ public class ThreewayGraphMerger {
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
   private Map<SemanticNode, SemanticNode> b2oMatchings;
   private Map<SemanticNode, SemanticNode> b2tMatchings;
-  private List<Mapping> mappings;
+  private List<ThreewayMapping> mappings;
 
   public ThreewayGraphMerger(
-          String resultFolder,
+      String resultFolder,
       Graph<SemanticNode, SemanticEdge> oursGraph,
       Graph<SemanticNode, SemanticEdge> baseGraph,
       Graph<SemanticNode, SemanticEdge> theirsGraph) {
@@ -45,23 +44,23 @@ public class ThreewayGraphMerger {
 
   /** Threeway map the CUs that need to merge */
   public void threewayMap() {
-    // two way matching to get three way mapping
+    // two way matchings to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-    b2oMatcher.topDownMatch();
-    b2oMatcher.bottomUpMatch();
+//    b2oMatcher.topDownMatch();
+//    b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
-    b2oMatchings = b2oMatcher.matchings;
-    b2tMatchings = b2tMatcher.matchings;
+    b2oMatchings = b2oMatcher.matchings.exactMatchings;
+    b2tMatchings = b2tMatcher.matchings.exactMatchings;
 
     // collect CU mappings that need to merge
     for (SemanticNode node : baseGraph.vertexSet()) {
       if (node instanceof CompilationUnitNode) {
         CompilationUnitNode cu = (CompilationUnitNode) node;
         if (cu.needToMerge == true) {
-          Mapping mapping =
-              new Mapping(
+          ThreewayMapping mapping =
+              new ThreewayMapping(
                   Optional.ofNullable(b2oMatchings.getOrDefault(node, null)),
                   Optional.of(node),
                   Optional.ofNullable(b2tMatchings.getOrDefault(node, null)));
@@ -75,12 +74,13 @@ public class ThreewayGraphMerger {
   public void threewayMerge() {
     threewayMap();
     // bottom up merge children of the needToMerge CU
-    for (Mapping mapping : mappings) {
+    for (ThreewayMapping mapping : mappings) {
       if (mapping.baseNode.isPresent()) {
         // merge the CU by merging its content
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
-        CompilationUnitNode  mergedPackageAndImports= mergePackageAndImports(mapping.baseNode.get());
+        CompilationUnitNode mergedPackageAndImports =
+            mergePackageAndImports(mapping.baseNode.get());
         if (mergedCU != null) {
           // save the merged result to file
           Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultFolder);
@@ -168,7 +168,13 @@ public class ThreewayGraphMerger {
                   new RawText(Constants.encode(rightContent)));
       ByteArrayOutputStream output = new ByteArrayOutputStream();
       (new MergeFormatter())
-          .formatMerge(output, mergeResult, Side.BASE.asString(), Side.OURS.asString(), Side.THEIRS.asString(), StandardCharsets.UTF_8);
+          .formatMerge(
+              output,
+              mergeResult,
+              Side.BASE.asString(),
+              Side.OURS.asString(),
+              Side.THEIRS.asString(),
+              StandardCharsets.UTF_8);
       textualMergeResult = new String(output.toByteArray(), StandardCharsets.UTF_8);
     } catch (Exception e) {
       e.printStackTrace();
