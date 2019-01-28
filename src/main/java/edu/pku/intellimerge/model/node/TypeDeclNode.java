@@ -34,6 +34,7 @@ public class TypeDeclNode extends NonTerminalNode {
     this.needToMerge = needToMerge;
 
     this.implementTypes = new ArrayList<>();
+    // Notice: here the order matters
     this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
     this.incomingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
@@ -43,8 +44,8 @@ public class TypeDeclNode extends NonTerminalNode {
 
     this.outgoingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.EXTEND, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_INNER_CLASS, new ArrayList<>());
   }

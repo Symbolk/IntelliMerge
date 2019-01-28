@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class TwowayMatching {
   // 2 kinds of matchings: match by unchanged signature & signature changed but match by their roles
-  public Map<SemanticNode, SemanticNode> exactMatchings; // confidence: 1
+  public Map<SemanticNode, SemanticNode> one2oneMatchings; // confidence: 1
   //  private DefaultUndirectedWeightedGraph<SemanticNode, MatchingEdge> biPartite;
   public Graph<SemanticNode, MatchingEdge> biPartite; // may contain refactoring matchings
   // store the two way nodes matchings relationships in a bipartite
@@ -19,11 +19,11 @@ public class TwowayMatching {
   private Set<SemanticNode> partition2; // usually others
 
   public TwowayMatching() {
-    this.exactMatchings = new HashMap<>();
-      this.biPartite = initBipartite();
-      //        this.biPartite = new DefaultDirectedWeightedGraph<>(MatchingEdge.class);
-      this.partition1 = new HashSet<>();
-      this.partition2 = new HashSet<>();
+    this.one2oneMatchings = new HashMap<>();
+    this.biPartite = initBipartite();
+    //        this.biPartite = new DefaultDirectedWeightedGraph<>(MatchingEdge.class);
+    this.partition1 = new HashSet<>();
+    this.partition2 = new HashSet<>();
   }
 
   public void addMatchingEdge(
@@ -37,10 +37,20 @@ public class TwowayMatching {
     biPartite.getEdge(node1, node2).setLabel(label);
   }
 
-    /**
-     * Init the biparitie graph, directed from partition1 to partition2
-     * @return
-     */
+  public void getRefactoredOne2OneMatching() {
+    for (SemanticNode node1 : partition1) {
+      if (biPartite.edgesOf(node1).size() == 1) {
+        for (MatchingEdge edge : biPartite.edgesOf(node1)) {
+          one2oneMatchings.put(biPartite.getEdgeSource(edge), biPartite.getEdgeTarget(edge));
+        }
+      }
+    }
+  }
+  /**
+   * Init the biparitie graph, directed from partition1 to partition2
+   *
+   * @return
+   */
   private Graph<SemanticNode, MatchingEdge> initBipartite() {
     return GraphTypeBuilder.<SemanticNode, MatchingEdge>directed()
         .allowingMultipleEdges(false)

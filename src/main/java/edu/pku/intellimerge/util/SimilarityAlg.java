@@ -41,6 +41,7 @@ public class SimilarityAlg {
 
   /**
    * Signature textual similarity, but method name and parameter types should be the most important
+   *
    * @param s1
    * @param s2
    * @return
@@ -53,6 +54,7 @@ public class SimilarityAlg {
   public static double methodContext(
       Map<EdgeType, List<SemanticNode>> edges1, Map<EdgeType, List<SemanticNode>> edges2) {
     double similarity = 0.0;
+    int count = 0;
     // for every type of edge, calculate the similarity
     for (Map.Entry<EdgeType, List<SemanticNode>> entry : edges1.entrySet()) {
       Set<String> targetQNames1 =
@@ -65,28 +67,33 @@ public class SimilarityAlg {
               .collect(Collectors.toSet());
       if (targetQNames1.size() > 0 && targetQNames2.size() > 0) {
         similarity += jaccard(targetQNames1, targetQNames2);
+        count++;
       } else {
         similarity += 0; // unsure
       }
+    }
+    if (count > 0) {
+      similarity /= count;
     }
     return similarity;
   }
 
   /**
    * Compute method body subtree similarity based on gumtree
+   *
    * @param node1
    * @param node2
    * @return
    */
-  public static double methodBody(MethodDeclNode node1, MethodDeclNode node2){
+  public static double methodBody(MethodDeclNode node1, MethodDeclNode node2) {
     double similarity = 0D;
     try {
       JdtTreeGenerator generator = new JdtTreeGenerator();
       generator.setKind(ASTParser.K_STATEMENTS);
       TreeContext baseContext = generator.generateFromString(node1.getBody());
       TreeContext othersContext = generator.generateFromString(node2.getBody());
-//            TreeContext src = Generators.getInstance().getTree(fSrc.getAbsolutePath());
-//            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
+      //            TreeContext src = Generators.getInstance().getTree(fSrc.getAbsolutePath());
+      //            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
       ITree baseRoot = baseContext.getRoot();
       ITree othersRoot = othersContext.getRoot();
       baseRoot.getDescendants();
@@ -102,6 +109,7 @@ public class SimilarityAlg {
   }
   /**
    * Jaccard = Intersection/Union [0,1]
+   *
    * @param s1
    * @param s2
    * @return

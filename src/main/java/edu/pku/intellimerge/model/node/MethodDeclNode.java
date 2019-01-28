@@ -33,7 +33,15 @@ public class MethodDeclNode extends TerminalNode {
       List<String> throwExceptions,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range);  // block or ""(abstract method or interface)
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        body,
+        range); // block or ""(abstract method or interface)
     this.access = access;
     this.modifiers = modifiers;
     this.returnType = returnType;
@@ -53,37 +61,24 @@ public class MethodDeclNode extends TerminalNode {
 
   @Override
   public String toString() {
-    return "MethodDeclNode{"
-        + "access='"
-        + access
-        + '\''
-        + ", modifiers="
-        + modifiers
-        + ", returnType='"
-        + returnType
-        + '\''
-        + ", methodName='"
-        + methodName
-        + '\''
-        + ", parameterTypes="
-        + parameterTypes
-        + '}';
+    return "MethodDeclNode{" + getQualifiedName() + '}';
   }
 
   @Override
   public String getSignature() {
     // qualified signature of method, without the parameter names/spaces/commmas/brackets
-    StringBuilder builder = new StringBuilder();
-    builder.append(access);
-    modifiers.forEach(modifier -> builder.append(modifier));
-    builder.append(returnType);
-    builder.append(methodName);
-    if (parameterTypes.size() > 0) {
-      parameterTypes.forEach(type -> builder.append(type));
-    }
-    if (throwExceptions.size() > 0) {
-      throwExceptions.forEach(exception -> builder.append(exception));
-    }
-    return toString();
+    //    StringBuilder builder = new StringBuilder();
+    //    builder.append(access);
+    //    modifiers.forEach(modifier -> builder.append(modifier));
+    //    builder.append(returnType);
+    //    builder.append(methodName);
+    //    if (parameterTypes.size() > 0) {
+    //      parameterTypes.forEach(type -> builder.append(type));
+    //    }
+    //    if (throwExceptions.size() > 0) {
+    //      throwExceptions.forEach(exception -> builder.append(exception));
+    //    }
+    // qualified method name + parameter types, enough to identify one method
+    return getQualifiedName();
   }
 }

@@ -1,26 +1,32 @@
 package edu.pku.intellimerge.model;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class SemanticNode {
-  public Map<EdgeType, List<SemanticNode>> incomingEdges = new HashMap<>();
-  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new HashMap<>();
+  public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
+  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new LinkedHashMap<>();
+                         // signature
+  public Boolean needToMerge;
   private Integer nodeID;
   private NodeType nodeType;
   private String displayName;
   private String qualifiedName;
-  private String originalSignature; // original signature in code, here we generalize the definition of signature
-  public Boolean needToMerge;
+  private String
+      originalSignature; // original signature in code, here we generalize the definition of
 
   public SemanticNode() {}
 
-  public SemanticNode(Integer nodeID, Boolean needToMerge, NodeType nodeType, String displayName, String qualifiedName) {
+  public SemanticNode(
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -107,9 +113,11 @@ public abstract class SemanticNode {
     return originalSignature;
   }
 
-  /**
-   * Get the unique fully qualified signature in this project
-   */
+  public void setOriginalSignature(String originalSignature) {
+    this.originalSignature = originalSignature;
+  }
+
+  /** Get the unique fully qualified signature in this project */
   public abstract String getSignature();
 
   public Integer hashCodeSignature() {
@@ -118,12 +126,14 @@ public abstract class SemanticNode {
 
   /**
    * Clone the object without children and edges
+   *
    * @return
    */
   public abstract SemanticNode shallowClone();
 
   /**
    * Clone the object with cloning children and edges
+   *
    * @return
    */
   public abstract SemanticNode deepClone();

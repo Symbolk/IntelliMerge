@@ -234,6 +234,7 @@ public class SemanticGraphBuilder {
         String displayName = enumDeclaration.getNameAsString();
         String qualifiedName = packageName + "." + displayName;
         String qualifiedClassName = qualifiedName;
+        // TODO add enum declaration nodes
       }
 
       List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =

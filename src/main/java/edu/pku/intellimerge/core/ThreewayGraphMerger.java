@@ -5,6 +5,7 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
+import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
@@ -26,8 +27,8 @@ public class ThreewayGraphMerger {
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
-  private Map<SemanticNode, SemanticNode> b2oMatchings;
-  private Map<SemanticNode, SemanticNode> b2tMatchings;
+  private TwowayMatching b2oMatchings;
+  private TwowayMatching b2tMatchings;
   private List<ThreewayMapping> mappings;
 
   public ThreewayGraphMerger(
@@ -47,12 +48,12 @@ public class ThreewayGraphMerger {
     // two way matchings to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-//    b2oMatcher.topDownMatch();
-//    b2oMatcher.bottomUpMatch();
+    b2oMatcher.topDownMatch();
+    b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
-    b2oMatchings = b2oMatcher.matchings.exactMatchings;
-    b2tMatchings = b2tMatcher.matchings.exactMatchings;
+    b2oMatchings = b2oMatcher.matchings;
+    b2tMatchings = b2tMatcher.matchings;
 
     // collect CU mappings that need to merge
     for (SemanticNode node : baseGraph.vertexSet()) {
@@ -61,9 +62,9 @@ public class ThreewayGraphMerger {
         if (cu.needToMerge == true) {
           ThreewayMapping mapping =
               new ThreewayMapping(
-                  Optional.ofNullable(b2oMatchings.getOrDefault(node, null)),
+                  Optional.ofNullable(b2oMatchings.one2oneMatchings.getOrDefault(node, null)),
                   Optional.of(node),
-                  Optional.ofNullable(b2tMatchings.getOrDefault(node, null)));
+                  Optional.ofNullable(b2tMatchings.one2oneMatchings.getOrDefault(node, null)));
           mappings.add(mapping);
         }
       }
@@ -79,9 +80,8 @@ public class ThreewayGraphMerger {
         // merge the CU by merging its content
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
-        CompilationUnitNode mergedPackageAndImports =
-            mergePackageAndImports(mapping.baseNode.get());
-        if (mergedCU != null) {
+        CompilationUnitNode mergedPackageAndImports = mergePackageAndImports(mapping.baseNode.get());
+        if (mergedCU != null && mergedPackageAndImports!=null) {
           // save the merged result to file
           Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultFolder);
         }
@@ -92,8 +92,8 @@ public class ThreewayGraphMerger {
   private CompilationUnitNode mergePackageAndImports(SemanticNode node) {
     if (node instanceof CompilationUnitNode) {
       CompilationUnitNode mergedCU = (CompilationUnitNode) node;
-      SemanticNode oursNode = b2oMatchings.getOrDefault(node, null);
-      SemanticNode theirsNode = b2oMatchings.getOrDefault(node, null);
+      SemanticNode oursNode = b2oMatchings.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode theirsNode = b2tMatchings.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
@@ -127,28 +127,37 @@ public class ThreewayGraphMerger {
     SemanticNode mergedNode = node.shallowClone();
     if (node instanceof TerminalNode) {
       TerminalNode mergedTerminal = (TerminalNode) mergedNode;
-      SemanticNode oursNode = b2oMatchings.getOrDefault(node, null);
-      SemanticNode theirsNode = b2tMatchings.getOrDefault(node, null);
+      SemanticNode oursNode = b2oMatchings.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode theirsNode = b2tMatchings.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         // exist in both side
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
-        String mergeResult =
+        String mergedSignature =
+            mergeTextually(
+                oursTerminal.getOriginalSignature(),
+                baseTerminal.getOriginalSignature(),
+                theirsTerminal.getOriginalSignature());
+        String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
-        mergedTerminal.setBody(mergeResult);
+        mergedTerminal.setOriginalSignature(mergedSignature);
+        mergedTerminal.setBody(mergedBody);
+        return mergedTerminal;
       } else {
         // deleted in one side --> delete
-        mergedTerminal.setBody("");
+        return null;
       }
-      return mergedTerminal;
     } else {
       // nonterminal: iteratively merge its children
       List<SemanticNode> children = node.getChildren();
       NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
       for (SemanticNode child : children) {
-        mergedNonTerminal.addChild(mergeSingleNode(child));
+        SemanticNode mergedChild = mergeSingleNode(child);
+        if (mergedChild != null) {
+          mergedNonTerminal.addChild(mergedChild);
+        }
       }
       return mergedNonTerminal;
     }

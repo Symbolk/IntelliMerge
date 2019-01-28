@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class NonTerminalNode extends SemanticNode {
 
@@ -87,14 +86,12 @@ public class NonTerminalNode extends SemanticNode {
    */
   public List<SemanticNode> getChildren() {
     if (this.children == null) {
-      List<Map.Entry<EdgeType, List<SemanticNode>>> childrenEntries =
-          outgoingEdges
-              .entrySet()
-              .stream()
-              .filter(entry -> entry.getKey().isStructureEdge)
-              .collect(Collectors.toList());
       this.children = new ArrayList<>();
-      childrenEntries.forEach(entry -> children.addAll(entry.getValue()));
+      outgoingEdges
+          .entrySet()
+          .stream()
+          .filter(entry -> entry.getKey().isStructureEdge)
+          .forEach(entry -> children.addAll(entry.getValue()));
     }
     return this.children;
   }

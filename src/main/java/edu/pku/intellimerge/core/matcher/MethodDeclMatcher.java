@@ -34,8 +34,7 @@ public class MethodDeclMatcher {
         biPartite.addVertex(node2);
         partition2.add(node2);
         biPartite.addEdge(node1, node2);
-        double similarity =
-            SimilarityAlg.methodBody((MethodDeclNode) node1, (MethodDeclNode) node2);
+        double similarity = SimilarityAlg.method((MethodDeclNode) node1, (MethodDeclNode) node2);
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
@@ -44,7 +43,7 @@ public class MethodDeclMatcher {
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
-    // add exactMatchings found and remove from unmatched
+    // add one2oneMatchings found and remove from unmatched
     for (DefaultWeightedEdge edge : edges) {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
@@ -61,7 +60,7 @@ public class MethodDeclMatcher {
       List<SemanticNode> methodDeclNodes2) {
     Map<SemanticNode, SemanticNode> reversedMatchings =
         matchings
-            .exactMatchings
+            .one2oneMatchings
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
@@ -99,7 +98,11 @@ public class MethodDeclMatcher {
             .forEach(entry -> inUnion.get(entry.getKey()).addAll(entry.getValue()));
         Map<EdgeType, List<SemanticNode>> outUnion = new HashMap<>();
         outUnion.putAll(callee.outgoingEdges);
-        outUnion.putAll(caller.outgoingEdges);
+        caller
+            .outgoingEdges
+            .entrySet()
+            .stream()
+            .forEach(entry -> outUnion.get(entry.getKey()).addAll(entry.getValue()));
         caller.incomingEdges = inUnion;
         caller.outgoingEdges = outUnion;
         double similarityAfter = SimilarityAlg.method(caller, callerBase);

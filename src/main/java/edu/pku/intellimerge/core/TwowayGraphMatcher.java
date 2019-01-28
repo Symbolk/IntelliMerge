@@ -58,7 +58,7 @@ public class TwowayGraphMatcher {
     for (Entry<Integer, SemanticNode> entry : map1.entrySet()) {
       if (map2.containsKey(entry.getKey())) {
         // add the matched nodes into the matchings relationships
-        matchings.exactMatchings.put(entry.getValue(), map2.get(entry.getKey()));
+        matchings.one2oneMatchings.put(entry.getValue(), map2.get(entry.getKey()));
         // remove the mapped node from other
         map2.remove(entry.getKey());
       } else {
@@ -85,6 +85,7 @@ public class TwowayGraphMatcher {
       MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
       methodDeclMatcher.matchChangeMethodSignature(matchings, unmatchedMethods1, unmatchedMethods2);
       methodDeclMatcher.matchExtractMethod(matchings, unmatchedMethods1, unmatchedMethods2);
+      matchings.getRefactoredOne2OneMatching();
     }
   }
 
