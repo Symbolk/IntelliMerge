@@ -20,6 +20,8 @@ import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
+import com.github.javaparser.utils.ProjectRoot;
 import com.github.javaparser.utils.SourceRoot;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -122,8 +124,11 @@ public class SemanticGraphBuilder {
     sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
     //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-    //      ProjectRoot projectRoot1 = new
-    // SymbolSolverCollectionStrategy().collect(root.toPath());
+    // sub-projects/modules
+    ProjectRoot projectRoot =
+        new SymbolSolverCollectionStrategy(
+                JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver))
+            .collect(root.toPath());
 
     List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
     //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
@@ -233,8 +238,21 @@ public class SemanticGraphBuilder {
       for (EnumDeclaration enumDeclaration : enumDeclarations) {
         String displayName = enumDeclaration.getNameAsString();
         String qualifiedName = packageName + "." + displayName;
-        String qualifiedClassName = qualifiedName;
-        // TODO add enum declaration nodes
+        EnumDeclNode enumDeclNode =
+            new EnumDeclNode(
+                nodeCount++,
+                isChangedFile,
+                NodeType.ENUM,
+                displayName,
+                qualifiedName,
+                enumDeclaration.getEntries().toString().replace("[", "{").replace("]", "}"),
+                enumDeclaration.getRange());
+        graph.addVertex(enumDeclNode);
+
+        graph.addEdge(
+            cuNode,
+            enumDeclNode,
+            new SemanticEdge(edgeCount++, EdgeType.DEFINE_ENUM, cuNode, enumDeclNode));
       }
 
       List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =

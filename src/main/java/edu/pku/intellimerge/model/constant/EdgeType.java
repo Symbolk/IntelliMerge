@@ -20,7 +20,8 @@ public enum EdgeType {
   DECL_OBJECT(12, false, "declares object"),
   INIT_OBJECT(13, false, "creates object"),
   // use DEFINE_TYPE or concrete types?
-  DEFINE_TYPE(14, true, "declares enum");
+  DEFINE_TYPE(14, true, "defines class/interface"),
+  DEFINE_ENUM(15, true, "defines enum");
 
   public Integer index;
   // whether the edge represent the nesting hierarchy structure, or the interaction with other nodes

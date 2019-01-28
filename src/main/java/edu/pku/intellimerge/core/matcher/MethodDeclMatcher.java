@@ -44,6 +44,7 @@ public class MethodDeclMatcher {
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
     // add one2oneMatchings found and remove from unmatched
+    biPartite.edgeSet();
     for (DefaultWeightedEdge edge : edges) {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
@@ -86,9 +87,9 @@ public class MethodDeclMatcher {
       List<MethodDeclNode> callers = alternate.getValue();
       for (MethodDeclNode caller : callers) {
         MethodDeclNode callerBase = (MethodDeclNode) reversedMatchings.get(caller);
-        double similarityBefore = biPartite.getEdgeWeight(biPartite.getEdge(caller, callerBase));
+        double similarityBefore = SimilarityAlg.method(caller, callerBase);
 
-        // TODO: how to inline the callee to the caller?
+        // TODO inline method body, i.e. revert extract
         Map<EdgeType, List<SemanticNode>> inUnion = new HashMap<>();
         inUnion.putAll(callee.incomingEdges);
         caller
@@ -106,7 +107,9 @@ public class MethodDeclMatcher {
         caller.incomingEdges = inUnion;
         caller.outgoingEdges = outUnion;
         double similarityAfter = SimilarityAlg.method(caller, callerBase);
-        if (similarityAfter > similarityBefore) {}
+        if (similarityAfter > similarityBefore) {
+          matchings.addMatchingEdge(callerBase, callee, "extract_method", similarityAfter);
+        }
       }
     }
   }

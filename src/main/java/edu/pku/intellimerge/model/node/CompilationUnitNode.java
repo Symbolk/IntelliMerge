@@ -37,6 +37,7 @@ public class CompilationUnitNode extends NonTerminalNode {
 
     this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE_ENUM, new ArrayList<>());
   }
 
   @Override

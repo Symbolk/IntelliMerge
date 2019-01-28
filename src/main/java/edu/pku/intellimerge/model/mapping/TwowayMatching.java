@@ -41,7 +41,9 @@ public class TwowayMatching {
     for (SemanticNode node1 : partition1) {
       if (biPartite.edgesOf(node1).size() == 1) {
         for (MatchingEdge edge : biPartite.edgesOf(node1)) {
-          one2oneMatchings.put(biPartite.getEdgeSource(edge), biPartite.getEdgeTarget(edge));
+          if (!one2oneMatchings.containsKey(node1)) {
+            one2oneMatchings.put(biPartite.getEdgeSource(edge), biPartite.getEdgeTarget(edge));
+          }
         }
       }
     }

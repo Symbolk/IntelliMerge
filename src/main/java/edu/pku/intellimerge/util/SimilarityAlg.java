@@ -35,7 +35,8 @@ public class SimilarityAlg {
     similarity += methodContext(n1.outgoingEdges, n2.outgoingEdges);
     // navie string similarity of method signature
     similarity += methodSignature(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity /= 3;
+    similarity += methodBody(n1.getBody(), n2.getBody());
+    similarity /= 4;
     return similarity;
   }
 
@@ -81,17 +82,17 @@ public class SimilarityAlg {
   /**
    * Compute method body subtree similarity based on gumtree
    *
-   * @param node1
-   * @param node2
+   * @param body1
+   * @param body2
    * @return
    */
-  public static double methodBody(MethodDeclNode node1, MethodDeclNode node2) {
+  public static double methodBody(String body1, String body2) {
     double similarity = 0D;
     try {
       JdtTreeGenerator generator = new JdtTreeGenerator();
       generator.setKind(ASTParser.K_STATEMENTS);
-      TreeContext baseContext = generator.generateFromString(node1.getBody());
-      TreeContext othersContext = generator.generateFromString(node2.getBody());
+      TreeContext baseContext = generator.generateFromString(body1);
+      TreeContext othersContext = generator.generateFromString(body2);
       //            TreeContext src = Generators.getInstance().getTree(fSrc.getAbsolutePath());
       //            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
       ITree baseRoot = baseContext.getRoot();
