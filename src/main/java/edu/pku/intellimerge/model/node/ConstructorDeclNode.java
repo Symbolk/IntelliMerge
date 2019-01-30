@@ -38,10 +38,4 @@ public class ConstructorDeclNode extends TerminalNode {
     return "ConstructorDeclNode{" + "constructorName='" + constructorName + '\'' + '}';
   }
 
-  @Override
-  public String getSignature() {
-    return constructorName;
-  }
-
-
 }

@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.util;
+package edu.pku.intellimerge.io;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -7,6 +7,8 @@ import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.GitService;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Repository;
@@ -38,9 +40,15 @@ public class SourceFileCollector {
   public void collectFilesForAllSides() {
     try {
       getDiffJavaFiles();
-//      collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
-//      collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
-//      collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
+      // collect only both modified files in two sides
+      collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
+      collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
+      collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
+
+      // collect diff files for all sides
+      //      collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
+      //      collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
+      //      collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -94,10 +102,15 @@ public class SourceFileCollector {
     //      List<SimpleDiffEntry> baseDiffEntries = oursDiffEntries;
     //      theirsDiffEntries.removeAll(baseDiffEntries);
     //      baseDiffEntries.addAll(theirsDiffEntries);
-    Set<SimpleDiffEntry> temp = new HashSet<>();
-    temp.addAll(mergeScenario.oursDiffEntries);
-    temp.addAll(mergeScenario.theirsDiffEntries);
-    mergeScenario.baseDiffEntries = new ArrayList<>(temp);
+    Set<SimpleDiffEntry> union = new HashSet<>();
+    union.addAll(mergeScenario.oursDiffEntries);
+    union.addAll(mergeScenario.theirsDiffEntries);
+    mergeScenario.baseDiffEntries = new ArrayList<>(union);
+
+    Set<SimpleDiffEntry> intersection = new HashSet<>();
+    intersection.addAll(mergeScenario.oursDiffEntries);
+    intersection.retainAll(mergeScenario.theirsDiffEntries);
+    mergeScenario.bothModifiedEntries = new ArrayList<>(intersection);
   }
 
   /**

@@ -79,19 +79,4 @@ public class TypeDeclNode extends NonTerminalNode {
         + implementTypes
         + '}';
   }
-
-  @Override
-  public String getSignature() {
-    // qualified signature of types, without the spaces
-    StringBuilder builder = new StringBuilder();
-    builder.append(access);
-    modifiers.forEach(modifier -> builder.append(modifier));
-    builder.append(typeType);
-    builder.append(typeName);
-    builder.append(extendType);
-    if(implementTypes.size() > 0){
-      implementTypes.forEach(type -> builder.append(type));
-    }
-    return toString();
-  }
 }

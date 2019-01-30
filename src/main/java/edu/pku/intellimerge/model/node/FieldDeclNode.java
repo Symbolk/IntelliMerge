@@ -57,18 +57,4 @@ public class FieldDeclNode extends TerminalNode {
         + '\''
         + '}';
   }
-
-  @Override
-  public String getSignature() {
-    if (this.signature == null) {
-      // qualified signature of field, without assigned value/spaces
-      StringBuilder builder = new StringBuilder();
-      builder.append(access);
-      modifiers.forEach(modifier -> builder.append(modifier));
-      builder.append(fieldType);
-      builder.append(fieldName);
-      this.signature = builder.toString();
-    }
-    return this.signature;
-  }
 }

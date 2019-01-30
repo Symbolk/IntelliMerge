@@ -18,6 +18,7 @@ public class MergeScenario {
   public List<SimpleDiffEntry> oursDiffEntries;
   public List<SimpleDiffEntry> baseDiffEntries;
   public List<SimpleDiffEntry> theirsDiffEntries;
+  public List<SimpleDiffEntry> bothModifiedEntries;
 
   public MergeScenario(
       String repoName,

@@ -54,11 +54,6 @@ public class CompilationUnitNode extends NonTerminalNode {
         + '}';
   }
 
-  @Override
-  public String getSignature() {
-    return getQualifiedName();
-  }
-
   public String getPackageStatement() {
     return packageStatement;
   }

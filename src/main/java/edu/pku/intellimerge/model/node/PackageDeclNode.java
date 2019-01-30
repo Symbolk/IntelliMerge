@@ -35,12 +35,4 @@ public class PackageDeclNode extends NonTerminalNode {
         + packageNameHierachy
         + '}';
   }
-
-  @Override
-  public String getSignature() {
-    // qualified signature of package, without spaces/dots
-    StringBuilder builder = new StringBuilder();
-    builder.append(packageName);
-    return toString();
-  }
 }

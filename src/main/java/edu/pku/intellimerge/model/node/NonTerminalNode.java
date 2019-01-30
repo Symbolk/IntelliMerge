@@ -34,11 +34,6 @@ public class NonTerminalNode extends SemanticNode {
   }
 
   @Override
-  public String getSignature() {
-    return getOriginalSignature();
-  }
-
-  @Override
   public SemanticNode shallowClone() {
     return new NonTerminalNode(
         this.getNodeID(),

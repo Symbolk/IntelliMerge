@@ -4,7 +4,10 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
-import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
@@ -117,11 +120,11 @@ public class SemanticGraphBuilder {
     // init the semantic graph
     Graph<SemanticNode, SemanticEdge> graph = initGraph();
 
-    // parse all java files in project folder
+    // parse all java files in the file
     //        ParserConfiguration parserConfiguration
     File root = new File(sideDiffPath);
-    SourceRoot sourceRoot = new SourceRoot(root.toPath());
-    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
+    //    SourceRoot sourceRoot = new SourceRoot(root.toPath());
+    //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
     //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
     // sub-projects/modules
@@ -129,15 +132,18 @@ public class SemanticGraphBuilder {
         new SymbolSolverCollectionStrategy(
                 JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver))
             .collect(root.toPath());
+    List<CompilationUnit> compilationUnits = new ArrayList<>();
 
-    List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
-    //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
-    List<CompilationUnit> compilationUnits =
-        parseResults
-            .stream()
-            .filter(ParseResult::isSuccessful)
-            .map(r -> r.getResult().get())
-            .collect(Collectors.toList());
+    for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
+      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
+      //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
+      compilationUnits.addAll(
+          parseResults
+              .stream()
+              .filter(ParseResult::isSuccessful)
+              .map(r -> r.getResult().get())
+              .collect(Collectors.toList()));
+    }
 
     // incremental id, unique in one side's graph
     Integer nodeCount = 0;
@@ -183,7 +189,7 @@ public class SemanticGraphBuilder {
               cu.getImports()
                   .stream()
                   .map(ImportDeclaration::toString)
-                  .collect(Collectors.toSet()));
+                  .collect(Collectors.toCollection(LinkedHashSet::new)));
 
       graph.addVertex(cuNode);
       // 1. package
@@ -345,6 +351,10 @@ public class SemanticGraphBuilder {
             displayName = field.toString();
             qualifiedName = qualifiedClassName + "." + displayName;
             originalSignature = getFieldOriginalSignature(fieldDeclaration);
+            String body =
+                field.getInitializer().isPresent()
+                    ? "=" + field.getInitializer().get().toString() + ";"
+                    : ";";
 
             FieldDeclNode fieldDeclarationNode =
                 new FieldDeclNode(
@@ -358,7 +368,7 @@ public class SemanticGraphBuilder {
                     modifiers,
                     field.getTypeAsString(),
                     field.getNameAsString(),
-                    field.getInitializer().map(Expression::toString).orElse(";"),
+                    body,
                     field.getRange());
             graph.addVertex(fieldDeclarationNode);
             // add edge between field and class
@@ -406,7 +416,7 @@ public class SemanticGraphBuilder {
                   qualifiedName,
                   constructorDeclaration.getDeclarationAsString(),
                   displayName,
-                  constructorDeclaration.toString(),
+                  constructorDeclaration.getBody().toString(),
                   constructorDeclaration.getRange());
           graph.addVertex(constructorDeclNode);
           graph.addEdge(

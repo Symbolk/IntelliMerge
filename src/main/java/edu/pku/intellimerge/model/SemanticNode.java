@@ -10,7 +10,7 @@ import java.util.Map;
 public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
   public Map<EdgeType, List<SemanticNode>> outgoingEdges = new LinkedHashMap<>();
-                         // signature
+  // signature
   public Boolean needToMerge;
   private Integer nodeID;
   private NodeType nodeType;
@@ -117,8 +117,10 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
   }
 
-  /** Get the unique fully qualified signature in this project */
-  public abstract String getSignature();
+  /** Get the unique fully qualified signature in this project, which should represent the MAIN identification of this node*/
+  public String getSignature() {
+    return getQualifiedName();
+  }
 
   public Integer hashCodeSignature() {
     return getSignature().hashCode();

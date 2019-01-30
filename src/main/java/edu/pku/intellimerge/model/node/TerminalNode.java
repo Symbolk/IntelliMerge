@@ -44,11 +44,6 @@ public class TerminalNode extends SemanticNode {
   }
 
   @Override
-  public String getSignature() {
-    return getOriginalSignature();
-  }
-
-  @Override
   public SemanticNode shallowClone() {
     return new TerminalNode(
         this.getNodeID(),
