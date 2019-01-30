@@ -51,6 +51,12 @@ public class MergeScenario {
     this.theirsDiffEntries = new ArrayList<>();
   }
 
+  /**
+   * Whether the file is changed in this side, if yes, it needs to be merged
+   * @param side
+   * @param relativePath
+   * @return
+   */
   public Boolean isChangedFile(Side side, String relativePath) {
     // normalize to linux style separators
     String path = relativePath.replaceAll(Pattern.quote(File.separator), "/");

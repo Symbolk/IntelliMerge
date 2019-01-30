@@ -33,9 +33,4 @@ public class ConstructorDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
   }
 
-  @Override
-  public String toString() {
-    return "ConstructorDeclNode{" + "constructorName='" + constructorName + '\'' + '}';
-  }
-
 }

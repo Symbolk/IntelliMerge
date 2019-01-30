@@ -19,15 +19,6 @@ public class NonTerminalNode extends SemanticNode {
       Boolean needToMerge,
       NodeType nodeType,
       String displayName,
-      String qualifiedName) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
-  }
-
-  public NonTerminalNode(
-      Integer nodeID,
-      Boolean needToMerge,
-      NodeType nodeType,
-      String displayName,
       String qualifiedName,
       String originalSignature) {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);

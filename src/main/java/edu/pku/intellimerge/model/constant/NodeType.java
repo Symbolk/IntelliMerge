@@ -30,6 +30,15 @@ public enum NodeType {
   }
 
   public String asString() {
+    return label;
+  }
+
+  /**
+   * Mainly for visualization
+   *
+   * @return
+   */
+  public String toPrettyString() {
     return label.toUpperCase();
   }
 }

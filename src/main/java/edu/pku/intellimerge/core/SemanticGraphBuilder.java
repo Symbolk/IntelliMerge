@@ -181,7 +181,8 @@ public class SemanticGraphBuilder {
               isChangedFile,
               NodeType.CU,
               fileName,
-              absolutePath,
+              "",
+              fileName,
               fileName,
               relativePath,
               absolutePath,
@@ -191,7 +192,6 @@ public class SemanticGraphBuilder {
                   .map(ImportDeclaration::toString)
                   .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-      graph.addVertex(cuNode);
       // 1. package
       String packageName = "";
       if (cu.getPackageDeclaration().isPresent()) {
@@ -217,15 +217,18 @@ public class SemanticGraphBuilder {
                   isChangedFile,
                   NodeType.PACKAGE,
                   finalPackageName,
-                  packageDeclaration.toString(),
+                  packageDeclaration.getNameAsString(),
+                  packageDeclaration.toString().trim(),
                   finalPackageName,
                   Arrays.asList(finalPackageName.split(".")));
+          graph.addVertex(cuNode);
           graph.addVertex(packageDeclNode);
           graph.addEdge(
               packageDeclNode,
               cuNode,
               new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
         } else {
+          graph.addVertex(cuNode);
           graph.addEdge(
               packageDeclNodeOpt.get(),
               cuNode,
@@ -251,6 +254,7 @@ public class SemanticGraphBuilder {
                 NodeType.ENUM,
                 displayName,
                 qualifiedName,
+                getTypeOriginalSignature(enumDeclaration),
                 enumDeclaration.getEntries().toString().replace("[", "{").replace("]", "}"),
                 enumDeclaration.getRange());
         graph.addVertex(enumDeclNode);
@@ -633,6 +637,7 @@ public class SemanticGraphBuilder {
     return graph;
   }
 
+  // TODO: remove comments
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
     String source = fieldDeclaration.toString();
     return source

@@ -22,19 +22,6 @@ public class TerminalNode extends SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String body,
-      Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
-    this.body = body;
-    this.range = range;
-  }
-
-  public TerminalNode(
-      Integer nodeID,
-      Boolean needToMerge,
-      NodeType nodeType,
-      String displayName,
-      String qualifiedName,
       String originalSignature,
       String body,
       Optional<Range> range) {

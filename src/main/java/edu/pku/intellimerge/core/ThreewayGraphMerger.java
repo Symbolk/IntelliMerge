@@ -103,7 +103,7 @@ public class ThreewayGraphMerger {
                 mergedCU.getPackageStatement(),
                 theirsCU.getPackageStatement()));
 
-        Set<String> union = new HashSet<>();
+        Set<String> union = new LinkedHashSet<>();
         union.addAll(oursCU.getImportStatements());
         union.addAll(theirsCU.getImportStatements());
         mergedCU.setImportStatements(union);

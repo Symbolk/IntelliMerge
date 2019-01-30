@@ -39,21 +39,4 @@ public class FieldDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
   }
-
-  @Override
-  public String toString() {
-    return "FieldDeclNode{"
-        + "access='"
-        + access
-        + '\''
-        + ", modifiers="
-        + modifiers
-        + ", fieldType='"
-        + fieldType
-        + '\''
-        + ", fieldName='"
-        + fieldName
-        + '\''
-        + '}';
-  }
 }

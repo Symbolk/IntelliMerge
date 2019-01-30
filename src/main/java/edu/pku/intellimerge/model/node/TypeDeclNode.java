@@ -58,24 +58,4 @@ public class TypeDeclNode extends NonTerminalNode {
     this.implementTypes = implementTypes;
   }
 
-  @Override
-  public String toString() {
-    return "TypeDeclNode{"
-        + "access='"
-        + access
-        + '\''
-        + ", modifiers="
-        + modifiers
-        + ", typeType='"
-        + typeType
-        + '\''
-        + ", typeName='"
-        + typeName
-        + '\''
-        + ", extendType="
-        + extendType
-        + ", implementTypes="
-        + implementTypes
-        + '}';
-  }
 }

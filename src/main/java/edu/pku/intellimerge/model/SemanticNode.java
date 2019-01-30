@@ -16,23 +16,10 @@ public abstract class SemanticNode {
   private NodeType nodeType;
   private String displayName;
   private String qualifiedName;
-  private String
-      originalSignature; // original signature in code, here we generalize the definition of
+  // original signature in source code, here we generalize the definition of signature
+  private String originalSignature;
 
   public SemanticNode() {}
-
-  public SemanticNode(
-      Integer nodeID,
-      Boolean needToMerge,
-      NodeType nodeType,
-      String displayName,
-      String qualifiedName) {
-    this.nodeID = nodeID;
-    this.needToMerge = needToMerge;
-    this.nodeType = nodeType;
-    this.displayName = displayName;
-    this.qualifiedName = qualifiedName;
-  }
 
   public SemanticNode(
       Integer nodeID,
@@ -73,42 +60,6 @@ public abstract class SemanticNode {
     this.qualifiedName = qualifiedName;
   }
 
-  @Override
-  public String toString() {
-    return "SemanticNode{"
-        + "nodeType='"
-        + nodeType
-        + '\''
-        + ", displayName='"
-        + displayName
-        + '\''
-        + ", qualifiedName='"
-        + qualifiedName
-        + "}";
-  }
-
-  /**
-   * Mainly for visualization
-   *
-   * @return
-   */
-  public String asString() {
-    return nodeType.asString() + "::" + displayName;
-  }
-
-  /**
-   * To compare if two nodes are equal
-   *
-   * @return
-   */
-  public int hashCode() {
-    return asString().hashCode();
-  }
-
-  public boolean equals(Object o) {
-    return (o instanceof SemanticNode) && (toString().equals(o.toString()));
-  }
-
   public String getOriginalSignature() {
     return originalSignature;
   }
@@ -117,7 +68,10 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
   }
 
-  /** Get the unique fully qualified signature in this project, which should represent the MAIN identification of this node*/
+  /**
+   * Get the unique fully qualified signature in this project, which should represent the MAIN
+   * identification of this node
+   */
   public String getSignature() {
     return getQualifiedName();
   }
@@ -146,5 +100,55 @@ public abstract class SemanticNode {
 
   public Boolean getNeedToMerge() {
     return needToMerge;
+  }
+
+  /**
+   * Mainly for debugging
+   *
+   * @return
+   */
+  @Override
+  public String toString() {
+    return nodeType.toPrettyString() + "{" + originalSignature + "}";
+  }
+
+  /**
+   * Mainly for visualization
+   *
+   * @return
+   */
+  public String toPrettyString() {
+    return nodeType.asString() + "::" + displayName;
+  }
+
+  /**
+   * Complete string representation
+   *
+   * @return
+   */
+  public String asString() {
+    return "SemanticNode{"
+        + "nodeType="
+        + nodeType
+        + ", qualifiedName='"
+        + qualifiedName
+        + '\''
+        + ", originalSignature='"
+        + originalSignature
+        + '\''
+        + '}';
+  }
+
+  /**
+   * To compare if two nodes are equal
+   *
+   * @return
+   */
+  public int hashCode() {
+    return asString().hashCode();
+  }
+
+  public boolean equals(Object o) {
+      return (o instanceof SemanticNode) && (asString().equals(((SemanticNode)o).asString()));
   }
 }

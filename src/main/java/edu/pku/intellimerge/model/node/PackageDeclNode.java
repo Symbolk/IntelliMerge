@@ -16,23 +16,13 @@ public class PackageDeclNode extends NonTerminalNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
+      String originalSignature,
       String packageName,
       List<String> packageNameHierachy) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
-  }
-
-  @Override
-  public String toString() {
-    return "PackageDeclNode{"
-        + "packageName='"
-        + packageName
-        + '\''
-        + ", packageNameHierachy="
-        + packageNameHierachy
-        + '}';
   }
 }

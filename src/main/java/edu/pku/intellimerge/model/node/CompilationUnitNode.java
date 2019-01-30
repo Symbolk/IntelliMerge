@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class CompilationUnitNode extends NonTerminalNode {
   private String packageStatement;
-  private Set<String> importStatements;
+  private Set<String> importStatements; // ordered, so use LinkedHashSet
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
@@ -21,12 +21,13 @@ public class CompilationUnitNode extends NonTerminalNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
+      String originalSignature,
       String fileName,
       String relativePath,
       String absolutePath,
       String packageStatement,
       Set<String> importStatements) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
@@ -38,20 +39,6 @@ public class CompilationUnitNode extends NonTerminalNode {
     this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_ENUM, new ArrayList<>());
-  }
-
-  @Override
-  public String toString() {
-    return "CompilationUnitNode{"
-        + "fileName='"
-        + fileName
-        + '\''
-        + ", relativePath='"
-        + relativePath
-        + '\''
-        + ", absolutePath='"
-        + absolutePath
-        + '}';
   }
 
   public String getPackageStatement() {

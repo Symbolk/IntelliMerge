@@ -21,10 +21,10 @@ public class APIClient {
 
   private static final Logger logger = LoggerFactory.getLogger(APIClient.class);
 
-  private static final String REPO_NAME = "IntelliMerge";
+  private static final String REPO_NAME = "javaparser";
   private static final String REPO_PATH = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
-  private static final String SRC_PATH = "/src/main/java/"; // java project source folder
+  private static final String SRC_PATH = "/javaparser-core/src/main/java/"; // java project source folder
   //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String DIFF_PATH = "D:\\github\\diffs\\" + REPO_NAME;
   private static final String RESULT_PATH = "D:\\github\\merges\\" + REPO_NAME;
@@ -33,15 +33,10 @@ public class APIClient {
     PropertyConfigurator.configure("log4j.properties");
     //      BasicConfigurator.configure();
 
-//    String mergeCommitID = "d9c990a94c725b8d112ba02897988b7400100ce3";
-//    String oursCommitID = "dee6b3f144f3d3bf0f0469cfb3a5c9176b57b9d5";
-//    String theirsCommitID = "4d3a53a47d34f7d93d2b1af76d0b2d7250028397";
-//    String baseCommitID = "52814c72f70239f212e13178c2d1ef01e0e25f47";
-
-    String mergeCommitID = "3ceb2c9453198631adf0f49afc10ece85ccfc295";
-    String oursCommitID = "3ab30428c5c85039cafdf380627436a80386b353";
-    String theirsCommitID = "3ae7bb49d9331107b941a72c97b84042eebf9c7e";
-    String baseCommitID = "003eba5af74699132eb15343c9cb39cab51eb85c";
+    String mergeCommitID = "d9c990a94c725b8d112ba02897988b7400100ce3";
+    String oursCommitID = "dee6b3f144f3d3bf0f0469cfb3a5c9176b57b9d5";
+    String theirsCommitID = "4d3a53a47d34f7d93d2b1af76d0b2d7250028397";
+    String baseCommitID = "52814c72f70239f212e13178c2d1ef01e0e25f47";
 
     try {
       Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
