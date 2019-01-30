@@ -13,7 +13,6 @@ public class FieldDeclNode extends TerminalNode {
   private List<String> modifiers;
   private String fieldType;
   private String fieldName;
-  private String signature;
 
   public FieldDeclNode(
       Integer nodeID,

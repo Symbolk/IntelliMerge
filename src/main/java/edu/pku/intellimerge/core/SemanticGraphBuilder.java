@@ -121,13 +121,13 @@ public class SemanticGraphBuilder {
     Graph<SemanticNode, SemanticEdge> graph = initGraph();
 
     // parse all java files in the file
-    //        ParserConfiguration parserConfiguration
+    // regular project: only one source folder
     File root = new File(sideDiffPath);
     //    SourceRoot sourceRoot = new SourceRoot(root.toPath());
     //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
+    // multi-module project: separated source folder for sub-projects/modules
     //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-    // sub-projects/modules
     ProjectRoot projectRoot =
         new SymbolSolverCollectionStrategy(
                 JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver))
@@ -298,6 +298,8 @@ public class SemanticGraphBuilder {
                 nodeType.asString(),
                 displayName);
         graph.addVertex(typeDeclNode);
+
+        // inner-class and inner-interface should be the children of its parent type declaration
 
         graph.addEdge(
             cuNode,

@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 

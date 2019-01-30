@@ -28,6 +28,10 @@ public class SourceFileCollector {
   private Repository repository;
   private String collectedFilePath;
   private MergeScenario mergeScenario;
+  // care only both modified (possibly textually conflict files)
+  private boolean onlyBothModified = false;
+  // copy imported files or not
+  private boolean copyImportedFiles = true;
 
   public SourceFileCollector(
       MergeScenario mergeScenario, Repository repository, String collectedFilePath) {
@@ -36,19 +40,42 @@ public class SourceFileCollector {
     this.collectedFilePath = collectedFilePath;
   }
 
+  public SourceFileCollector(
+      Repository repository,
+      String collectedFilePath,
+      MergeScenario mergeScenario,
+      boolean onlyBothModified,
+      boolean copyImportedFiles) {
+    this.repository = repository;
+    this.collectedFilePath = collectedFilePath;
+    this.mergeScenario = mergeScenario;
+    this.onlyBothModified = onlyBothModified;
+    this.copyImportedFiles = copyImportedFiles;
+  }
+
+  public void setOnlyBothModified(boolean onlyBothModified) {
+    this.onlyBothModified = onlyBothModified;
+  }
+
+  public void setCopyImportedFiles(boolean copyImportedFiles) {
+    this.copyImportedFiles = copyImportedFiles;
+  }
+
   /** Collect related source files to process together */
   public void collectFilesForAllSides() {
     try {
       getDiffJavaFiles();
-      // collect only both modified files in two sides
-      collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
-      collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
-      collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
-
-      // collect diff files for all sides
-      //      collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
-      //      collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
-      //      collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
+      if (this.onlyBothModified) {
+        // collect only both modified files in two sides
+        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
+      } else {
+        // collect diff files for all sides
+        collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
+        collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
+        collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -114,7 +141,7 @@ public class SourceFileCollector {
   }
 
   /**
-   * Scan the whole project to index all source files
+   * Scan the whole project to index all source files at a specific commit
    *
    * @param commitID
    * @return
@@ -140,15 +167,15 @@ public class SourceFileCollector {
       throws Exception {
 
     for (SimpleDiffEntry diffEntry : diffEntries) {
-      // TODO change type may should be ignored, since they may be imprecise
+      // only care about both modified files now
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
         // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
         String relativePath = diffEntry.getNewPath();
-        logger.info(
-            "{} : {} -> {}",
-            diffEntry.getChangeType(),
-            diffEntry.getOldPath(),
-            diffEntry.getNewPath());
+//        logger.info(
+//            "{} : {} -> {}",
+//            diffEntry.getChangeType(),
+//            diffEntry.getOldPath(),
+//            diffEntry.getNewPath());
         File srcFile = new File(mergeScenario.repoPath + File.separator + relativePath);
         // copy the diff files
         if (srcFile.exists()) {
@@ -158,18 +185,24 @@ public class SourceFileCollector {
           logger.info("Copying diff file: {} ...", srcFile.getName());
 
           // copy the imported files
-          CompilationUnit cu = JavaParser.parse(dstFile);
-          for (ImportDeclaration importDeclaration : cu.getImports()) {
-            String qualifiedName =
-                importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", "");
-            for (SourceFile sourceFile : sourceFiles) {
-              // Check if the file has been copied, to avoid duplicate IO
-              if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
-                srcFile = new File(sourceFile.getAbsolutePath());
-                dstFile = new File(sideCollectedFilePath + sourceFile.getRelativePath());
-                FileUtils.copyFile(srcFile, dstFile);
-                sourceFile.isCopied = true;
-                logger.info("Copying imported file: {} ...", srcFile.getName());
+          if (copyImportedFiles) {
+            CompilationUnit cu = JavaParser.parse(dstFile);
+            for (ImportDeclaration importDeclaration : cu.getImports()) {
+              String qualifiedName =
+                  importDeclaration
+                      .getNameAsString()
+                      .trim()
+                      .replace("import ", "")
+                      .replace(";", "");
+              for (SourceFile sourceFile : sourceFiles) {
+                // Check if the file has been copied, to avoid duplicate IO
+                if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
+                  srcFile = new File(sourceFile.getAbsolutePath());
+                  dstFile = new File(sideCollectedFilePath + sourceFile.getRelativePath());
+                  FileUtils.copyFile(srcFile, dstFile);
+                  sourceFile.isCopied = true;
+                  logger.info("Copying imported file: {} ...", srcFile.getName());
+                }
               }
             }
           }
