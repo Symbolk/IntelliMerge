@@ -7,10 +7,10 @@ public enum Side {
   MANUAL(3, "manualMerged"),
   GIT(4, "gitMerged");
 
-  private Integer index;
+  private int index;
   private String label;
 
-  Side(Integer index, String label) {
+  Side(int index, String label) {
     this.index = index;
     this.label = label;
   }

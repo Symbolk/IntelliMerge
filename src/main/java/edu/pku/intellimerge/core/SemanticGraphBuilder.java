@@ -287,10 +287,11 @@ public class SemanticGraphBuilder {
             classOrInterfaceDeclaration
                 .getModifiers()
                 .stream()
-                .map(Enum::toString)
+                .map(Modifier::toString)
                 .collect(Collectors.toList());
-        String access =
-            Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
+        String access = classOrInterfaceDeclaration.getAccessSpecifier().asString();
+        //
+        // Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
         String originalSignature = getTypeOriginalSignature(classOrInterfaceDeclaration);
 
         TypeDeclNode typeDeclNode =
@@ -355,10 +356,10 @@ public class SemanticGraphBuilder {
               fieldDeclaration
                   .getModifiers()
                   .stream()
-                  .map(Enum::toString)
+                  .map(Modifier::toString)
                   .collect(Collectors.toList());
 
-          access = Modifier.getAccessSpecifier(fieldDeclaration.getModifiers()).asString();
+          access = fieldDeclaration.getAccessSpecifier().asString();
           for (VariableDeclarator field : fieldDeclaration.getVariables()) {
             displayName = field.toString();
             qualifiedName = qualifiedClassName + "." + displayName;
@@ -454,7 +455,7 @@ public class SemanticGraphBuilder {
               methodDeclaration
                   .getModifiers()
                   .stream()
-                  .map(Enum::toString)
+                  .map(Modifier::toString)
                   .collect(Collectors.toList());
           List<String> parameterTypes =
               methodDeclaration
@@ -469,7 +470,7 @@ public class SemanticGraphBuilder {
                   .stream()
                   .map(Parameter::getNameAsString)
                   .collect(Collectors.toList());
-          access = Modifier.getAccessSpecifier(methodDeclaration.getModifiers()).asString();
+          access = methodDeclaration.getAccessSpecifier().asString();
           List<String> throwsExceptions =
               methodDeclaration
                   .getThrownExceptions()

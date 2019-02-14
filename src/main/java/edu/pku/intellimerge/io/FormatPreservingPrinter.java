@@ -25,14 +25,14 @@ public class FormatPreservingPrinter {
 
       myClass = cu.getClassByName("MyNewClassName").get();
       myClass.setName("MyNewClassName");
-      myClass.addModifier(Modifier.PUBLIC);
+      myClass.addModifier(Modifier.publicModifier().getKeyword());
       System.out.println(LexicalPreservingPrinter.print(cu));
 
       System.out.println("----------------");
 
       myClass = cu.getClassByName("MyNewClassName").get();
       myClass.setName("MyNewClassName");
-      myClass.addModifier(Modifier.PUBLIC);
+      myClass.addModifier(Modifier.privateModifier().getKeyword());
       cu.setPackageDeclaration("org.javaparser.samples");
       System.out.println(LexicalPreservingPrinter.print(cu));
     } catch (Exception e) {
