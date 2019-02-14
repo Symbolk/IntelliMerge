@@ -311,6 +311,7 @@ public class SemanticGraphBuilder {
 
         // TODO inner-class and inner-interface should be the children of its parent type
         // declaration
+//        classOrInterfaceDeclaration
 
         graph.addEdge(
             cuNode,
