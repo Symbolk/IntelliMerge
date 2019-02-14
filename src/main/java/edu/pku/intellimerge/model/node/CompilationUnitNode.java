@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.model.node;
 
-import com.github.javaparser.ast.CompilationUnit;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
@@ -13,7 +12,8 @@ public class CompilationUnitNode extends NonTerminalNode {
   private String fileName;
   private String relativePath; // the same as absolute path currently
   private String absolutePath; // file path in the collected folder, not the original repo
-//  private CompilationUnit cu; // corresponding AST node, to get package and import contents in merging
+  //  private CompilationUnit cu; // corresponding AST node, to get package and import contents in
+  // merging
 
   public CompilationUnitNode(
       Integer nodeID,
@@ -22,12 +22,13 @@ public class CompilationUnitNode extends NonTerminalNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
+      String comment,
       String fileName,
       String relativePath,
       String absolutePath,
       String packageStatement,
       Set<String> importStatements) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;
@@ -45,12 +46,12 @@ public class CompilationUnitNode extends NonTerminalNode {
     return packageStatement;
   }
 
-  public Set<String> getImportStatements() {
-    return importStatements;
-  }
-
   public void setPackageStatement(String packageStatement) {
     this.packageStatement = packageStatement;
+  }
+
+  public Set<String> getImportStatements() {
+    return importStatements;
   }
 
   public void setImportStatements(Set<String> importStatements) {

@@ -19,10 +19,11 @@ public class ConstructorDeclNode extends TerminalNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
+      String comment,
       String constructorName,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range);
     this.constructorName = constructorName;
     this.needToMerge = needToMerge;
 

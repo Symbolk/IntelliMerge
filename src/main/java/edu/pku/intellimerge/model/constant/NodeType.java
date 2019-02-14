@@ -21,10 +21,10 @@ public enum NodeType {
   METHOD(6, "method");
 
   // the hierarchy/nesting level of code elements, from outer to inner
-  public Integer level;
+  public int level;
   public String label;
 
-  NodeType(Integer level, String label) {
+  NodeType(int level, String label) {
     this.level = level;
     this.label = label;
   }

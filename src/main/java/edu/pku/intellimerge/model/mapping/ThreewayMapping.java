@@ -4,7 +4,9 @@ import edu.pku.intellimerge.model.SemanticNode;
 
 import java.util.Optional;
 
-/** Nodes are not one-to-one matched */
+/**
+ * Only keep the CUs for now
+ */
 public class ThreewayMapping {
   public Optional<SemanticNode> oursNode;
   public Optional<SemanticNode> baseNode;

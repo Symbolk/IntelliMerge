@@ -4,6 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -173,16 +174,17 @@ public class SemanticGraphBuilder {
       String relativePath = absolutePath.replace(sideDiffPath, "");
 
       // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-      Boolean isChangedFile = mergeScenario.isChangedFile(side, relativePath);
+      Boolean inChangedFile = mergeScenario.isChangedFile(side, relativePath);
 
       CompilationUnitNode cuNode =
           new CompilationUnitNode(
               nodeCount++,
-              isChangedFile,
+              inChangedFile,
               NodeType.CU,
               fileName,
               "",
               fileName,
+              cu.getComment().map(Comment::getContent).orElse(""),
               fileName,
               relativePath,
               absolutePath,
@@ -214,11 +216,12 @@ public class SemanticGraphBuilder {
           PackageDeclNode packageDeclNode =
               new PackageDeclNode(
                   nodeCount++,
-                  isChangedFile,
+                  inChangedFile,
                   NodeType.PACKAGE,
                   finalPackageName,
                   packageDeclaration.getNameAsString(),
                   packageDeclaration.toString().trim(),
+                  packageDeclaration.getComment().map(Comment::getContent).orElse(""),
                   finalPackageName,
                   Arrays.asList(finalPackageName.split(".")));
           graph.addVertex(cuNode);
@@ -250,11 +253,12 @@ public class SemanticGraphBuilder {
         EnumDeclNode enumDeclNode =
             new EnumDeclNode(
                 nodeCount++,
-                isChangedFile,
+                inChangedFile,
                 NodeType.ENUM,
                 displayName,
                 qualifiedName,
                 getTypeOriginalSignature(enumDeclaration),
+                enumDeclaration.getComment().map(Comment::getContent).orElse(""),
                 enumDeclaration.getEntries().toString().replace("[", "{").replace("]", "}"),
                 enumDeclaration.getRange());
         graph.addVertex(enumDeclNode);
@@ -292,18 +296,20 @@ public class SemanticGraphBuilder {
         TypeDeclNode typeDeclNode =
             new TypeDeclNode(
                 nodeCount++,
-                isChangedFile,
+                inChangedFile,
                 nodeType,
                 displayName,
                 qualifiedName,
                 originalSignature,
+                classOrInterfaceDeclaration.getComment().map(Comment::getContent).orElse(""),
                 access,
                 modifiers,
                 nodeType.asString(),
                 displayName);
         graph.addVertex(typeDeclNode);
 
-        // inner-class and inner-interface should be the children of its parent type declaration
+        // TODO inner-class and inner-interface should be the children of its parent type
+        // declaration
 
         graph.addEdge(
             cuNode,
@@ -365,11 +371,12 @@ public class SemanticGraphBuilder {
             FieldDeclNode fieldDeclarationNode =
                 new FieldDeclNode(
                     nodeCount++,
-                    isChangedFile,
+                    inChangedFile,
                     NodeType.FIELD,
                     displayName,
                     qualifiedName,
                     originalSignature,
+                    fieldDeclaration.getComment().map(Comment::getContent).orElse(""),
                     access,
                     modifiers,
                     field.getTypeAsString(),
@@ -416,11 +423,12 @@ public class SemanticGraphBuilder {
           ConstructorDeclNode constructorDeclNode =
               new ConstructorDeclNode(
                   nodeCount++,
-                  isChangedFile,
+                  inChangedFile,
                   NodeType.CONSTRUCTOR,
                   displayName,
                   qualifiedName,
                   constructorDeclaration.getDeclarationAsString(),
+                  constructorDeclaration.getComment().map(Comment::getContent).orElse(""),
                   displayName,
                   constructorDeclaration.getBody().toString(),
                   constructorDeclaration.getRange());
@@ -471,11 +479,12 @@ public class SemanticGraphBuilder {
           MethodDeclNode methodDeclarationNode =
               new MethodDeclNode(
                   nodeCount++,
-                  isChangedFile,
+                  inChangedFile,
                   NodeType.METHOD,
                   displayName,
                   qualifiedName,
                   methodDeclaration.getDeclarationAsString(),
+                  methodDeclaration.getComment().map(Comment::getContent).orElse(""),
                   access,
                   modifiers,
                   methodDeclaration.getTypeAsString(),
@@ -646,7 +655,11 @@ public class SemanticGraphBuilder {
   }
 
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
+    // remove comment if there is in string representation
     String source = typeDeclaration.toString();
+    if (typeDeclaration.getComment().isPresent()) {
+      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
+    }
     return source.substring(0, source.indexOf("{")).trim();
   }
 
@@ -676,7 +689,6 @@ public class SemanticGraphBuilder {
       for (String targeNodeName : targetNodeNames) {
         SemanticNode targetNode = getTargetNode(vertexSet, targeNodeName, targetNodeType);
         if (targetNode != null) {
-          // TODO check if the edge already exists
           // if the edge was added to the graph, returns true; if the edges already exists, returns
           // false
           boolean isSuccessful =

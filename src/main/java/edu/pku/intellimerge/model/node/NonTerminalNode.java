@@ -20,8 +20,9 @@ public class NonTerminalNode extends SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String originalSignature) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
+      String originalSignature,
+      String comment) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
   }
 
   @Override
@@ -32,7 +33,8 @@ public class NonTerminalNode extends SemanticNode {
         this.getNodeType(),
         this.getDisplayName(),
         this.getQualifiedName(),
-        this.getOriginalSignature());
+        this.getOriginalSignature(),
+            this.getComment());
   }
 
   @Override

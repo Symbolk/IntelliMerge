@@ -3,9 +3,11 @@ package edu.pku.intellimerge.model;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
+import javax.swing.text.html.Option;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
@@ -18,6 +20,7 @@ public abstract class SemanticNode {
   private String qualifiedName;
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
+  private String comment;
 
   public SemanticNode() {}
 
@@ -27,13 +30,15 @@ public abstract class SemanticNode {
       NodeType nodeType,
       String displayName,
       String qualifiedName,
-      String originalSignature) {
+      String originalSignature,
+      String comment) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
     this.displayName = displayName;
     this.qualifiedName = qualifiedName;
     this.originalSignature = originalSignature;
+    this.comment = comment;
   }
 
   public Integer getNodeID() {
@@ -74,6 +79,14 @@ public abstract class SemanticNode {
    */
   public String getSignature() {
     return getQualifiedName();
+  }
+
+  public String getComment(){
+    return comment;
+  }
+
+  public void setComment(String comment){
+    this.comment = comment;
   }
 
   public Integer hashCodeSignature() {

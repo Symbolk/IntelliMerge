@@ -61,4 +61,8 @@ public class SemanticEdge {
   public void setWeight(Integer weight) {
     this.weight = weight;
   }
+
+  public boolean isStructuredEdge(){
+    return this.edgeType.isStructureEdge;
+  }
 }

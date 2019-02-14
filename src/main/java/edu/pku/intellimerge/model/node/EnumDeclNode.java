@@ -16,10 +16,11 @@ public class EnumDeclNode extends TerminalNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
+      String comment,
       String body,
       Optional<Range> range) {
     super(
-        nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, body, range);
+        nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range);
     this.incomingEdges.put(EdgeType.DEFINE_ENUM, new ArrayList<>());
   }
 }

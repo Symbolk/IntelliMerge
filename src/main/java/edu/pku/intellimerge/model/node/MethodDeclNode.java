@@ -24,6 +24,7 @@ public class MethodDeclNode extends TerminalNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
+      String comment,
       String access,
       List<String> modifiers,
       String returnType,
@@ -40,6 +41,7 @@ public class MethodDeclNode extends TerminalNode {
         displayName,
         qualifiedName,
         originalSignature,
+        comment,
         body,
         range); // block or ""(abstract method or interface)
     this.access = access;

@@ -23,11 +23,12 @@ public class TerminalNode extends SemanticNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
+      String comment,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
     this.body = body;
-    this.range = range;
+    this.range = range; // since javaparser stores range in Optional, so directly save it
   }
 
   @Override
@@ -39,6 +40,7 @@ public class TerminalNode extends SemanticNode {
         this.getDisplayName(),
         this.getQualifiedName(),
         this.getOriginalSignature(),
+        this.getComment(),
         this.getBody(),
         this.range);
   }

@@ -23,17 +23,17 @@ public enum EdgeType {
   DEFINE_TYPE(14, true, "defines class/interface"),
   DEFINE_ENUM(15, true, "defines enum");
 
-  public Integer index;
+  public int index;
   // whether the edge represent the nesting hierarchy structure, or the interaction with other nodes
-  public Boolean isStructureEdge;
+  public boolean isStructureEdge;
   public String label;
 
-  EdgeType(Integer index, String label) {
+  EdgeType(int index, String label) {
     this.index = index;
     this.label = label;
   }
 
-  EdgeType(Integer index, Boolean isStructureEdge, String label) {
+  EdgeType(int index, Boolean isStructureEdge, String label) {
     this.index = index;
     this.isStructureEdge = isStructureEdge;
     this.label = label;
