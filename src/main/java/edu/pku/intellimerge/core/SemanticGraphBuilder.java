@@ -34,7 +34,6 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.*;
-import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.slf4j.Logger;
@@ -45,49 +44,53 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/** Build SemanticGraph among collected java files */
 public class SemanticGraphBuilder {
   private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
+  // init the semantic graph
+  Graph<SemanticNode, SemanticEdge> graph;
+  JavaSymbolSolver symbolSolver;
+  JavaParserFacade javaParserFacade;
+  // incremental id, unique in one side's graph
+  Integer nodeCount = 0;
+  Integer edgeCount = 0;
+  /*
+   * a series of temp containers to keep relationships between node and symbol
+   * if the symbol is internal: draw the edge in graph;
+   * else:
+   */
+  Map<SemanticNode, List<String>> importEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
+  Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
   private MergeScenario mergeScenario;
+  private Side side;
   private String collectedFilePath;
+  //  the context files for symbolsolving, i.e. the source folder of this java project
+  private String srcPath;
 
-  public SemanticGraphBuilder(MergeScenario mergeScenario, String collectedFilePath) {
+  public SemanticGraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
     this.mergeScenario = mergeScenario;
+    this.side = side;
     this.collectedFilePath = collectedFilePath;
-  }
+    this.srcPath = mergeScenario.repoPath + mergeScenario.srcPath;
 
-  /**
-   * Build graphs once for all
-   *
-   * @return
-   * @throws Exception
-   */
-  public Triple<
-          Graph<SemanticNode, SemanticEdge>,
-          Graph<SemanticNode, SemanticEdge>,
-          Graph<SemanticNode, SemanticEdge>>
-      buildGraphsForAllSides() throws Exception {
-    Graph<SemanticNode, SemanticEdge> oursGraph = buildGraphForOneSide(Side.OURS);
-    Graph<SemanticNode, SemanticEdge> theirsGraph = buildGraphForOneSide(Side.THEIRS);
-    Graph<SemanticNode, SemanticEdge> baseGraph = buildGraphForOneSide(Side.BASE);
-    return Triple.of(oursGraph, baseGraph, theirsGraph);
-  }
-
-  /**
-   * Build the graph once for one side
-   *
-   * @return
-   * @throws Exception
-   */
-  public Graph<SemanticNode, SemanticEdge> buildGraphForOneSide(Side side) throws Exception {
-
-    Graph<SemanticNode, SemanticEdge> graph =
-        //        SemanticGraphBuilder.initGraph();
-        build(side, mergeScenario.repoPath + mergeScenario.srcPath);
-    if (graph == null) {
-      logger.error(side.toString() + " graph is null!");
-    }
-    return graph;
+    this.graph = initGraph();
+    // set up the typsolver
+    TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
+    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(srcPath));
+    reflectionTypeSolver.setParent(reflectionTypeSolver);
+    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
+    combinedTypeSolver.add(reflectionTypeSolver);
+    combinedTypeSolver.add(javaParserTypeSolver);
+    this.symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
+    JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
+    this.javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
   }
 
   /**
@@ -98,28 +101,14 @@ public class SemanticGraphBuilder {
    * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
    * qualified name, for the symbol is defined in unavailable jars
    *
-   * @param side
-   * @param srcPath the context files for symbolsolving, i.e. the source folder of this java project
    * @return
    */
-  public Graph<SemanticNode, SemanticEdge> build(Side side, String srcPath) throws Exception {
+  public Graph<SemanticNode, SemanticEdge> build() {
 
     // the folder path which contains collected files to build the graph upon
-    String sideDiffPath = collectedFilePath + side.toString().toLowerCase() + File.separator;
-
-    // set up the typsolver
-    TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(srcPath));
-    reflectionTypeSolver.setParent(reflectionTypeSolver);
-    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-    combinedTypeSolver.add(reflectionTypeSolver);
-    combinedTypeSolver.add(javaParserTypeSolver);
-    JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-    JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
-    final JavaParserFacade javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
-
-    // init the semantic graph
-    Graph<SemanticNode, SemanticEdge> graph = initGraph();
+    String sideDiffPath = collectedFilePath + File.separator + side.asString() + File.separator;
+    // just for sure: reinit the graph
+    this.graph = initGraph();
 
     // parse all java files in the file
     // regular project: only one source folder
@@ -146,24 +135,6 @@ public class SemanticGraphBuilder {
               .collect(Collectors.toList()));
     }
 
-    // incremental id, unique in one side's graph
-    Integer nodeCount = 0;
-    Integer edgeCount = 0;
-
-    /*
-     * a series of temp containers to keep relationships between node and symbol
-     * if the symbol is internal: draw the edge in graph;
-     * else:
-     */
-    Map<SemanticNode, List<String>> importEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
-    Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
-
     /*
      * build the graph by analyzing every CU
      */
@@ -171,15 +142,15 @@ public class SemanticGraphBuilder {
       String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
       String absolutePath =
           cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
-      String relativePath = absolutePath.replace(sideDiffPath, "");
+      String relativePath = absolutePath.replace(collectedFilePath, "");
 
       // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-      Boolean inChangedFile = mergeScenario.isChangedFile(side, relativePath);
+      Boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);
 
       CompilationUnitNode cuNode =
           new CompilationUnitNode(
               nodeCount++,
-              inChangedFile,
+              isInChangedFile,
               NodeType.CU,
               fileName,
               "",
@@ -216,7 +187,7 @@ public class SemanticGraphBuilder {
           PackageDeclNode packageDeclNode =
               new PackageDeclNode(
                   nodeCount++,
-                  inChangedFile,
+                  isInChangedFile,
                   NodeType.PACKAGE,
                   finalPackageName,
                   packageDeclaration.getNameAsString(),
@@ -245,366 +216,47 @@ public class SemanticGraphBuilder {
         importedClassNames.add(
             importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
       }
-      // 3. type declaration: enum, class/interface
-      List<EnumDeclaration> enumDeclarations = cu.findAll(EnumDeclaration.class);
-      for (EnumDeclaration enumDeclaration : enumDeclarations) {
-        String displayName = enumDeclaration.getNameAsString();
-        String qualifiedName = packageName + "." + displayName;
-        EnumDeclNode enumDeclNode =
-            new EnumDeclNode(
-                nodeCount++,
-                inChangedFile,
-                NodeType.ENUM,
-                displayName,
-                qualifiedName,
-                getTypeOriginalSignature(enumDeclaration),
-                enumDeclaration.getComment().map(Comment::getContent).orElse(""),
-                enumDeclaration.getEntries().toString().replace("[", "{").replace("]", "}"),
-                enumDeclaration.getRange());
-        graph.addVertex(enumDeclNode);
 
-        graph.addEdge(
-            cuNode,
-            enumDeclNode,
-            new SemanticEdge(edgeCount++, EdgeType.DEFINE_ENUM, cuNode, enumDeclNode));
-      }
+      // 3. type declaration: annotation, enum, class/interface
+      // getTypes() returns top level types declared in this compilation unit
+      for (TypeDeclaration td : cu.getTypes()) {
+        //        td.getMembers()
+        TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount, isInChangedFile);
+        nodeCount++;
+        graph.addVertex(tdNode);
 
-      List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations =
-          cu.findAll(ClassOrInterfaceDeclaration.class);
-      for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration : classOrInterfaceDeclarations) {
-        String displayName = classOrInterfaceDeclaration.getNameAsString();
-        String qualifiedName = packageName + "." + displayName;
-        String qualifiedClassName = qualifiedName;
-        // enum/interface/inner/local class
-        NodeType nodeType = NodeType.CLASS; // default
-        nodeType = classOrInterfaceDeclaration.isInterface() ? NodeType.INTERFACE : nodeType;
-        nodeType = classOrInterfaceDeclaration.isEnumDeclaration() ? NodeType.ENUM : nodeType;
-        nodeType = classOrInterfaceDeclaration.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
-        nodeType =
-            classOrInterfaceDeclaration.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
-
-        List<String> modifiers =
-            classOrInterfaceDeclaration
-                .getModifiers()
-                .stream()
-                .map(Modifier::toString)
-                .collect(Collectors.toList());
-        String access = classOrInterfaceDeclaration.getAccessSpecifier().asString();
-        //
-        // Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
-        String originalSignature = getTypeOriginalSignature(classOrInterfaceDeclaration);
-
-        TypeDeclNode typeDeclNode =
-            new TypeDeclNode(
-                nodeCount++,
-                inChangedFile,
-                nodeType,
-                displayName,
-                qualifiedName,
-                originalSignature,
-                classOrInterfaceDeclaration.getComment().map(Comment::getContent).orElse(""),
-                access,
-                modifiers,
-                nodeType.asString(),
-                displayName);
-        graph.addVertex(typeDeclNode);
-
-        // TODO inner-class and inner-interface should be the children of its parent type
-        // declaration
-//        classOrInterfaceDeclaration
-
-        graph.addEdge(
-            cuNode,
-            typeDeclNode,
-            new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, typeDeclNode));
-
-        // extend/implement
-        if (classOrInterfaceDeclaration.getExtendedTypes().size() > 0) {
-          // single extends
-          String extendedType =
-              classOrInterfaceDeclaration
-                  .getExtendedTypes()
-                  .get(0)
-                  .resolve()
-                  .asReferenceType()
-                  .getQualifiedName();
-          List<String> temp = new ArrayList<>();
-          temp.add(extendedType);
-          typeDeclNode.setExtendType(extendedType);
-          extendEdges.put(typeDeclNode, temp);
-        }
-        if (classOrInterfaceDeclaration.getImplementedTypes().size() > 0) {
-          List<String> implementedTypes = new ArrayList<>();
-          // multiple implements
-          classOrInterfaceDeclaration
-              .getImplementedTypes()
-              .forEach(
-                  implementedType ->
-                      implementedTypes.add(
-                          implementedType.resolve().asReferenceType().getQualifiedName()));
-          typeDeclNode.setImplementTypes(implementedTypes);
-          implementEdges.put(typeDeclNode, implementedTypes);
-        }
-
-        // class-imports-class(es)
-        importEdges.put(cuNode, importedClassNames);
-
-        // 4. field
-        List<FieldDeclaration> fieldDeclarations = classOrInterfaceDeclaration.getFields();
-        for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
-          // there can be more than one var declared in one field declaration, add one node for each
-          modifiers =
-              fieldDeclaration
-                  .getModifiers()
-                  .stream()
-                  .map(Modifier::toString)
-                  .collect(Collectors.toList());
-
-          access = fieldDeclaration.getAccessSpecifier().asString();
-          for (VariableDeclarator field : fieldDeclaration.getVariables()) {
-            displayName = field.toString();
-            qualifiedName = qualifiedClassName + "." + displayName;
-            originalSignature = getFieldOriginalSignature(fieldDeclaration);
-            String body =
-                field.getInitializer().isPresent()
-                    ? "=" + field.getInitializer().get().toString() + ";"
-                    : ";";
-
-            FieldDeclNode fieldDeclarationNode =
-                new FieldDeclNode(
-                    nodeCount++,
-                    inChangedFile,
-                    NodeType.FIELD,
-                    displayName,
-                    qualifiedName,
-                    originalSignature,
-                    fieldDeclaration.getComment().map(Comment::getContent).orElse(""),
-                    access,
-                    modifiers,
-                    field.getTypeAsString(),
-                    field.getNameAsString(),
-                    body,
-                    field.getRange());
-            graph.addVertex(fieldDeclarationNode);
-            // add edge between field and class
-            graph.addEdge(
-                typeDeclNode,
-                fieldDeclarationNode,
-                new SemanticEdge(
-                    edgeCount++, EdgeType.DEFINE_FIELD, typeDeclNode, fieldDeclarationNode));
-            // 4.1 object creation in field declaration
-            List<String> declClassNames = new ArrayList<>();
-            List<String> initClassNames = new ArrayList<>();
-            //            if (!field.getType().isClassOrInterfaceType()) {
-            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
-            //              SymbolReference<ResolvedTypeDeclaration> ref = javaParserFacade.solve();
-            //              if (ref.isSolved()) {
-            //                String classUsedInFieldName =
-            // ref.getCorrespondingDeclaration().getQualifiedName();
-            //                if (field.getInitializer().isPresent()) {
-            //                  initClassNames.add(classUsedInFieldName);
-            //                } else {
-            //                  declClassNames.add(classUsedInFieldName);
-            //                }
-            //              }
-            //            }
-            if (declClassNames.size() > 0) {
-              declObjectEdges.put(fieldDeclarationNode, declClassNames);
-            }
-            if (initClassNames.size() > 0) {
-              initObjectEdges.put(fieldDeclarationNode, initClassNames);
-            }
-          }
-        }
-        // 5. constructor
-        List<ConstructorDeclaration> constructorDeclarations =
-            classOrInterfaceDeclaration.getConstructors();
-        for (ConstructorDeclaration constructorDeclaration : constructorDeclarations) {
-          displayName = constructorDeclaration.getSignature().toString();
-          qualifiedName = qualifiedClassName + "." + displayName;
-          ConstructorDeclNode constructorDeclNode =
-              new ConstructorDeclNode(
-                  nodeCount++,
-                  inChangedFile,
-                  NodeType.CONSTRUCTOR,
-                  displayName,
-                  qualifiedName,
-                  constructorDeclaration.getDeclarationAsString(),
-                  constructorDeclaration.getComment().map(Comment::getContent).orElse(""),
-                  displayName,
-                  constructorDeclaration.getBody().toString(),
-                  constructorDeclaration.getRange());
-          graph.addVertex(constructorDeclNode);
+        if (td.isTopLevelType()) {
           graph.addEdge(
-              typeDeclNode,
-              constructorDeclNode,
-              new SemanticEdge(
-                  edgeCount++, EdgeType.DEFINE_CONSTRUCTOR, typeDeclNode, constructorDeclNode));
-        }
-        // 6. method
-        // TODO override/overload
-        List<MethodDeclaration> methodDeclarations = classOrInterfaceDeclaration.getMethods();
-        for (MethodDeclaration methodDeclaration : methodDeclarations) {
-          if (methodDeclaration.getAnnotations().size() > 0) {
-            if (methodDeclaration.isAnnotationPresent("Override")) {
-              // search the method signature in its superclass or interface
-            }
-          }
-          displayName = methodDeclaration.getSignature().toString();
-          qualifiedName = qualifiedClassName + "." + displayName;
-          modifiers =
-              methodDeclaration
-                  .getModifiers()
-                  .stream()
-                  .map(Modifier::toString)
-                  .collect(Collectors.toList());
-          List<String> parameterTypes =
-              methodDeclaration
-                  .getParameters()
-                  .stream()
-                  .map(Parameter::getType)
-                  .map(Type::asString)
-                  .collect(Collectors.toList());
-          List<String> parameterNames =
-              methodDeclaration
-                  .getParameters()
-                  .stream()
-                  .map(Parameter::getNameAsString)
-                  .collect(Collectors.toList());
-          access = methodDeclaration.getAccessSpecifier().asString();
-          List<String> throwsExceptions =
-              methodDeclaration
-                  .getThrownExceptions()
-                  .stream()
-                  .map(ReferenceType::toString)
-                  .collect(Collectors.toList());
-          MethodDeclNode methodDeclarationNode =
-              new MethodDeclNode(
-                  nodeCount++,
-                  inChangedFile,
-                  NodeType.METHOD,
-                  displayName,
-                  qualifiedName,
-                  methodDeclaration.getDeclarationAsString(),
-                  methodDeclaration.getComment().map(Comment::getContent).orElse(""),
-                  access,
-                  modifiers,
-                  methodDeclaration.getTypeAsString(),
-                  displayName.substring(0, displayName.indexOf("(")),
-                  parameterTypes,
-                  parameterNames,
-                  throwsExceptions,
-                  methodDeclaration.getBody().map(BlockStmt::toString).orElse(""),
-                  methodDeclaration.getRange());
-          graph.addVertex(methodDeclarationNode);
-          graph.addEdge(
-              typeDeclNode,
-              methodDeclarationNode,
-              new SemanticEdge(
-                  edgeCount++, EdgeType.DEFINE_METHOD, typeDeclNode, methodDeclarationNode));
+              cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
 
-          // 6.1 new instance
-          List<ObjectCreationExpr> objectCreationExprs =
-              methodDeclaration.findAll(ObjectCreationExpr.class);
-          List<String> createObjectNames = new ArrayList<>();
-          for (ObjectCreationExpr objectCreationExpr : objectCreationExprs) {
-            //            SymbolReference<? extends ResolvedConstructorDeclaration> ref =
-            //                    javaParserFacade.solve((objectCreationExpr));
-            //            if(ref.isSolved()){
-            //              String typeQualifiedName =
-            // ref.getCorrespondingDeclaration().declaringType().getQualifiedName();
-            //              createObjectNames.add(typeQualifiedName);
-            //            }
-            try {
-              String typeQualifiedName =
-                  objectCreationExpr.resolve().declaringType().getQualifiedName();
-              createObjectNames.add(typeQualifiedName);
-            } catch (UnsolvedSymbolException e) {
-              continue;
+          if (td.isClassOrInterfaceDeclaration()) {
+            ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
+            // extend/implement
+            if (cid.getExtendedTypes().size() > 0) {
+              // single extends
+              String extendedType =
+                  cid.getExtendedTypes().get(0).resolve().asReferenceType().getQualifiedName();
+              List<String> temp = new ArrayList<>();
+              temp.add(extendedType);
+              tdNode.setExtendType(extendedType);
+              extendEdges.put(tdNode, temp);
             }
-          }
-          if (createObjectNames.size() > 0) {
-            initObjectEdges.put(methodDeclarationNode, createObjectNames);
-          }
+            if (cid.getImplementedTypes().size() > 0) {
+              List<String> implementedTypes = new ArrayList<>();
+              // multiple implements
+              cid.getImplementedTypes()
+                  .forEach(
+                      implementedType ->
+                          implementedTypes.add(
+                              implementedType.resolve().asReferenceType().getQualifiedName()));
+              tdNode.setImplementTypes(implementedTypes);
+              implementEdges.put(tdNode, implementedTypes);
+            }
 
-          // 6.2 field access
-          // TODO support self field access
-          List<FieldAccessExpr> fieldAccessExprs = methodDeclaration.findAll(FieldAccessExpr.class);
-          List<String> readFieldNames = new ArrayList<>();
-          List<String> writeFieldNames = new ArrayList<>();
-          for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
-            // resolve the field declaration and draw the edge
-            //            final SymbolReference<? extends ResolvedValueDeclaration> ref =
-            //                javaParserFacade.solve(fieldAccessExpr);
-            SymbolReference<? extends ResolvedValueDeclaration> ref =
-                javaParserFacade.solve((fieldAccessExpr));
-            if (ref.isSolved()) {
-              // internal types
-              ResolvedValueDeclaration resolvedDeclaration = ref.getCorrespondingDeclaration();
-              if (resolvedDeclaration.isField()) {
-                ResolvedFieldDeclaration resolvedFieldDeclaration = resolvedDeclaration.asField();
-                displayName = resolvedFieldDeclaration.getName();
-                qualifiedName =
-                    resolvedFieldDeclaration.declaringType().getQualifiedName()
-                        + "."
-                        + resolvedFieldDeclaration.getName();
-              } else if (resolvedDeclaration.isEnumConstant()) {
-                ResolvedEnumConstantDeclaration resolvedEnumConstantDeclaration =
-                    resolvedDeclaration.asEnumConstant();
-                displayName = resolvedEnumConstantDeclaration.getName();
-                // TODO: cannot get qualified name now
-                qualifiedName = resolvedEnumConstantDeclaration.getName();
-              }
-            } else {
-              // external types
-            }
-            // whether the field is assigned a value
-            if (fieldAccessExpr.getParentNode().isPresent()) {
-              Node parent = fieldAccessExpr.getParentNode().get();
-              if (parent instanceof AssignExpr) {
-                AssignExpr parentAssign = (AssignExpr) parent;
-                if (parentAssign.getTarget().equals(fieldAccessExpr)) {
-                  writeFieldNames.add(qualifiedName);
-                }
-              }
-            }
-            readFieldNames.add(qualifiedName);
+            // class-imports-class(es)
+            importEdges.put(cuNode, importedClassNames);
           }
-          if (readFieldNames.size() > 0) {
-            readFieldEdges.put(methodDeclarationNode, readFieldNames);
-          }
-          if (writeFieldNames.size() > 0) {
-            writeFieldEdges.put(methodDeclarationNode, writeFieldNames);
-          }
-          // 6.3 method call
-          List<MethodCallExpr> methodCallExprs = methodDeclaration.findAll(MethodCallExpr.class);
-          List<String> methodCalledNames = new ArrayList<>();
-          for (MethodCallExpr methodCallExpr : methodCallExprs) {
-            // try to solve the symbol, create node&edge for internal types, and save the external
-            // relationships
-            try {
-              SymbolReference<ResolvedMethodDeclaration> ref =
-                  javaParserFacade.solve((methodCallExpr));
-              if (ref.isSolved()) {
-                ResolvedMethodDeclaration md = methodCallExpr.resolve();
-                StringBuilder sb = new StringBuilder();
-                sb.append(md.getQualifiedName());
-                sb.append("(");
-                for (int i = 0; i < md.getNumberOfParams(); i++) {
-                  if (i != 0) {
-                    sb.append(", ");
-                  }
-                  String qualifiedType = md.getParam(i).describeType();
-                  sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".") + 1));
-                }
-                sb.append(")");
-                methodCalledNames.add(sb.toString());
-              }
-            } catch (UnsolvedSymbolException e) {
-              continue;
-            }
-          }
-          callMethodEdges.put(methodDeclarationNode, methodCalledNames);
+          processMemebers(td, tdNode, packageName, isInChangedFile);
         }
       }
     }
@@ -648,9 +300,322 @@ public class SemanticGraphBuilder {
     return graph;
   }
 
-  // TODO: remove comments
+  private void processMemebers(
+      TypeDeclaration td, TypeDeclNode tdNode, String packageName, boolean isInChangedFile) {
+    String qualifiedTypeName = packageName + "." + td.getNameAsString();
+    List<String> modifiers;
+    String access, displayName, qualifiedName, originalSignature;
+    // if contains nested type declaration, iterate into it
+    for (Node child : td.getChildNodes()) {
+      if (child instanceof TypeDeclaration) {
+        TypeDeclaration childTD = (TypeDeclaration) child;
+        if (childTD.isNestedType()) {
+          // add edge from the parent td to the nested td
+          TypeDeclNode childTDNode =
+              processTypeDeclaration(childTD, packageName, nodeCount, isInChangedFile);
+          graph.addVertex(childTDNode);
+          graph.addEdge(
+              tdNode,
+              childTDNode,
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, tdNode, childTDNode));
+          // process nested td members iteratively
+          processMemebers(childTD, childTDNode, packageName, isInChangedFile);
+        }
+      } else {
+        // for other members (constructor, field, method), create the node
+        // add the edge from the parent td to the member
+        // 4. field
+        if (child instanceof FieldDeclaration) {
+          FieldDeclaration fd = (FieldDeclaration) child;
+          // there can be more than one var declared in one field declaration, add one node for
+          // each
+          modifiers =
+              fd.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+
+          access = fd.getAccessSpecifier().asString();
+          for (VariableDeclarator field : fd.getVariables()) {
+            displayName = field.toString();
+            qualifiedName = qualifiedTypeName + "." + displayName;
+            originalSignature = getFieldOriginalSignature(fd);
+            String body =
+                field.getInitializer().isPresent()
+                    ? "=" + field.getInitializer().get().toString() + ";"
+                    : ";";
+
+            FieldDeclNode fdNode =
+                new FieldDeclNode(
+                    nodeCount++,
+                    isInChangedFile,
+                    NodeType.FIELD,
+                    displayName,
+                    qualifiedName,
+                    originalSignature,
+                    fd.getComment().map(Comment::getContent).orElse(""),
+                    access,
+                    modifiers,
+                    field.getTypeAsString(),
+                    field.getNameAsString(),
+                    body,
+                    field.getRange());
+            graph.addVertex(fdNode);
+            // add edge between field and class
+            graph.addEdge(
+                tdNode,
+                fdNode,
+                new SemanticEdge(edgeCount++, EdgeType.DEFINE_FIELD, tdNode, fdNode));
+            // 4.1 object creation in field declaration
+            List<String> declClassNames = new ArrayList<>();
+            List<String> initClassNames = new ArrayList<>();
+            //            if (!field.getType().isClassOrInterfaceType()) {
+            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
+            //              SymbolReference<ResolvedTypeDeclaration> ref =
+            // javaParserFacade.solve();
+            //              if (ref.isSolved()) {
+            //                String classUsedInFieldName =
+            // ref.getCorrespondingDeclaration().getQualifiedName();
+            //                if (field.getInitializer().isPresent()) {
+            //                  initClassNames.add(classUsedInFieldName);
+            //                } else {
+            //                  declClassNames.add(classUsedInFieldName);
+            //                }
+            //              }
+            //            }
+            if (declClassNames.size() > 0) {
+              declObjectEdges.put(fdNode, declClassNames);
+            }
+            if (initClassNames.size() > 0) {
+              initObjectEdges.put(fdNode, initClassNames);
+            }
+          }
+        }
+
+        // 5. constructor
+        if (child instanceof ConstructorDeclaration) {
+          ConstructorDeclaration cd = (ConstructorDeclaration) child;
+          displayName = cd.getSignature().toString();
+          qualifiedName = qualifiedTypeName + "." + displayName;
+          ConstructorDeclNode cdNode =
+              new ConstructorDeclNode(
+                  nodeCount++,
+                  isInChangedFile,
+                  NodeType.CONSTRUCTOR,
+                  displayName,
+                  qualifiedName,
+                  cd.getDeclarationAsString(),
+                  cd.getComment().map(Comment::getContent).orElse(""),
+                  displayName,
+                  cd.getBody().toString(),
+                  cd.getRange());
+          graph.addVertex(cdNode);
+          graph.addEdge(
+              tdNode,
+              cdNode,
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTRUCTOR, tdNode, cdNode));
+        }
+        // 6. method
+        if (child instanceof MethodDeclaration) {
+          MethodDeclaration md = (MethodDeclaration) child;
+          if (md.getAnnotations().size() > 0) {
+            if (md.isAnnotationPresent("Override")) {
+              // search the method signature in its superclass or interface
+            }
+          }
+          displayName = md.getSignature().toString();
+          qualifiedName = qualifiedTypeName + "." + displayName;
+          modifiers =
+              md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+          List<String> parameterTypes =
+              md.getParameters()
+                  .stream()
+                  .map(Parameter::getType)
+                  .map(Type::asString)
+                  .collect(Collectors.toList());
+          List<String> parameterNames =
+              md.getParameters()
+                  .stream()
+                  .map(Parameter::getNameAsString)
+                  .collect(Collectors.toList());
+          access = md.getAccessSpecifier().asString();
+          List<String> throwsExceptions =
+              md.getThrownExceptions()
+                  .stream()
+                  .map(ReferenceType::toString)
+                  .collect(Collectors.toList());
+          MethodDeclNode mdNode =
+              new MethodDeclNode(
+                  nodeCount++,
+                  isInChangedFile,
+                  NodeType.METHOD,
+                  displayName,
+                  qualifiedName,
+                  md.getDeclarationAsString(),
+                  md.getComment().map(Comment::getContent).orElse(""),
+                  access,
+                  modifiers,
+                  md.getTypeAsString(),
+                  displayName.substring(0, displayName.indexOf("(")),
+                  parameterTypes,
+                  parameterNames,
+                  throwsExceptions,
+                  md.getBody().map(BlockStmt::toString).orElse(""),
+                  md.getRange());
+          graph.addVertex(mdNode);
+          graph.addEdge(
+              tdNode,
+              mdNode,
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE_METHOD, tdNode, mdNode));
+
+          // 6.1 new instance
+          List<ObjectCreationExpr> objectCreationExprs = md.findAll(ObjectCreationExpr.class);
+          List<String> createObjectNames = new ArrayList<>();
+          for (ObjectCreationExpr objectCreationExpr : objectCreationExprs) {
+            //            SymbolReference<? extends ResolvedConstructorDeclaration> ref =
+            //                    javaParserFacade.solve((objectCreationExpr));
+            //            if(ref.isSolved()){
+            //              String typeQualifiedName =
+            // ref.getCorrespondingDeclaration().declaringType().getQualifiedName();
+            //              createObjectNames.add(typeQualifiedName);
+            //            }
+            try {
+              String typeQualifiedName =
+                  objectCreationExpr.resolve().declaringType().getQualifiedName();
+              createObjectNames.add(typeQualifiedName);
+            } catch (UnsolvedSymbolException e) {
+              continue;
+            }
+          }
+          if (createObjectNames.size() > 0) {
+            initObjectEdges.put(mdNode, createObjectNames);
+          }
+
+          // 6.2 field access
+          // TODO support self field access
+          List<FieldAccessExpr> fieldAccessExprs = md.findAll(FieldAccessExpr.class);
+          List<String> readFieldNames = new ArrayList<>();
+          List<String> writeFieldNames = new ArrayList<>();
+          for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
+            // resolve the field declaration and draw the edge
+            //            final SymbolReference<? extends ResolvedValueDeclaration> ref =
+            //                javaParserFacade.solve(fieldAccessExpr);
+            SymbolReference<? extends ResolvedValueDeclaration> ref =
+                javaParserFacade.solve((fieldAccessExpr));
+            if (ref.isSolved()) {
+              // internal types
+              ResolvedValueDeclaration resolvedDeclaration = ref.getCorrespondingDeclaration();
+              if (resolvedDeclaration.isField()) {
+                ResolvedFieldDeclaration resolvedFieldDeclaration = resolvedDeclaration.asField();
+                displayName = resolvedFieldDeclaration.getName();
+                qualifiedName =
+                    resolvedFieldDeclaration.declaringType().getQualifiedName()
+                        + "."
+                        + resolvedFieldDeclaration.getName();
+              } else if (resolvedDeclaration.isEnumConstant()) {
+                ResolvedEnumConstantDeclaration resolvedEnumConstantDeclaration =
+                    resolvedDeclaration.asEnumConstant();
+                displayName = resolvedEnumConstantDeclaration.getName();
+                // TODO: cannot get qualified name now
+                qualifiedName = resolvedEnumConstantDeclaration.getName();
+              }
+            } else {
+              // external types
+            }
+            // whether the field is assigned a value
+            if (fieldAccessExpr.getParentNode().isPresent()) {
+              Node parent = fieldAccessExpr.getParentNode().get();
+              if (parent instanceof AssignExpr) {
+                AssignExpr parentAssign = (AssignExpr) parent;
+                if (parentAssign.getTarget().equals(fieldAccessExpr)) {
+                  writeFieldNames.add(qualifiedName);
+                }
+              }
+            }
+            readFieldNames.add(qualifiedName);
+          }
+          if (readFieldNames.size() > 0) {
+            readFieldEdges.put(mdNode, readFieldNames);
+          }
+          if (writeFieldNames.size() > 0) {
+            writeFieldEdges.put(mdNode, writeFieldNames);
+          }
+          // 6.3 method call
+          List<MethodCallExpr> methodCallExprs = md.findAll(MethodCallExpr.class);
+          List<String> methodCalledNames = new ArrayList<>();
+          for (MethodCallExpr methodCallExpr : methodCallExprs) {
+            // try to solve the symbol, create node&edge for internal types, and save the
+            // external
+            // relationships
+            try {
+              SymbolReference<ResolvedMethodDeclaration> ref =
+                  javaParserFacade.solve((methodCallExpr));
+              if (ref.isSolved()) {
+                ResolvedMethodDeclaration resolvedMethodDeclaration = methodCallExpr.resolve();
+                StringBuilder sb = new StringBuilder();
+                sb.append(resolvedMethodDeclaration.getQualifiedName());
+                sb.append("(");
+                for (int i = 0; i < resolvedMethodDeclaration.getNumberOfParams(); i++) {
+                  if (i != 0) {
+                    sb.append(", ");
+                  }
+                  String qualifiedType = resolvedMethodDeclaration.getParam(i).describeType();
+                  sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".") + 1));
+                }
+                sb.append(")");
+                methodCalledNames.add(sb.toString());
+              }
+            } catch (UnsolvedSymbolException e) {
+              continue;
+            }
+          }
+          callMethodEdges.put(mdNode, methodCalledNames);
+        }
+      }
+    }
+  }
+
+  private TypeDeclNode processTypeDeclaration(
+      TypeDeclaration td, String packageName, int nodeCount, boolean isInChangedFile) {
+    String displayName = td.getNameAsString();
+    String qualifiedName = packageName + "." + displayName;
+    // enum/interface/inner/local class
+    NodeType nodeType = NodeType.CLASS; // default
+    nodeType = td.isEnumDeclaration() ? NodeType.ENUM : nodeType;
+    nodeType = td.isAnnotationDeclaration() ? NodeType.ANNOTATION : nodeType;
+    if (td.isClassOrInterfaceDeclaration()) {
+      ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
+      nodeType = cid.isInterface() ? NodeType.INTERFACE : nodeType;
+      nodeType = cid.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
+      nodeType = cid.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
+    }
+    // TODO why the toString cannot be resolved?
+    List<String> modifiers = new ArrayList<>();
+    //    List<String> modifiers =
+    //        td.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+    String access = td.getAccessSpecifier().asString();
+    //
+    // Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
+    String originalSignature = getTypeOriginalSignature(td);
+
+    TypeDeclNode tdNode =
+        new TypeDeclNode(
+            nodeCount++,
+            isInChangedFile,
+            nodeType,
+            displayName,
+            qualifiedName,
+            originalSignature,
+            td.getComment().map(Comment::getContent).orElse(""),
+            access,
+            modifiers,
+            nodeType.asString(),
+            displayName);
+    return tdNode;
+  }
+
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
     String source = fieldDeclaration.toString();
+    if (fieldDeclaration.getComment().isPresent()) {
+      source = source.replace(fieldDeclaration.getComment().get().getContent(), "");
+    }
     return source
         .substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";")))
         .trim();

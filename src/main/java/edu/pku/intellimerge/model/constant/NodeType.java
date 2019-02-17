@@ -11,7 +11,7 @@ public enum NodeType {
   CLASS(3, "class"),
   INTERFACE(3, "interface"),
   ENUM(3, "enum"),
-  // ANNOTATION // annotation type declaration
+  ANNOTATION(3, "annotation"), // annotation type declaration
   INNER_CLASS(4, "inner_class"),
   LOCAL_CLASS(5, "local_class"),
 

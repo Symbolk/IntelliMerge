@@ -6,10 +6,13 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class or Interface Declaration
+ */
 public class TypeDeclNode extends NonTerminalNode {
   private String access; // can be empty for most inner class
   private List<String> modifiers; // abstract
-  private String typeType; // class/enum/interface/annotation type
+  private String type; // annotation/class/interface/enum
   private String typeName;
   private String extendType; // java only allows single extending
   private List<String> implementTypes;
@@ -24,12 +27,12 @@ public class TypeDeclNode extends NonTerminalNode {
       String comment,
       String access,
       List<String> modifiers,
-      String typeType,
+      String type,
       String typeName) {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
     this.access = access;
     this.modifiers = modifiers;
-    this.typeType = typeType;
+    this.type = type;
     this.typeName = typeName;
     this.needToMerge = needToMerge;
 
@@ -48,7 +51,7 @@ public class TypeDeclNode extends NonTerminalNode {
     this.outgoingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_INNER_CLASS, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_ENUM, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
   }
 
   public void setExtendType(String extendType) {

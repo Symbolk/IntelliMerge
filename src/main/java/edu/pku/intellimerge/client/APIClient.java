@@ -1,8 +1,8 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
-import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -24,7 +24,8 @@ public class APIClient {
   private static final String REPO_NAME = "javaparser";
   private static final String REPO_PATH = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
-  private static final String SRC_PATH = "/javaparser-core/src/main/java/"; // java project source folder
+  private static final String SRC_PATH =
+      "/javaparser-core/src/main/java/"; // java project source folder
   //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String DIFF_PATH = "D:\\github\\diffs\\" + REPO_NAME;
   private static final String RESULT_PATH = "D:\\github\\merges\\" + REPO_NAME;
@@ -80,22 +81,32 @@ public class APIClient {
     collector.collectFilesForAllSides();
 
     // 2.1 Build ours/theirs graphs with collected files
-    SemanticGraphBuilder builder = new SemanticGraphBuilder(mergeScenario, collectedFilePath);
+    SemanticGraphBuilder oursBuilder =
+        new SemanticGraphBuilder(mergeScenario, Side.OURS, collectedFilePath);
+    SemanticGraphBuilder baseBuilder =
+        new SemanticGraphBuilder(mergeScenario, Side.BASE, collectedFilePath);
+    SemanticGraphBuilder theirsBuilder =
+        new SemanticGraphBuilder(mergeScenario, Side.THEIRS, collectedFilePath);
 
-    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
-    Graph<SemanticNode, SemanticEdge> theirsGraph = builder.buildGraphForOneSide(Side.THEIRS);
+    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
     //    SemanticGraphExporter.printAsDot(oursGraph);
-//    SemanticGraphExporter.printAsDot(theirsGraph);
+    //    SemanticGraphExporter.printAsDot(theirsGraph);
 
     // 2.2 Build base/merge graphs among ours/theirs files
-    Graph<SemanticNode, SemanticEdge> baseGraph = builder.buildGraphForOneSide(Side.BASE);
+    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
 
     // 3. Match node and merge the 3-way graphs
-    String resultFolder = RESULT_PATH + File.separator + mergeScenario.mergeCommitID + File.separator
+    String resultFolder =
+        RESULT_PATH
+            + File.separator
+            + mergeScenario.mergeCommitID
+            + File.separator
             + "intelliMerged";
     FilesManager.prepareResultFolder(resultFolder);
-    ThreewayGraphMerger merger = new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
+    ThreewayGraphMerger merger =
+        new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
     merger.threewayMerge();
     // 4. Print the merged graph into code, keep the original format as possible
 
