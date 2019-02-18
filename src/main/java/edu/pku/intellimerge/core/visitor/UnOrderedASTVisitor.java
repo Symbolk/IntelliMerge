@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** An AST Visitor that visit nodes in an unspecified order */
-public class TreeToGraphVisitor extends VoidVisitorAdapter<Graph<SemanticNode, SemanticEdge>> {
+public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, SemanticEdge>> {
   private static final String FILE_PATH =
       "D:\\github\\merges\\javaparser\\d9c990a94c725b8d112ba02897988b7400100ce3\\ours\\javaparser-core\\src\\main\\java\\com\\github\\javaparser\\utils\\SourceRoot.java";
 
@@ -31,7 +31,7 @@ public class TreeToGraphVisitor extends VoidVisitorAdapter<Graph<SemanticNode, S
       CompilationUnit cu = JavaParser.parse(new FileInputStream(FILE_PATH));
       Graph<SemanticNode, SemanticEdge> graph = initGraph();
 
-      TreeToGraphVisitor visitor = new TreeToGraphVisitor();
+      UnOrderedASTVisitor visitor = new UnOrderedASTVisitor();
       visitor.visit(cu, graph);
     } catch (IOException e) {
       e.printStackTrace();

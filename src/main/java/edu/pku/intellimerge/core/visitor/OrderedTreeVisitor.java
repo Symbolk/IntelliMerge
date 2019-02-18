@@ -12,14 +12,14 @@ import com.github.javaparser.ast.visitor.TreeVisitor;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class MyTreeVisitor extends TreeVisitor {
+public class OrderedTreeVisitor extends TreeVisitor {
   private static final String FILE_PATH =
       "D:\\github\\merges\\javaparser\\d9c990a94c725b8d112ba02897988b7400100ce3\\ours\\javaparser-core\\src\\main\\java\\com\\github\\javaparser\\utils\\SourceRoot.java";
 
   public static void main(String[] args) {
     try {
       CompilationUnit cu = JavaParser.parse(new FileInputStream(FILE_PATH));
-      MyTreeVisitor visitor = new MyTreeVisitor();
+      OrderedTreeVisitor visitor = new OrderedTreeVisitor();
       visitor.visitPreOrder(cu);
     } catch (IOException e) {
       e.printStackTrace();

@@ -1,6 +1,7 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
+import edu.pku.intellimerge.core.SingleFileGraphBuilder;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
@@ -41,8 +42,8 @@ public class APIClient {
     String baseCommitID = "52814c72f70239f212e13178c2d1ef01e0e25f47";
 
     try {
+      // process merge scenarios in repository
       Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
-
       MergeScenario mergeScenario =
           new MergeScenario(
               REPO_NAME,
@@ -52,8 +53,12 @@ public class APIClient {
               oursCommitID,
               baseCommitID,
               theirsCommitID);
-      handleOneMergeScenario(mergeScenario, repository);
+//      processOneMergeScenario(mergeScenario, repository);
 
+      // process single file
+      String folderPath = "src/test/resources/RenameMethod/renameinboth/";
+      String fileRelativePath = "SourceRoot.java";
+      processSingleFiles(folderPath, fileRelativePath);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -66,7 +71,7 @@ public class APIClient {
    * @param repository
    * @throws Exception
    */
-  public static void handleOneMergeScenario(MergeScenario mergeScenario, Repository repository)
+  public static void processOneMergeScenario(MergeScenario mergeScenario, Repository repository)
       throws Exception {
 
     // 1. Collect diff java files and imported files between merge parent commit and base commit
@@ -112,5 +117,17 @@ public class APIClient {
     merger.threewayMerge();
     // 4. Print the merged graph into code, keep the original format as possible
 
+  }
+
+  /** Given three versions of one single java file, convert and merge them with graph */
+  private static void processSingleFiles(String folderPath, String fileRelativePath)
+      throws Exception {
+    SingleFileGraphBuilder builder = new SingleFileGraphBuilder(folderPath, fileRelativePath);
+    //    Triple<
+    //            Graph<SemanticNode, SemanticEdge>,
+    //            Graph<SemanticNode, SemanticEdge>,
+    //            Graph<SemanticNode, SemanticEdge>> graphs= builder.buildGraphsForAllSides();
+    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
+    SemanticGraphExporter.printAsDot(oursGraph);
   }
 }

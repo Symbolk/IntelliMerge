@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.core;
 
 import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
@@ -24,37 +23,35 @@ import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
-import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
-import com.github.javaparser.utils.ProjectRoot;
-import com.github.javaparser.utils.SourceRoot;
-import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.*;
+import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Build Semantic Graph for one merge scenario*/
-public class SemanticGraphBuilder {
-  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
+/** Build Semantic Graph for one single java file (Mainly for testing) */
+public class SingleFileGraphBuilder {
+  private static final Logger logger = LoggerFactory.getLogger(SingleFileGraphBuilder.class);
+  private String folderPath;
+  private String fileRelativePath;
   private Graph<SemanticNode, SemanticEdge> graph;
-  private JavaSymbolSolver symbolSolver;
-  private JavaParserFacade javaParserFacade;
   // incremental id, unique in one side's graph
   private Integer nodeCount;
   private Integer edgeCount;
+  private JavaSymbolSolver symbolSolver;
+  private JavaParserFacade javaParserFacade;
   /*
    * a series of temp containers to keep relationships between node and symbol
    * if the symbol is internal: draw the edge in graph;
@@ -69,26 +66,52 @@ public class SemanticGraphBuilder {
   private Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
   private Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
-  private MergeScenario mergeScenario;
-  private Side side;
-  private String collectedFilePath;
-  //  the context files for symbolsolving, i.e. the source folder of this java project
-  private String sourceFolderPath;
-
-  public SemanticGraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
-    this.mergeScenario = mergeScenario;
-    this.side = side;
-    this.collectedFilePath = collectedFilePath;
-    // TODO this cause failed resolving in case of file level changes
-    this.sourceFolderPath = mergeScenario.repoPath + mergeScenario.srcPath;
-
+  public SingleFileGraphBuilder(String folderPath, String fileRelativePath) {
+    this.folderPath = folderPath;
+    this.fileRelativePath = fileRelativePath;
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
+  }
+
+  /**
+   * Build graphs once for all
+   *
+   * @return
+   * @throws Exception
+   */
+  public Triple<
+          Graph<SemanticNode, SemanticEdge>,
+          Graph<SemanticNode, SemanticEdge>,
+          Graph<SemanticNode, SemanticEdge>>
+      buildGraphsForAllSides() throws Exception {
+    Graph<SemanticNode, SemanticEdge> oursGraph = buildGraphForOneSide(Side.OURS);
+    Graph<SemanticNode, SemanticEdge> theirsGraph = buildGraphForOneSide(Side.THEIRS);
+    Graph<SemanticNode, SemanticEdge> baseGraph = buildGraphForOneSide(Side.BASE);
+    return Triple.of(oursGraph, baseGraph, theirsGraph);
+  }
+
+  /**
+   * Build the graph once for one side
+   *
+   * @return
+   * @throws Exception
+   */
+  public Graph<SemanticNode, SemanticEdge> buildGraphForOneSide(Side side) throws Exception {
+
+    Graph<SemanticNode, SemanticEdge> graph = build(side);
+    if (graph == null) {
+      logger.error(side.toString() + " graph is null!");
+    }
+    return graph;
+  }
+
+  private Graph<SemanticNode, SemanticEdge> build(Side side) throws IOException {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(sourceFolderPath));
+    TypeSolver javaParserTypeSolver =
+        new JavaParserTypeSolver(new File(folderPath + File.separator + side.asString()));
     reflectionTypeSolver.setParent(reflectionTypeSolver);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
     combinedTypeSolver.add(reflectionTypeSolver);
@@ -96,55 +119,134 @@ public class SemanticGraphBuilder {
     this.symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
     JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
     this.javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
-  }
 
-  /**
-   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results:
-   *
-   * <p>1. Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined
-   * in other java files in the current project, so create one edge for the def-use 1.2 By
-   * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
-   * qualified name, for the symbol is defined in unavailable jars
-   *
-   * @return
-   */
-  public Graph<SemanticNode, SemanticEdge> build() {
-
-    // the folder path which contains collected files to build the graph upon
-    String sideDiffPath = collectedFilePath + File.separator + side.asString() + File.separator;
     // just for sure: reinit the graph
     this.graph = initGraph();
-
-    // parse all java files in the file
-    // regular project: only one source folder
-    File root = new File(sideDiffPath);
-    //    SourceRoot sourceRoot = new SourceRoot(root.toPath());
-    //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
-
-    // multi-module project: separated source folder for sub-projects/modules
-    //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-    ProjectRoot projectRoot =
-        new SymbolSolverCollectionStrategy(
-                JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver))
-            .collect(root.toPath());
-    List<CompilationUnit> compilationUnits = new ArrayList<>();
-
-    for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
-      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
-      //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
-      compilationUnits.addAll(
-          parseResults
-              .stream()
-              .filter(ParseResult::isSuccessful)
-              .map(r -> r.getResult().get())
-              .collect(Collectors.toList()));
-    }
 
     /*
      * build the graph by analyzing every CU
      */
-    for (CompilationUnit cu : compilationUnits) {
-      processCompilationUnit(cu);
+    String fileAbsPath =
+        folderPath + File.separator + side.asString() + File.separator + fileRelativePath;
+    CompilationUnit cu = JavaParser.parse(new File(fileAbsPath));
+    String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
+    String absolutePath =
+        cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
+    String relativePath = fileRelativePath;
+
+    // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
+    Boolean isInChangedFile = true;
+
+    CompilationUnitNode cuNode =
+        new CompilationUnitNode(
+            nodeCount++,
+            isInChangedFile,
+            NodeType.CU,
+            fileName,
+            "",
+            fileName,
+            cu.getComment().map(Comment::getContent).orElse(""),
+            fileName,
+            relativePath,
+            absolutePath,
+            cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
+            cu.getImports()
+                .stream()
+                .map(ImportDeclaration::toString)
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
+
+    // 1. package
+    String packageName = "";
+    if (cu.getPackageDeclaration().isPresent()) {
+      PackageDeclaration packageDeclaration = cu.getPackageDeclaration().get();
+      packageName = packageDeclaration.getNameAsString();
+      cuNode.setQualifiedName(packageName + "." + fileName);
+      // check if the package node exists
+      // if not exist, create one
+      String finalPackageName = packageName;
+      Optional<SemanticNode> packageDeclNodeOpt =
+          graph
+              .vertexSet()
+              .stream()
+              .filter(
+                  node ->
+                      node.getNodeType().equals(NodeType.PACKAGE)
+                          && node.getQualifiedName().equals(finalPackageName))
+              .findAny();
+      if (!packageDeclNodeOpt.isPresent()) {
+        PackageDeclNode packageDeclNode =
+            new PackageDeclNode(
+                nodeCount++,
+                isInChangedFile,
+                NodeType.PACKAGE,
+                finalPackageName,
+                packageDeclaration.getNameAsString(),
+                packageDeclaration.toString().trim(),
+                packageDeclaration.getComment().map(Comment::getContent).orElse(""),
+                finalPackageName,
+                Arrays.asList(finalPackageName.split(".")));
+        graph.addVertex(cuNode);
+        graph.addVertex(packageDeclNode);
+        graph.addEdge(
+            packageDeclNode,
+            cuNode,
+            new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
+      } else {
+        graph.addVertex(cuNode);
+        graph.addEdge(
+            packageDeclNodeOpt.get(),
+            cuNode,
+            new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNodeOpt.get(), cuNode));
+      }
+    }
+    // 2. import
+    List<ImportDeclaration> importDeclarations = cu.getImports();
+    List<String> importedClassNames = new ArrayList<>();
+    for (ImportDeclaration importDeclaration : importDeclarations) {
+      importedClassNames.add(
+          importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
+    }
+
+    // 3. type declaration: annotation, enum, class/interface
+    // getTypes() returns top level types declared in this compilation unit
+    for (TypeDeclaration td : cu.getTypes()) {
+      //        td.getMembers()
+      TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount++, isInChangedFile);
+      graph.addVertex(tdNode);
+
+      if (td.isTopLevelType()) {
+        graph.addEdge(
+            cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
+
+        if (td.isClassOrInterfaceDeclaration()) {
+          ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
+          // extend/implement
+          if (cid.getExtendedTypes().size() > 0) {
+            // single extends
+            String extendedType =
+                cid.getExtendedTypes().get(0).resolve().asReferenceType().getQualifiedName();
+            List<String> temp = new ArrayList<>();
+            temp.add(extendedType);
+            tdNode.setExtendType(extendedType);
+            extendEdges.put(tdNode, temp);
+          }
+          if (cid.getImplementedTypes().size() > 0) {
+            List<String> implementedTypes = new ArrayList<>();
+            // multiple implements
+            cid.getImplementedTypes()
+                .forEach(
+                    implementedType ->
+                        implementedTypes.add(
+                            implementedType.resolve().asReferenceType().getQualifiedName()));
+            tdNode.setImplementTypes(implementedTypes);
+            implementEdges.put(tdNode, implementedTypes);
+          }
+
+          // class-imports-class(es)
+          importEdges.put(cuNode, importedClassNames);
+        }
+        processMemebers(td, tdNode, packageName, isInChangedFile);
+      }
     }
 
     // now vertices are fixed
@@ -187,129 +289,17 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Process one CompilationUnit every time
-   * @param cu
+   * Build and initialize an empty Graph
+   *
+   * @return
    */
-  private void processCompilationUnit(CompilationUnit cu){
-    String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
-    String absolutePath =
-            cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
-    String relativePath = absolutePath.replace(collectedFilePath, "");
-
-    // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-    Boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);
-
-    CompilationUnitNode cuNode =
-            new CompilationUnitNode(
-                    nodeCount++,
-                    isInChangedFile,
-                    NodeType.CU,
-                    fileName,
-                    "",
-                    fileName,
-                    cu.getComment().map(Comment::getContent).orElse(""),
-                    fileName,
-                    relativePath,
-                    absolutePath,
-                    cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
-                    cu.getImports()
-                            .stream()
-                            .map(ImportDeclaration::toString)
-                            .collect(Collectors.toCollection(LinkedHashSet::new)));
-
-    // 1. package
-    String packageName = "";
-    if (cu.getPackageDeclaration().isPresent()) {
-      PackageDeclaration packageDeclaration = cu.getPackageDeclaration().get();
-      packageName = packageDeclaration.getNameAsString();
-      cuNode.setQualifiedName(packageName + "." + fileName);
-      // check if the package node exists
-      // if not exist, create one
-      String finalPackageName = packageName;
-      Optional<SemanticNode> packageDeclNodeOpt =
-              graph
-                      .vertexSet()
-                      .stream()
-                      .filter(
-                              node ->
-                                      node.getNodeType().equals(NodeType.PACKAGE)
-                                              && node.getQualifiedName().equals(finalPackageName))
-                      .findAny();
-      if (!packageDeclNodeOpt.isPresent()) {
-        PackageDeclNode packageDeclNode =
-                new PackageDeclNode(
-                        nodeCount++,
-                        isInChangedFile,
-                        NodeType.PACKAGE,
-                        finalPackageName,
-                        packageDeclaration.getNameAsString(),
-                        packageDeclaration.toString().trim(),
-                        packageDeclaration.getComment().map(Comment::getContent).orElse(""),
-                        finalPackageName,
-                        Arrays.asList(finalPackageName.split(".")));
-        graph.addVertex(cuNode);
-        graph.addVertex(packageDeclNode);
-        graph.addEdge(
-                packageDeclNode,
-                cuNode,
-                new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
-      } else {
-        graph.addVertex(cuNode);
-        graph.addEdge(
-                packageDeclNodeOpt.get(),
-                cuNode,
-                new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNodeOpt.get(), cuNode));
-      }
-    }
-    // 2. import
-    List<ImportDeclaration> importDeclarations = cu.getImports();
-    List<String> importedClassNames = new ArrayList<>();
-    for (ImportDeclaration importDeclaration : importDeclarations) {
-      importedClassNames.add(
-              importDeclaration.getNameAsString().trim().replace("import ", "").replace(";", ""));
-    }
-
-    // 3. type declaration: annotation, enum, class/interface
-    // getTypes() returns top level types declared in this compilation unit
-    for (TypeDeclaration td : cu.getTypes()) {
-      //        td.getMembers()
-      TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount++, isInChangedFile);
-      graph.addVertex(tdNode);
-
-      if (td.isTopLevelType()) {
-        graph.addEdge(
-                cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
-
-        if (td.isClassOrInterfaceDeclaration()) {
-          ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
-          // extend/implement
-          if (cid.getExtendedTypes().size() > 0) {
-            // single extends
-            String extendedType =
-                    cid.getExtendedTypes().get(0).resolve().asReferenceType().getQualifiedName();
-            List<String> temp = new ArrayList<>();
-            temp.add(extendedType);
-            tdNode.setExtendType(extendedType);
-            extendEdges.put(tdNode, temp);
-          }
-          if (cid.getImplementedTypes().size() > 0) {
-            List<String> implementedTypes = new ArrayList<>();
-            // multiple implements
-            cid.getImplementedTypes()
-                    .forEach(
-                            implementedType ->
-                                    implementedTypes.add(
-                                            implementedType.resolve().asReferenceType().getQualifiedName()));
-            tdNode.setImplementTypes(implementedTypes);
-            implementEdges.put(tdNode, implementedTypes);
-          }
-
-          // class-imports-class(es)
-          importEdges.put(cuNode, importedClassNames);
-        }
-        processMemebers(td, tdNode, packageName, isInChangedFile);
-      }
-    }
+  public Graph<SemanticNode, SemanticEdge> initGraph() {
+    return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
+        .allowingMultipleEdges(true)
+        .allowingSelfLoops(true) // recursion
+        .edgeClass(SemanticEdge.class)
+        .weighted(true)
+        .buildGraph();
   }
 
   /**
@@ -359,7 +349,6 @@ public class SemanticGraphBuilder {
             displayName);
     return tdNode;
   }
-
   /**
    * Process members (child nodes that are field, constructor or method) of type declaration
    *
@@ -741,39 +730,5 @@ public class SemanticGraphBuilder {
                         && node.getQualifiedName().equals(targetQualifiedName))
             .findAny();
     return targetNodeOpt.orElse(null);
-  }
-
-  /**
-   * Setup and config the JavaSymbolSolver
-   *
-   * @param packagePath
-   * @param libPath
-   * @return
-   */
-  private JavaSymbolSolver setUpSymbolSolver(String packagePath, String libPath) {
-    // set up the JavaSymbolSolver
-    //    TypeSolver jarTypeSolver = JarTypeSolver.getJarTypeSolver(libPath);
-    TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(packagePath));
-    reflectionTypeSolver.setParent(reflectionTypeSolver);
-    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-    combinedTypeSolver.add(reflectionTypeSolver);
-    combinedTypeSolver.add(javaParserTypeSolver);
-    JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-    return symbolSolver;
-  }
-
-  /**
-   * Build and initialize an empty Graph
-   *
-   * @return
-   */
-  public static Graph<SemanticNode, SemanticEdge> initGraph() {
-    return GraphTypeBuilder.<SemanticNode, SemanticEdge>directed()
-        .allowingMultipleEdges(true)
-        .allowingSelfLoops(true) // recursion
-        .edgeClass(SemanticEdge.class)
-        .weighted(true)
-        .buildGraph();
   }
 }
