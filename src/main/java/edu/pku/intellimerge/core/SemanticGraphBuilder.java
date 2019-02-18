@@ -52,21 +52,21 @@ public class SemanticGraphBuilder {
   JavaSymbolSolver symbolSolver;
   JavaParserFacade javaParserFacade;
   // incremental id, unique in one side's graph
-  Integer nodeCount = 0;
-  Integer edgeCount = 0;
+  private Integer nodeCount;
+  private Integer edgeCount;
   /*
    * a series of temp containers to keep relationships between node and symbol
    * if the symbol is internal: draw the edge in graph;
    * else:
    */
-  Map<SemanticNode, List<String>> importEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
-  Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> importEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> extendEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
+  private Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
   private MergeScenario mergeScenario;
   private Side side;
@@ -81,6 +81,9 @@ public class SemanticGraphBuilder {
     this.srcPath = mergeScenario.repoPath + mergeScenario.srcPath;
 
     this.graph = initGraph();
+    this.nodeCount = 0;
+    this.edgeCount = 0;
+
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
     TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(srcPath));
@@ -221,8 +224,7 @@ public class SemanticGraphBuilder {
       // getTypes() returns top level types declared in this compilation unit
       for (TypeDeclaration td : cu.getTypes()) {
         //        td.getMembers()
-        TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount, isInChangedFile);
-        nodeCount++;
+        TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount++, isInChangedFile);
         graph.addVertex(tdNode);
 
         if (td.isTopLevelType()) {
@@ -312,7 +314,7 @@ public class SemanticGraphBuilder {
         if (childTD.isNestedType()) {
           // add edge from the parent td to the nested td
           TypeDeclNode childTDNode =
-              processTypeDeclaration(childTD, packageName, nodeCount, isInChangedFile);
+              processTypeDeclaration(childTD, packageName, nodeCount++, isInChangedFile);
           graph.addVertex(childTDNode);
           graph.addEdge(
               tdNode,
@@ -597,7 +599,7 @@ public class SemanticGraphBuilder {
 
     TypeDeclNode tdNode =
         new TypeDeclNode(
-            nodeCount++,
+            nodeCount,
             isInChangedFile,
             nodeType,
             displayName,

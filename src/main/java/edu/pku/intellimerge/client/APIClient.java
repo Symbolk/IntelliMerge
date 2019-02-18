@@ -2,6 +2,7 @@ package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -89,9 +90,10 @@ public class APIClient {
         new SemanticGraphBuilder(mergeScenario, Side.THEIRS, collectedFilePath);
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
+    SemanticGraphExporter.printAsDot(oursGraph);
+
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
-    //    SemanticGraphExporter.printAsDot(oursGraph);
     //    SemanticGraphExporter.printAsDot(theirsGraph);
 
     // 2.2 Build base/merge graphs among ours/theirs files
