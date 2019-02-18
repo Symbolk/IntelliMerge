@@ -53,12 +53,12 @@ public class APIClient {
               oursCommitID,
               baseCommitID,
               theirsCommitID);
-//      processOneMergeScenario(mergeScenario, repository);
+      processOneMergeScenario(mergeScenario, repository);
 
       // process single file
       String folderPath = "src/test/resources/RenameMethod/renameinboth/";
       String fileRelativePath = "SourceRoot.java";
-      processSingleFiles(folderPath, fileRelativePath);
+//      processSingleFiles(folderPath, fileRelativePath);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -95,7 +95,7 @@ public class APIClient {
         new SemanticGraphBuilder(mergeScenario, Side.THEIRS, collectedFilePath);
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
-    SemanticGraphExporter.printAsDot(oursGraph);
+//    SemanticGraphExporter.printAsDot(oursGraph);
 
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
@@ -111,7 +111,7 @@ public class APIClient {
             + mergeScenario.mergeCommitID
             + File.separator
             + "intelliMerged";
-    FilesManager.prepareResultFolder(resultFolder);
+    FilesManager.clearResultFolder(resultFolder);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
     merger.threewayMerge();

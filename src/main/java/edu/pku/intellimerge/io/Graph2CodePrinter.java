@@ -75,10 +75,12 @@ public class Graph2CodePrinter {
   private static String printNode(SemanticNode node) {
     StringBuilder builder = new StringBuilder();
     if (node instanceof TerminalNode) {
+      builder.append(node.getComment());
       builder.append(node.getOriginalSignature());
       builder.append(((TerminalNode) node).getBody()).append("\n");
     } else if (node instanceof NonTerminalNode) {
       if (!node.getNodeType().equals(NodeType.CU)) {
+        builder.append(node.getComment());
         builder.append(node.getOriginalSignature());
         builder.append("{\n");
       }

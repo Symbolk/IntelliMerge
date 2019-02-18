@@ -53,8 +53,8 @@ public class SemanticGraphBuilder {
   private JavaSymbolSolver symbolSolver;
   private JavaParserFacade javaParserFacade;
   // incremental id, unique in one side's graph
-  private Integer nodeCount;
-  private Integer edgeCount;
+  private int nodeCount;
+  private int edgeCount;
   /*
    * a series of temp containers to keep relationships between node and symbol
    * if the symbol is internal: draw the edge in graph;
@@ -194,10 +194,10 @@ public class SemanticGraphBuilder {
     String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
     String absolutePath =
             cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
-    String relativePath = absolutePath.replace(collectedFilePath, "");
+    String relativePath = absolutePath.replace(collectedFilePath + side.asString() + File.separator, "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-    Boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);
+    boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);
 
     CompilationUnitNode cuNode =
             new CompilationUnitNode(
@@ -207,7 +207,7 @@ public class SemanticGraphBuilder {
                     fileName,
                     "",
                     fileName,
-                    cu.getComment().map(Comment::getContent).orElse(""),
+                    cu.getComment().map(Comment::toString).orElse(""),
                     fileName,
                     relativePath,
                     absolutePath,
@@ -244,7 +244,7 @@ public class SemanticGraphBuilder {
                         finalPackageName,
                         packageDeclaration.getNameAsString(),
                         packageDeclaration.toString().trim(),
-                        packageDeclaration.getComment().map(Comment::getContent).orElse(""),
+                        packageDeclaration.getComment().map(Comment::toString).orElse(""),
                         finalPackageName,
                         Arrays.asList(finalPackageName.split(".")));
         graph.addVertex(cuNode);
@@ -352,7 +352,7 @@ public class SemanticGraphBuilder {
             displayName,
             qualifiedName,
             originalSignature,
-            td.getComment().map(Comment::getContent).orElse(""),
+            td.getComment().map(Comment::toString).orElse(""),
             access,
             modifiers,
             nodeType.asString(),
@@ -418,7 +418,7 @@ public class SemanticGraphBuilder {
                     displayName,
                     qualifiedName,
                     originalSignature,
-                    fd.getComment().map(Comment::getContent).orElse(""),
+                    fd.getComment().map(Comment::toString).orElse(""),
                     access,
                     modifiers,
                     field.getTypeAsString(),
@@ -470,7 +470,7 @@ public class SemanticGraphBuilder {
                   displayName,
                   qualifiedName,
                   cd.getDeclarationAsString(),
-                  cd.getComment().map(Comment::getContent).orElse(""),
+                  cd.getComment().map(Comment::toString).orElse(""),
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());
@@ -519,7 +519,7 @@ public class SemanticGraphBuilder {
                   displayName,
                   qualifiedName,
                   md.getDeclarationAsString(),
-                  md.getComment().map(Comment::getContent).orElse(""),
+                  md.getComment().map(Comment::toString).orElse(""),
                   access,
                   modifiers,
                   md.getTypeAsString(),
@@ -661,10 +661,10 @@ public class SemanticGraphBuilder {
    */
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
     String source = fieldDeclaration.toString();
-    if (fieldDeclaration.getComment().isPresent()) {
-      source = source.replace(fieldDeclaration.getComment().get().getContent(), "");
-    }
-    return source
+//    if (fieldDeclaration.getComment().isPresent()) {
+//      source = source.replace(fieldDeclaration.getComment().get().getContent(), "");
+//    }
+    return removeComment(source)
         .substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";")))
         .trim();
   }
@@ -673,12 +673,15 @@ public class SemanticGraphBuilder {
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
     String source = typeDeclaration.toString();
-    if (typeDeclaration.getComment().isPresent()) {
-      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
-    }
-    return source.substring(0, source.indexOf("{")).trim();
+//    if (typeDeclaration.getComment().isPresent()) {
+//      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
+//    }
+    return removeComment(source.substring(0, source.indexOf("{"))).trim();
   }
 
+  private String removeComment(String source){
+    return source.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)","");
+  }
   /**
    * Add edges according to recorded temp mappings
    *
@@ -688,9 +691,9 @@ public class SemanticGraphBuilder {
    * @param targetNodeType target node type
    * @return
    */
-  private Integer buildEdges(
+  private int buildEdges(
       Graph<SemanticNode, SemanticEdge> semanticGraph,
-      Integer edgeCount,
+      int edgeCount,
       Map<SemanticNode, List<String>> edges,
       EdgeType edgeType,
       NodeType targetNodeType) {

@@ -48,8 +48,8 @@ public class SingleFileGraphBuilder {
   private String fileRelativePath;
   private Graph<SemanticNode, SemanticEdge> graph;
   // incremental id, unique in one side's graph
-  private Integer nodeCount;
-  private Integer edgeCount;
+  private int nodeCount;
+  private int edgeCount;
   private JavaSymbolSolver symbolSolver;
   private JavaParserFacade javaParserFacade;
   /*
@@ -135,7 +135,7 @@ public class SingleFileGraphBuilder {
     String relativePath = fileRelativePath;
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-    Boolean isInChangedFile = true;
+    boolean isInChangedFile = true;
 
     CompilationUnitNode cuNode =
         new CompilationUnitNode(
@@ -677,9 +677,9 @@ public class SingleFileGraphBuilder {
    * @param targetNodeType target node type
    * @return
    */
-  private Integer buildEdges(
+  private int buildEdges(
       Graph<SemanticNode, SemanticEdge> semanticGraph,
-      Integer edgeCount,
+      int edgeCount,
       Map<SemanticNode, List<String>> edges,
       EdgeType edgeType,
       NodeType targetNodeType) {

@@ -57,7 +57,7 @@ public class MergeScenario {
    * @param relativePath
    * @return
    */
-  public Boolean isInChangedFile(Side side, String relativePath) {
+  public boolean isInChangedFile(Side side, String relativePath) {
     // normalize to linux style separators
     String path = relativePath.replaceAll(Pattern.quote(File.separator), "/");
     switch (side) {

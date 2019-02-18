@@ -5,8 +5,8 @@ public class SourceFile {
   private String qualifiedName;
   private String relativePath;
   private String absolutePath;
-  public Boolean isCopied;
-  public Boolean isParsed; // maybe unnecessary, since sourceroot only parse every file once
+  public boolean isCopied;
+  public boolean isParsed; // maybe unnecessary, since sourceroot only parse every file once
 
   public SourceFile(
       String fileName, String qualifiedName, String relativePath, String absolutePath) {

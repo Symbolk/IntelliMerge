@@ -32,7 +32,7 @@ public enum EdgeType {
     this.label = label;
   }
 
-  EdgeType(int index, Boolean isStructureEdge, String label) {
+  EdgeType(int index, boolean isStructureEdge, String label) {
     this.index = index;
     this.isStructureEdge = isStructureEdge;
     this.label = label;

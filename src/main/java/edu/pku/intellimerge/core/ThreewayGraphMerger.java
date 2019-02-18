@@ -134,6 +134,7 @@ public class ThreewayGraphMerger {
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
+        String mergedComment = mergeTextually(oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
         String mergedSignature =
             mergeTextually(
                 oursTerminal.getOriginalSignature(),
@@ -142,6 +143,7 @@ public class ThreewayGraphMerger {
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
+        mergedTerminal.setComment(mergedComment);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
         return mergedTerminal;

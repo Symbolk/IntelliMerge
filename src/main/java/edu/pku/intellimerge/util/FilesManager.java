@@ -151,12 +151,12 @@ public class FilesManager {
   }
 
   /**
-   * Prepare the result folder
+   * Empty the result folder
    *
    * @param folderPath absolute path
    * @return
    */
-  public static void prepareResultFolder(String folderPath) {
+  public static void clearResultFolder(String folderPath) {
     // if exist, remove all files under it
     File folderFile = new File(folderPath);
     if (folderFile.exists()) {
