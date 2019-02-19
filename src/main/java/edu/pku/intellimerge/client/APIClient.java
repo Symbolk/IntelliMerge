@@ -44,9 +44,9 @@ public class APIClient {
       // process merge scenarios in repository
       Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
 
-      //      for (MergeScenario mergeScenario : generateMergeScenarios()) {
-      //        processSingleMergeScenario(mergeScenario, repository);
-      //      }
+//            for (MergeScenario mergeScenario : generateMergeScenarios()) {
+//              processSingleMergeScenario(mergeScenario, repository);
+//            }
 
       processSingleMergeScenario(generateSingleMergeSenario(), repository);
 
@@ -125,6 +125,7 @@ public class APIClient {
     collector.setOnlyBothModified(true);
     collector.setCopyImportedFiles(true);
     collector.collectFilesForAllSides();
+    logger.info("Collecting files done for {}", mergeScenario.mergeCommitID);
 
     // 2.1 Build ours/theirs graphs with collected files
     SemanticGraphBuilder2 oursBuilder =

@@ -10,12 +10,21 @@ import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.FilesManager;
 import edu.pku.intellimerge.util.GitService;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +41,8 @@ public class SourceFileCollector {
   private boolean onlyBothModified = false;
   // copy imported files or not
   private boolean copyImportedFiles = true;
+  // collect the file content to files or not (faster)
+  //  private boolean collectToFiles = true;
 
   public SourceFileCollector(
       MergeScenario mergeScenario, Repository repository, String collectedFilePath) {
@@ -77,7 +88,6 @@ public class SourceFileCollector {
         collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
         collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
       }
-      logger.info("Collecting files done for {}", mergeScenario.mergeCommitID);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -105,11 +115,12 @@ public class SourceFileCollector {
         break;
     }
     if (sideCommitID != null) {
-      ArrayList<SourceFile> javaSourceFiles = scanJavaFiles(sideCommitID);
+      //      ArrayList<SourceFile> javaSourceFiles = scanJavaFiles(sideCommitID);
       String sideCollectedFilePath =
           collectedFilePath + side.toString().toLowerCase() + File.separator;
       if (diffEntries != null) {
-        collect(javaSourceFiles, diffEntries, sideCollectedFilePath);
+        //        collect(javaSourceFiles, diffEntries, sideCollectedFilePath);
+        collect2(diffEntries, sideCollectedFilePath, sideCommitID);
       }
     }
   }
@@ -148,6 +159,7 @@ public class SourceFileCollector {
    * @param commitID
    * @return
    * @throws Exception
+   * @deprecated
    */
   public ArrayList<SourceFile> scanJavaFiles(String commitID) throws Exception {
     GitService.checkout(repository, commitID);
@@ -161,8 +173,93 @@ public class SourceFileCollector {
   /**
    * Copy diff java files and imported java files to the given path, for later process
    *
+   * <p>Without * checking out the repo (faster)</>
+   *
+   * @param diffEntries
+   * @param sideCollectedFilePath
+   * @param sideCommitID
+   * @throws Exception
+   */
+  private void collect2(
+      List<SimpleDiffEntry> diffEntries, String sideCollectedFilePath, String sideCommitID)
+      throws Exception {
+    // generate file relative paths
+    List<String> diffFilePaths = new ArrayList<>();
+    List<String> importedFilePaths = new ArrayList<>();
+    for (SimpleDiffEntry diffEntry : diffEntries) {
+      if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
+        // e.g. src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
+        String relativePath = diffEntry.getOldPath();
+        diffFilePaths.add(relativePath);
+      }
+    }
+    // get file content with ObjectLoader
+    try (RevWalk revWalk = new RevWalk(repository)) {
+      ObjectId commitObj = repository.resolve(sideCommitID);
+      RevCommit commit = revWalk.parseCommit(commitObj);
+      importedFilePaths = generateFiles(diffFilePaths, commit, sideCollectedFilePath);
+      if (copyImportedFiles && !importedFilePaths.isEmpty()) {
+        generateFiles(importedFilePaths, commit, sideCollectedFilePath);
+      }
+    }
+  }
+
+  /**
+   * Generate files to be analyzed
+   *
+   * @param filePaths
+   * @param commit
+   * @param sideCollectedFilePath
+   * @return
+   * @throws Exception
+   */
+  private List<String> generateFiles(
+      List<String> filePaths, RevCommit commit, String sideCollectedFilePath) throws Exception {
+    List<String> importedFilePaths = new ArrayList<>();
+    if (!filePaths.isEmpty()) {
+      try (TreeWalk treeWalk = new TreeWalk(repository)) {
+        RevTree parentTree = commit.getTree();
+        treeWalk.addTree(parentTree);
+        treeWalk.setRecursive(true);
+        while (treeWalk.next()) {
+          String pathString = treeWalk.getPathString();
+          if (filePaths.contains(pathString)) {
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = repository.open(objectId);
+            // write content to file
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(loader.openStream(), writer, Charset.defaultCharset());
+            FilesManager.writeContent(
+                sideCollectedFilePath + File.separator + pathString, writer.toString());
+            // collect imported files
+            if (copyImportedFiles) {
+              String[] lines = writer.toString().split("\n");
+              for (String line : lines) {
+                if (line.startsWith("import")) {
+                  String importedFileRelativePath =
+                      line.replace("import ", "")
+                          .replace("static", "")
+                          .replace(".", File.separator)
+                          .replace(";", ".java")
+                          .trim();
+                  importedFilePaths.add(importedFileRelativePath);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return importedFilePaths;
+  }
+
+  /**
+   * Copy diff java files and imported java files to the given path, for later process By checking
+   * out the repo and copy files
+   *
    * @param diffEntries
    * @throws Exception
+   * @deprecated
    */
   private void collect(
       List<SourceFile> sourceFiles, List<SimpleDiffEntry> diffEntries, String sideCollectedFilePath)
@@ -172,38 +269,40 @@ public class SourceFileCollector {
       // only care about both modified files now
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
         // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
-        String relativePath = diffEntry.getNewPath();
-//        logger.info(
-//            "{} : {} -> {}",
-//            diffEntry.getChangeType(),
-//            diffEntry.getOldPath(),
-//            diffEntry.getNewPath());
+        String relativePath = diffEntry.getOldPath();
+        //        logger.info(
+        //            "{} : {} -> {}",
+        //            diffEntry.getChangeType(),
+        //            diffEntry.getOldPath(),
+        //            diffEntry.getNewPath());
         File srcFile = new File(mergeScenario.repoPath + File.separator + relativePath);
         // copy the diff files
         if (srcFile.exists()) {
           File dstFile = new File(sideCollectedFilePath + relativePath);
 
           FileUtils.copyFile(srcFile, dstFile);
-//          logger.info("Copying diff file: {} ...", srcFile.getName());
+          //          logger.info("Copying diff file: {} ...", srcFile.getName());
 
           // copy the imported files
           if (copyImportedFiles) {
             CompilationUnit cu = JavaParser.parse(dstFile);
             for (ImportDeclaration importDeclaration : cu.getImports()) {
-              String qualifiedName =
+              String importedFileRelativePath =
                   importDeclaration
                       .getNameAsString()
-                      .trim()
                       .replace("import ", "")
-                      .replace(";", "");
+                      .replace(";", "")
+                      .trim();
               for (SourceFile sourceFile : sourceFiles) {
                 // Check if the file has been copied, to avoid duplicate IO
-                if (sourceFile.getQualifiedName().equals(qualifiedName) && !sourceFile.isCopied) {
+                if (sourceFile.getQualifiedName().equals(importedFileRelativePath)
+                    && !sourceFile.isCopied) {
                   srcFile = new File(sourceFile.getAbsolutePath());
                   dstFile = new File(sideCollectedFilePath + sourceFile.getRelativePath());
                   FileUtils.copyFile(srcFile, dstFile);
                   sourceFile.isCopied = true;
-//                  logger.info("Copying imported file: {} ...", srcFile.getName());
+                  //                  logger.info("Copying imported file: {} ...",
+                  // srcFile.getName());
                 }
               }
             }
