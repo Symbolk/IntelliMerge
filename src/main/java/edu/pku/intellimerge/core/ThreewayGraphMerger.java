@@ -45,15 +45,15 @@ public class ThreewayGraphMerger {
 
   /** Threeway map the CUs that need to merge */
   public void threewayMap() {
-    // two way matchings to get three way mapping
+    // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
     b2oMatcher.topDownMatch();
     b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
-    b2oMatchings = b2oMatcher.matchings;
-    b2tMatchings = b2tMatcher.matchings;
+    b2oMatchings = b2oMatcher.matching;
+    b2tMatchings = b2tMatcher.matching;
 
     // collect CU mappings that need to merge
     for (SemanticNode node : baseGraph.vertexSet()) {

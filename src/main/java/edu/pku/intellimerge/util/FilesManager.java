@@ -11,11 +11,31 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class FilesManager {
 
   private static final Logger logger = LoggerFactory.getLogger(FilesManager.class);
+
+  /**
+   * Change the format of files under a folder
+   *
+   * @param path
+   * @param formatBefore
+   * @param formatAfter
+   */
+  public static void renameFiles(String path, String formatBefore, String formatAfter) {
+    File file = new File(path);
+    if (file.exists() && file.isDirectory()) {
+      File[] files = file.listFiles();
+      for (File f : files) {
+        if (f.isFile()) {
+          f.renameTo(new File(f.getAbsolutePath().replace(formatBefore, formatAfter)));
+        }
+      }
+    }
+  }
 
   /**
    * Checks if the given file is adequate for parsing.
@@ -64,6 +84,30 @@ public class FilesManager {
       e.printStackTrace();
     }
     return content;
+  }
+
+  /**
+   * Read csv and return a list of separated items
+   *
+   * @param path
+   * @param separator
+   * @return
+   */
+  public static List<String[]> readCSV(String path, String separator) {
+    List<String[]> results = new ArrayList<>();
+    try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+      reader.readLine(); // header
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        String items[] = line.split(separator);
+        results.add(items);
+      }
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return results;
   }
 
   /**

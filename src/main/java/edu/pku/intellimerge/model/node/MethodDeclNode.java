@@ -60,4 +60,12 @@ public class MethodDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
   }
+
+  public List<String> getParameterTypes() {
+    return parameterTypes;
+  }
+
+  public List<String> getParameterNames() {
+    return parameterNames;
+  }
 }

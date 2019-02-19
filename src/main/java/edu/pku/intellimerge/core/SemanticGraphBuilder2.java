@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.core;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
@@ -10,21 +9,15 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
-import com.github.javaparser.resolution.UnsolvedSymbolException;
-import com.github.javaparser.resolution.declarations.ResolvedEnumConstantDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
-import com.github.javaparser.symbolsolver.model.resolution.SymbolReference;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
-import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
+import com.github.javaparser.utils.ParserCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
 import com.github.javaparser.utils.SourceRoot;
 import edu.pku.intellimerge.model.MergeScenario;
@@ -44,12 +37,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Build Semantic Graph for one merge scenario */
-public class SemanticGraphBuilder {
-  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
+/** Build Semantic Graph for one merge scenario, with fuzzy matching instead of symbolsolving */
+public class SemanticGraphBuilder2 {
+  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder2.class);
   private Graph<SemanticNode, SemanticEdge> graph;
-  private JavaSymbolSolver symbolSolver;
-  private JavaParserFacade javaParserFacade;
   // incremental id, unique in one side's graph
   private int nodeCount;
   private int edgeCount;
@@ -63,37 +54,21 @@ public class SemanticGraphBuilder {
   private Map<SemanticNode, List<String>> implementEdges = new HashMap<>();
   private Map<SemanticNode, List<String>> declObjectEdges = new HashMap<>();
   private Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
-  private Map<SemanticNode, List<String>> readFieldEdges = new HashMap<>();
-  private Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
-  private Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
+  private Map<SemanticNode, List<FieldAccessExpr>> readFieldEdges = new HashMap<>();
+  private Map<SemanticNode, List<FieldAccessExpr>> writeFieldEdges = new HashMap<>();
+  private Map<SemanticNode, List<MethodCallExpr>> callMethodEdges = new HashMap<>();
 
   private MergeScenario mergeScenario;
   private Side side;
   private String collectedFilePath;
-  //  the context files for symbolsolving, i.e. the source folder of this java project
-  private String sourceFolderPath;
 
-  public SemanticGraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
+  public SemanticGraphBuilder2(MergeScenario mergeScenario, Side side, String collectedFilePath) {
     this.mergeScenario = mergeScenario;
     this.side = side;
     this.collectedFilePath = collectedFilePath;
-    // TODO this cause failed resolving in case of file level changes
-    this.sourceFolderPath = mergeScenario.repoPath + mergeScenario.srcPath;
-
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
-
-    // set up the typsolver
-    TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(sourceFolderPath));
-    reflectionTypeSolver.setParent(reflectionTypeSolver);
-    CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-    combinedTypeSolver.add(reflectionTypeSolver);
-    combinedTypeSolver.add(javaParserTypeSolver);
-    this.symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-    JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
-    this.javaParserFacade = JavaParserFacade.get(combinedTypeSolver);
   }
 
   /**
@@ -111,12 +86,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Build the graph by parsing the collected files Try to solve symbols, leading to 3 results:
-   *
-   * <p>1. Solved: qualified name got 1.1 By JavaParserTypeSolver(internal): the symbol is defined
-   * in other java files in the current project, so create one edge for the def-use 1.2 By
-   * ReflectionTypeSolver(JDK): the symbol is defined in jdk libs 2. UnsolvedSymbolException: no
-   * qualified name, for the symbol is defined in unavailable jars
+   * Build the graph by parsing the collected files
    *
    * @return
    */
@@ -134,11 +104,7 @@ public class SemanticGraphBuilder {
     //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
     // multi-module project: separated source folder for sub-projects/modules
-    //      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-    ProjectRoot projectRoot =
-        new SymbolSolverCollectionStrategy(
-                JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver))
-            .collect(root.toPath());
+    ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
     List<CompilationUnit> compilationUnits = new ArrayList<>();
 
     for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
@@ -169,10 +135,12 @@ public class SemanticGraphBuilder {
         buildEdges(graph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
     edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
-    edgeCount =
-        buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
+
+    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD,
+    // NodeType.FIELD);
+    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD,
+    // NodeType.FIELD);
+    edgeCount = buildEdgesForMethodCall(edgeCount, callMethodEdges);
 
     // now edges are fixed
     // save incoming edges and outgoing edges in corresponding nodes
@@ -299,8 +267,7 @@ public class SemanticGraphBuilder {
           // extend/implement
           if (cid.getExtendedTypes().size() > 0) {
             // single extends
-            String extendedType =
-                cid.getExtendedTypes().get(0).resolve().asReferenceType().getQualifiedName();
+            String extendedType = cid.getExtendedTypes().get(0).getNameAsString();
             List<String> temp = new ArrayList<>();
             temp.add(extendedType);
             tdNode.setExtendType(extendedType);
@@ -311,9 +278,7 @@ public class SemanticGraphBuilder {
             // multiple implements
             cid.getImplementedTypes()
                 .forEach(
-                    implementedType ->
-                        implementedTypes.add(
-                            implementedType.resolve().asReferenceType().getQualifiedName()));
+                    implementedType -> implementedTypes.add(implementedType.getNameAsString()));
             tdNode.setImplementTypes(implementedTypes);
             implementEdges.put(tdNode, implementedTypes);
           }
@@ -448,20 +413,15 @@ public class SemanticGraphBuilder {
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
-            //            if (!field.getType().isClassOrInterfaceType()) {
-            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
-            //              SymbolReference<ResolvedTypeDeclaration> ref =
-            // javaParserFacade.solve();
-            //              if (ref.isSolved()) {
-            //                String classUsedInFieldName =
-            // ref.getCorrespondingDeclaration().getQualifiedName();
-            //                if (field.getInitializer().isPresent()) {
-            //                  initClassNames.add(classUsedInFieldName);
-            //                } else {
-            //                  declClassNames.add(classUsedInFieldName);
-            //                }
-            //              }
-            //            }
+            if (field.getType().isClassOrInterfaceType()) {
+              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
+              String classUsedInFieldName = type.getNameAsString();
+              if (field.getInitializer().isPresent()) {
+                initClassNames.add(classUsedInFieldName);
+              } else {
+                declClassNames.add(classUsedInFieldName);
+              }
+            }
             if (declClassNames.size() > 0) {
               declObjectEdges.put(fdNode, declClassNames);
             }
@@ -569,19 +529,8 @@ public class SemanticGraphBuilder {
     List<ObjectCreationExpr> objectCreationExprs = cd.findAll(ObjectCreationExpr.class);
     List<String> createObjectNames = new ArrayList<>();
     for (ObjectCreationExpr objectCreationExpr : objectCreationExprs) {
-      //            SymbolReference<? extends ResolvedConstructorDeclaration> ref =
-      //                    javaParserFacade.solve((objectCreationExpr));
-      //            if(ref.isSolved()){
-      //              String typeQualifiedName =
-      // ref.getCorrespondingDeclaration().declaringType().getQualifiedName();
-      //              createObjectNames.add(typeQualifiedName);
-      //            }
-      try {
-        String typeQualifiedName = objectCreationExpr.resolve().declaringType().getQualifiedName();
-        createObjectNames.add(typeQualifiedName);
-      } catch (UnsolvedSymbolException e) {
-        continue;
-      }
+      String typeName = objectCreationExpr.getTypeAsString();
+      createObjectNames.add(typeName);
     }
     if (createObjectNames.size() > 0) {
       initObjectEdges.put(node, createObjectNames);
@@ -590,89 +539,31 @@ public class SemanticGraphBuilder {
     // 2 field access
     // TODO support self field access
     List<FieldAccessExpr> fieldAccessExprs = cd.findAll(FieldAccessExpr.class);
-    List<String> readFieldNames = new ArrayList<>();
-    List<String> writeFieldNames = new ArrayList<>();
+    List<FieldAccessExpr> readFieldExprs = new ArrayList<>();
+    List<FieldAccessExpr> writeFieldExprs = new ArrayList<>();
     for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
-      // resolve the field declaration and draw the edge
-      //            final SymbolReference<? extends ResolvedValueDeclaration> ref =
-      //                javaParserFacade.solve(fieldAccessExpr);
-      try {
-
-        SymbolReference<? extends ResolvedValueDeclaration> ref =
-            javaParserFacade.solve((fieldAccessExpr));
-        if (ref.isSolved()) {
-          // internal types
-          ResolvedValueDeclaration resolvedDeclaration = ref.getCorrespondingDeclaration();
-          if (resolvedDeclaration.isField()) {
-            ResolvedFieldDeclaration resolvedFieldDeclaration = resolvedDeclaration.asField();
-            displayName = resolvedFieldDeclaration.getName();
-            qualifiedName =
-                resolvedFieldDeclaration.declaringType().getQualifiedName()
-                    + "."
-                    + resolvedFieldDeclaration.getName();
-          } else if (resolvedDeclaration.isEnumConstant()) {
-            ResolvedEnumConstantDeclaration resolvedEnumConstantDeclaration =
-                resolvedDeclaration.asEnumConstant();
-            displayName = resolvedEnumConstantDeclaration.getName();
-            // TODO: cannot get qualified name now
-            qualifiedName = resolvedEnumConstantDeclaration.getName();
-          }
-        } else {
-          // external types
-        }
-      } catch (UnsolvedSymbolException e) {
-        continue;
-      }
-
+      // internal types
       // whether the field is assigned a value
       if (fieldAccessExpr.getParentNode().isPresent()) {
         Node parent = fieldAccessExpr.getParentNode().get();
         if (parent instanceof AssignExpr) {
           AssignExpr parentAssign = (AssignExpr) parent;
           if (parentAssign.getTarget().equals(fieldAccessExpr)) {
-            writeFieldNames.add(qualifiedName);
+            writeFieldExprs.add(fieldAccessExpr);
           }
         }
       }
-      readFieldNames.add(qualifiedName);
+      readFieldExprs.add(fieldAccessExpr);
     }
-    if (readFieldNames.size() > 0) {
-      readFieldEdges.put(node, readFieldNames);
+    if (readFieldExprs.size() > 0) {
+      readFieldEdges.put(node, readFieldExprs);
     }
-    if (writeFieldNames.size() > 0) {
-      writeFieldEdges.put(node, writeFieldNames);
+    if (writeFieldExprs.size() > 0) {
+      writeFieldEdges.put(node, writeFieldExprs);
     }
     // 3 method call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
-    List<String> methodCalledNames = new ArrayList<>();
-    for (MethodCallExpr methodCallExpr : methodCallExprs) {
-      // try to solve the symbol, create node&edge for internal types, and save the
-      // external
-      // relationships
-      try {
-        SymbolReference<ResolvedMethodDeclaration> ref = javaParserFacade.solve((methodCallExpr));
-        if (ref.isSolved()) {
-          ResolvedMethodDeclaration resolvedMethodDeclaration = methodCallExpr.resolve();
-          StringBuilder sb = new StringBuilder();
-          sb.append(resolvedMethodDeclaration.getQualifiedName());
-          sb.append("(");
-          for (int i = 0; i < resolvedMethodDeclaration.getNumberOfParams(); i++) {
-            if (i != 0) {
-              sb.append(", ");
-            }
-            String qualifiedType = resolvedMethodDeclaration.getParam(i).describeType();
-            sb.append(qualifiedType.substring(qualifiedType.lastIndexOf(".") + 1));
-          }
-          sb.append(")");
-          methodCalledNames.add(sb.toString());
-        }
-      } catch (UnsolvedSymbolException e) {
-        continue;
-      } catch (RuntimeException e) {
-        continue;
-      }
-    }
-    callMethodEdges.put(node, methodCalledNames);
+    callMethodEdges.put(node, methodCallExprs);
   }
 
   /**
@@ -698,12 +589,52 @@ public class SemanticGraphBuilder {
     //    if (typeDeclaration.getComment().isPresent()) {
     //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
     //    }
-//    return removeComment(source.substring(0, source.indexOf("{"))).trim();
+    //    return removeComment(source.substring(0, source.indexOf("{"))).trim();
     return source.trim();
   }
 
   private String removeComment(String source) {
     return source.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", "");
+  }
+
+  private int buildEdgesForMethodCall(
+      int edgeCount, Map<SemanticNode, List<MethodCallExpr>> callMethodEdges) {
+    // for every method call, find its declaration by method name and paramater num
+    for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : callMethodEdges.entrySet()) {
+      SemanticNode caller = entry.getKey();
+      List<MethodCallExpr> exprs = entry.getValue();
+      for (MethodCallExpr expr : exprs) {
+        String displayName = expr.getNameAsString();
+        int argNum = expr.getArguments().size();
+        List<SemanticNode> methodNodes =
+            graph
+                .vertexSet()
+                .stream()
+                .filter(
+                    node ->
+                        node.getNodeType().equals(NodeType.METHOD)
+                            && node.getDisplayName().substring(0, node.getDisplayName().indexOf("(")).equals(displayName))
+                .collect(Collectors.toList());
+        for (SemanticNode node : methodNodes) {
+          MethodDeclNode methodDeclNode = (MethodDeclNode) node;
+          if (methodDeclNode.getParameterNames().size() == argNum) {
+            boolean isSuccessful =
+                graph.addEdge(
+                    caller,
+                    methodDeclNode,
+                    new SemanticEdge(edgeCount++, EdgeType.CALL_METHOD, caller, methodDeclNode));
+            if (!isSuccessful) {
+              SemanticEdge edge = graph.getEdge(caller, methodDeclNode);
+              if(edge!=null){
+                edge.setWeight(edge.getWeight() + 1);
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    return edgeCount;
   }
 
   /**
@@ -730,7 +661,14 @@ public class SemanticGraphBuilder {
       SemanticNode sourceNode = entry.getKey();
       List<String> targetNodeNames = entry.getValue();
       for (String targeNodeName : targetNodeNames) {
-        SemanticNode targetNode = getTargetNode(vertexSet, targeNodeName, targetNodeType);
+        SemanticNode targetNode = null;
+        if (targetNodeType.equals(NodeType.FIELD)) {
+          targetNode = getTargetNodeForField(vertexSet, targeNodeName, targetNodeType);
+        } else if (targetNodeType.equals(NodeType.CLASS)) {
+          targetNode = getTargetNodeForType(vertexSet, targeNodeName, targetNodeType);
+        } else {
+          targetNode = getTargetNode(vertexSet, targeNodeName, targetNodeType);
+        }
         if (targetNode != null) {
           // if the edge was added to the graph, returns true; if the edges already exists, returns
           // false
@@ -767,6 +705,61 @@ public class SemanticGraphBuilder {
                     node.getNodeType().equals(targetNodeType)
                         && node.getQualifiedName().equals(targetQualifiedName))
             .findAny();
+    return targetNodeOpt.orElse(null);
+  }
+
+  /**
+   * Get the target node for type decl or init by fuzzy matching
+   *
+   * @param vertexSet
+   * @param displayName
+   * @param targetNodeType
+   * @return
+   */
+  public SemanticNode getTargetNodeForType(
+      Set<SemanticNode> vertexSet, String displayName, NodeType targetNodeType) {
+    Optional<SemanticNode> targetNodeOpt =
+        vertexSet
+            .stream()
+            .filter(
+                node ->
+                    node.getNodeType().equals(targetNodeType)
+                        && node.getQualifiedName().equals(displayName))
+            .findAny();
+    return targetNodeOpt.orElse(null);
+  }
+
+  /**
+   * Get the target node for field access by fuzzy matching
+   *
+   * @param vertexSet
+   * @param fieldAccessString
+   * @param targetNodeType
+   * @return
+   */
+  public SemanticNode getTargetNodeForField(
+      Set<SemanticNode> vertexSet, String fieldAccessString, NodeType targetNodeType) {
+    // for field, match by field name
+    if (fieldAccessString.contains(".")) {
+      fieldAccessString =
+          fieldAccessString.substring(
+              fieldAccessString.lastIndexOf("."), fieldAccessString.length());
+    }
+    String displayName = fieldAccessString;
+    // for method, match by method name and paramater num
+    Optional<SemanticNode> targetNodeOpt = Optional.empty();
+    if (targetNodeType.equals(NodeType.FIELD)) {
+
+      targetNodeOpt =
+          vertexSet
+              .stream()
+              .filter(
+                  node ->
+                      node.getNodeType().equals(targetNodeType)
+                          && node.getDisplayName().equals(displayName))
+              .findAny();
+    }
+
     return targetNodeOpt.orElse(null);
   }
 

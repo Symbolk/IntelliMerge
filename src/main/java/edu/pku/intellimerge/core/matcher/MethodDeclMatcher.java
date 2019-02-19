@@ -38,8 +38,8 @@ public class MethodDeclMatcher {
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
-    // bipartite matchings to match most likely renamed methods
-    // find the maximum matchings, one method cannot be renamed to two
+    // bipartite matching to match most likely renamed methods
+    // find the maximum matching, one method cannot be renamed to two
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -65,7 +65,7 @@ public class MethodDeclMatcher {
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-    // Rule: one of callers in the matchings && original caller's parent==current parent&&union
+    // Rule: one of callers in the matching && original caller's parent==current parent&&union
     // context confidence > confidence before
     Map<MethodDeclNode, List<MethodDeclNode>> alternates = new HashMap<>();
     for (SemanticNode possiblyAddedMethod : methodDeclNodes2) {

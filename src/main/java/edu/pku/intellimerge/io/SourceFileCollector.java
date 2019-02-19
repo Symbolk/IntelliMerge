@@ -67,15 +67,17 @@ public class SourceFileCollector {
       getDiffJavaFiles();
       if (this.onlyBothModified) {
         // collect only both modified files in two sides
-//        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
-//        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
-//        collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
+        // TODO collect static imported files
+        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
       } else {
         // collect diff files for all sides
         collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
         collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
         collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
       }
+      logger.info("Collecting files done for {}", mergeScenario.mergeCommitID);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -182,7 +184,7 @@ public class SourceFileCollector {
           File dstFile = new File(sideCollectedFilePath + relativePath);
 
           FileUtils.copyFile(srcFile, dstFile);
-          logger.info("Copying diff file: {} ...", srcFile.getName());
+//          logger.info("Copying diff file: {} ...", srcFile.getName());
 
           // copy the imported files
           if (copyImportedFiles) {
@@ -201,7 +203,7 @@ public class SourceFileCollector {
                   dstFile = new File(sideCollectedFilePath + sourceFile.getRelativePath());
                   FileUtils.copyFile(srcFile, dstFile);
                   sourceFile.isCopied = true;
-                  logger.info("Copying imported file: {} ...", srcFile.getName());
+//                  logger.info("Copying imported file: {} ...", srcFile.getName());
                 }
               }
             }

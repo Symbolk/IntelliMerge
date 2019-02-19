@@ -4,22 +4,24 @@ import edu.pku.intellimerge.model.SemanticNode;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class TwowayMatching {
-  // 2 kinds of matchings: match by unchanged signature & signature changed but match by their roles
+  // 2 kinds of matching: match by unchanged signature & signature changed but match by their roles
   public Map<SemanticNode, SemanticNode> one2oneMatchings; // confidence: 1
+  public List<SemanticNode> unmatchedNodes1; // possibly deleted nodes
+  public List<SemanticNode> unmatchedNodes2; // possibly added nodes
   //  private DefaultUndirectedWeightedGraph<SemanticNode, MatchingEdge> biPartite;
-  public Graph<SemanticNode, MatchingEdge> biPartite; // may contain refactoring matchings
-  // store the two way nodes matchings relationships in a bipartite
+  public Graph<SemanticNode, MatchingEdge> biPartite; // may contain refactoring matching
+  // store the two way nodes matching relationships in a bipartite
   private Set<SemanticNode> partition1; // usually base
   private Set<SemanticNode> partition2; // usually others
 
   public TwowayMatching() {
-    this.one2oneMatchings = new HashMap<>();
+    this.one2oneMatchings = new LinkedHashMap<>();
+    this.unmatchedNodes1 = new ArrayList<>();
+    this.unmatchedNodes2 = new ArrayList<>();
+
     this.biPartite = initBipartite();
     //        this.biPartite = new DefaultDirectedWeightedGraph<>(MatchingEdge.class);
     this.partition1 = new HashSet<>();
