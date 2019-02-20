@@ -585,12 +585,12 @@ public class SemanticGraphBuilder2 {
   /** Get signature of type in original code */
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
-    String source = typeDeclaration.getNameAsString();
+    String source = typeDeclaration.toString();
     //    if (typeDeclaration.getComment().isPresent()) {
     //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
     //    }
-    //    return removeComment(source.substring(0, source.indexOf("{"))).trim();
-    return source.trim();
+    return removeComment(source.substring(0, source.indexOf("{"))).trim();
+    //    return source.trim();
   }
 
   private String removeComment(String source) {
@@ -613,7 +613,9 @@ public class SemanticGraphBuilder2 {
                 .filter(
                     node ->
                         node.getNodeType().equals(NodeType.METHOD)
-                            && node.getDisplayName().substring(0, node.getDisplayName().indexOf("(")).equals(displayName))
+                            && node.getDisplayName()
+                                .substring(0, node.getDisplayName().indexOf("("))
+                                .equals(displayName))
                 .collect(Collectors.toList());
         for (SemanticNode node : methodNodes) {
           MethodDeclNode methodDeclNode = (MethodDeclNode) node;
@@ -625,7 +627,7 @@ public class SemanticGraphBuilder2 {
                     new SemanticEdge(edgeCount++, EdgeType.CALL_METHOD, caller, methodDeclNode));
             if (!isSuccessful) {
               SemanticEdge edge = graph.getEdge(caller, methodDeclNode);
-              if(edge!=null){
+              if (edge != null) {
                 edge.setWeight(edge.getWeight() + 1);
               }
             }

@@ -223,28 +223,32 @@ public class SourceFileCollector {
         treeWalk.setRecursive(true);
         while (treeWalk.next()) {
           String pathString = treeWalk.getPathString();
-          if (filePaths.contains(pathString)) {
-            ObjectId objectId = treeWalk.getObjectId(0);
-            ObjectLoader loader = repository.open(objectId);
-            // write content to file
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(loader.openStream(), writer, Charset.defaultCharset());
-            FilesManager.writeContent(
-                sideCollectedFilePath + File.separator + pathString, writer.toString());
-            // collect imported files
-            if (copyImportedFiles) {
-              String[] lines = writer.toString().split("\n");
-              for (String line : lines) {
-                if (line.startsWith("import")) {
-                  String importedFileRelativePath =
-                      line.replace("import ", "")
-                          .replace("static", "")
-                          .replace(".", File.separator)
-                          .replace(";", ".java")
-                          .trim();
-                  importedFilePaths.add(importedFileRelativePath);
+          for (String path : filePaths) {
+            // to tolerate import file paths, which is relative to source folder instead of repo root
+            if (pathString.endsWith(FilesManager.formatPathSeparator(path))) {
+              ObjectId objectId = treeWalk.getObjectId(0);
+              ObjectLoader loader = repository.open(objectId);
+              // write content to file
+              StringWriter writer = new StringWriter();
+              IOUtils.copy(loader.openStream(), writer, Charset.defaultCharset());
+              FilesManager.writeContent(
+                  sideCollectedFilePath + File.separator + pathString, writer.toString());
+              // collect imported files
+              if (copyImportedFiles) {
+                String[] lines = writer.toString().split("\n");
+                for (String line : lines) {
+                  if (line.startsWith("import")) {
+                    String importedFileRelativePath =
+                        line.replace("import ", "")
+                            .replace("static", "")
+                            .replace(".", File.separator)
+                            .replace(";", ".java")
+                            .trim();
+                    importedFilePaths.add(importedFileRelativePath);
+                  }
                 }
               }
+              break;
             }
           }
         }

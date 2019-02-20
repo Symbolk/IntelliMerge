@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FilesManager {
@@ -237,5 +238,15 @@ public class FilesManager {
       }
     }
     return true;
+  }
+
+  /**
+   * Format separator in path to jgit style "/"
+   *
+   * @param path
+   * @return
+   */
+  public static String formatPathSeparator(String path) {
+    return path.replaceAll(Pattern.quote(File.separator), "/");
   }
 }

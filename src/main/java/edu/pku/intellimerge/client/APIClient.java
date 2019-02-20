@@ -2,6 +2,7 @@ package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.SingleFileGraphBuilder;
+import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
@@ -137,7 +138,7 @@ public class APIClient {
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
     //    saveDotToFile(mergeScenario, oursGraph, Side.OURS);
-    SemanticGraphExporter.printAsDot(oursGraph);
+//    SemanticGraphExporter.printAsDot(oursGraph);
 
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
@@ -150,17 +151,17 @@ public class APIClient {
     logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
 
     // 3. Match node and merge the 3-way graphs
-    //    String resultFolder =
-    //        RESULT_PATH
-    //            + File.separator
-    //            + mergeScenario.mergeCommitID
-    //            + File.separator
-    //            + "intelliMerged";
-    //    FilesManager.clearResultFolder(resultFolder);
-    //    ThreewayGraphMerger merger =
-    //        new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
-    //    merger.threewayMerge();
-    //    logger.info("Merging versions done for {}", mergeScenario.mergeCommitID);
+        String resultFolder =
+            RESULT_PATH
+                + File.separator
+                + mergeScenario.mergeCommitID
+                + File.separator
+                + "intelliMerged";
+        FilesManager.clearResultFolder(resultFolder);
+        ThreewayGraphMerger merger =
+            new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
+        merger.threewayMerge();
+        logger.info("Merging versions done for {}", mergeScenario.mergeCommitID);
 
     // 4. Print the merged graph into code, keep the original format as possible
 

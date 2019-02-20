@@ -32,6 +32,8 @@ public class ConstructorDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL_CONSTRUCTOR, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
   }
 
 }
