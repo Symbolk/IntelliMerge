@@ -10,7 +10,6 @@ import java.util.Optional;
 /** access == public, no return type */
 public class ConstructorDeclNode extends TerminalNode {
   private String constructorName; // signature
-  private Boolean needToMerge;
 
   public ConstructorDeclNode(
       Integer nodeID,
@@ -25,7 +24,6 @@ public class ConstructorDeclNode extends TerminalNode {
       Optional<Range> range) {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range);
     this.constructorName = constructorName;
-    this.needToMerge = needToMerge;
 
     this.incomingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
     this.incomingEdges.put(EdgeType.CALL_CONSTRUCTOR, new ArrayList<>());

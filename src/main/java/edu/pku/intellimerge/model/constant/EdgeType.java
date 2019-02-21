@@ -20,7 +20,8 @@ public enum EdgeType {
   DECL_OBJECT(12, false, "declares object"),
   INIT_OBJECT(13, false, "creates object"),
   // use DEFINE_CLASSORINTERFACE or concrete types?
-  DEFINE_TYPE(14, true, "defines type");
+  DEFINE_TYPE(14, true, "defines type"),
+  DEFINE_CONSTANT(15, true, "defines constant");
 
   public int index;
   // whether the edge represent the nesting hierarchy structure, or the interaction with other nodes

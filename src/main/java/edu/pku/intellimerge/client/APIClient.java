@@ -124,7 +124,7 @@ public class APIClient {
     SourceFileCollector collector =
         new SourceFileCollector(mergeScenario, repository, collectedFilePath);
     collector.setOnlyBothModified(true);
-    collector.setCopyImportedFiles(true);
+    collector.setCopyImportedFiles(false);
     collector.collectFilesForAllSides();
     logger.info("Collecting files done for {}", mergeScenario.mergeCommitID);
 

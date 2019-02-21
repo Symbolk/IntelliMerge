@@ -18,7 +18,8 @@ public enum NodeType {
   // terminal
   CONSTRUCTOR(6, "constructor"),
   FIELD(6, "field"),
-  METHOD(6, "method");
+  METHOD(6, "method"),
+  ENUM_CONSTANT(6, "enum_constant");
 
   // the hierarchy/nesting level of code elements, from outer to inner
   public int level;

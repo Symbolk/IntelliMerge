@@ -364,7 +364,7 @@ public class SemanticGraphBuilder2 {
         if (childTD.isNestedType()) {
           // add edge from the parent td to the nested td
           TypeDeclNode childTDNode =
-              processTypeDeclaration(childTD, packageName, nodeCount++, isInChangedFile);
+              processTypeDeclaration(childTD, qualifiedTypeName, nodeCount++, isInChangedFile);
           graph.addVertex(childTDNode);
 
           tdNode.appendChild(childTDNode);
@@ -373,11 +373,36 @@ public class SemanticGraphBuilder2 {
               childTDNode,
               new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, tdNode, childTDNode));
           // process nested td members iteratively
-          processMemebers(childTD, childTDNode, packageName, isInChangedFile);
+          processMemebers(childTD, childTDNode, qualifiedTypeName, isInChangedFile);
         }
       } else {
         // for other members (constructor, field, method), create the node
         // add the edge from the parent td to the member
+        if (child instanceof EnumConstantDeclaration) {
+          EnumConstantDeclaration ecd = (EnumConstantDeclaration) child;
+          displayName = ecd.getNameAsString();
+          qualifiedName = qualifiedTypeName + "." + displayName;
+          String body = ecd.toString().replace(displayName, "");
+          EnumConstantDeclNode ecdNode =
+              new EnumConstantDeclNode(
+                  nodeCount++,
+                  isInChangedFile,
+                  NodeType.ENUM_CONSTANT,
+                  displayName,
+                  qualifiedName,
+                  ecd.toString(),
+                  ecd.getComment().map(Comment::toString).orElse(""),
+                  body,
+                  ecd.getRange());
+          graph.addVertex(ecdNode);
+
+          // add edge between field and class
+          tdNode.appendChild(ecdNode);
+          graph.addEdge(
+              tdNode,
+              ecdNode,
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTANT, tdNode, ecdNode));
+        }
         // 4. field
         if (child instanceof FieldDeclaration) {
           FieldDeclaration fd = (FieldDeclaration) child;
@@ -453,7 +478,7 @@ public class SemanticGraphBuilder2 {
                   displayName,
                   qualifiedName,
                   cd.getDeclarationAsString(),
-                  cd.getComment().map(Comment::toString).orElse(""),
+                  cd.getComment().map(Comment::toString).orElse(";"),
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());
@@ -512,7 +537,7 @@ public class SemanticGraphBuilder2 {
                   parameterTypes,
                   parameterNames,
                   throwsExceptions,
-                  md.getBody().map(BlockStmt::toString).orElse(""),
+                  md.getBody().map(BlockStmt::toString).orElse(";"),
                   md.getRange());
           graph.addVertex(mdNode);
 
