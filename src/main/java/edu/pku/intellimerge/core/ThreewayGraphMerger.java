@@ -59,7 +59,7 @@ public class ThreewayGraphMerger {
     for (SemanticNode node : baseGraph.vertexSet()) {
       if (node instanceof CompilationUnitNode) {
         CompilationUnitNode cu = (CompilationUnitNode) node;
-        if (cu.needToMerge == true) {
+        if (cu.getNeedToMerge() == true) {
           ThreewayMapping mapping =
               new ThreewayMapping(
                   Optional.ofNullable(b2oMatchings.one2oneMatchings.getOrDefault(node, null)),
@@ -158,7 +158,7 @@ public class ThreewayGraphMerger {
       for (SemanticNode child : children) {
         SemanticNode mergedChild = mergeSingleNode(child);
         if (mergedChild != null) {
-          mergedNonTerminal.addChild(mergedChild);
+          mergedNonTerminal.appendChild(mergedChild);
         }
       }
       return mergedNonTerminal;

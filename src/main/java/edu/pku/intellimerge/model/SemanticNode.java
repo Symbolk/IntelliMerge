@@ -3,17 +3,20 @@ package edu.pku.intellimerge.model;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
-import javax.swing.text.html.Option;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
   public Map<EdgeType, List<SemanticNode>> outgoingEdges = new LinkedHashMap<>();
   // signature
-  public Boolean needToMerge;
+  private Boolean needToMerge;
+
+  private SemanticNode parent;
+  private List<SemanticNode> children;
+
   private Integer nodeID;
   private NodeType nodeType;
   private String displayName;
@@ -39,6 +42,7 @@ public abstract class SemanticNode {
     this.qualifiedName = qualifiedName;
     this.originalSignature = originalSignature;
     this.comment = comment;
+    this.children = new ArrayList<>();
   }
 
   public Integer getNodeID() {
@@ -81,16 +85,20 @@ public abstract class SemanticNode {
     return getQualifiedName();
   }
 
-  public String getComment(){
+  public String getComment() {
     return comment;
   }
 
-  public void setComment(String comment){
+  public void setComment(String comment) {
     this.comment = comment;
   }
 
   public Integer hashCodeSignature() {
     return getSignature().hashCode();
+  }
+
+  public Boolean getNeedToMerge() {
+    return needToMerge;
   }
 
   /**
@@ -107,12 +115,45 @@ public abstract class SemanticNode {
    */
   public abstract SemanticNode deepClone();
 
-  public abstract SemanticNode getParent();
+  /** A series of methods to operate the tree structure */
+  public SemanticNode getParent() {
+    return parent;
+  }
 
-  public abstract List<SemanticNode> getChildren();
+  public void setParent(SemanticNode parent) {
+    this.parent = parent;
+  }
 
-  public Boolean getNeedToMerge() {
-    return needToMerge;
+  public List<SemanticNode> getChildren() {
+    return children;
+  }
+
+  public void appendChild(SemanticNode child) {
+    if (this.children == null) {
+      this.children = new ArrayList<>();
+    }
+    this.children.add(child);
+    child.setParent(this);
+  }
+
+  public void insertChild(SemanticNode child, int position) {
+    if (position >= 0 && position < children.size()) {
+      children.add(position, child);
+    } else if (position >= children.size()) {
+      appendChild(child);
+    }
+  }
+
+  public SemanticNode getChildAtPosition(int position) {
+    if (position >= 0 && position < children.size()) {
+      return children.get(position);
+    } else {
+      return null;
+    }
+  }
+
+  public int getChildPosition(SemanticNode child) {
+    return children.indexOf(child);
   }
 
   /**
@@ -162,6 +203,6 @@ public abstract class SemanticNode {
   }
 
   public boolean equals(Object o) {
-      return (o instanceof SemanticNode) && (asString().equals(((SemanticNode)o).asString()));
+    return (o instanceof SemanticNode) && (asString().equals(((SemanticNode) o).asString()));
   }
 }

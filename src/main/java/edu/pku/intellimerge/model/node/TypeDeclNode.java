@@ -34,7 +34,6 @@ public class TypeDeclNode extends NonTerminalNode {
     this.modifiers = modifiers;
     this.type = type;
     this.typeName = typeName;
-    this.needToMerge = needToMerge;
 
     this.implementTypes = new ArrayList<>();
     // Notice: here the order matters

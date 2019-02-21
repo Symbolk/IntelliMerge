@@ -231,12 +231,15 @@ public class SemanticGraphBuilder2 {
                 Arrays.asList(finalPackageName.split(".")));
         graph.addVertex(cuNode);
         graph.addVertex(packageDeclNode);
+
+        packageDeclNode.appendChild(cuNode);
         graph.addEdge(
             packageDeclNode,
             cuNode,
             new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
       } else {
         graph.addVertex(cuNode);
+        packageDeclNodeOpt.get().appendChild(cuNode);
         graph.addEdge(
             packageDeclNodeOpt.get(),
             cuNode,
@@ -259,6 +262,8 @@ public class SemanticGraphBuilder2 {
       graph.addVertex(tdNode);
 
       if (td.isTopLevelType()) {
+
+        cuNode.appendChild(tdNode);
         graph.addEdge(
             cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
 
@@ -361,6 +366,8 @@ public class SemanticGraphBuilder2 {
           TypeDeclNode childTDNode =
               processTypeDeclaration(childTD, packageName, nodeCount++, isInChangedFile);
           graph.addVertex(childTDNode);
+
+          tdNode.appendChild(childTDNode);
           graph.addEdge(
               tdNode,
               childTDNode,
@@ -405,7 +412,9 @@ public class SemanticGraphBuilder2 {
                     body,
                     field.getRange());
             graph.addVertex(fdNode);
+
             // add edge between field and class
+            tdNode.appendChild(fdNode);
             graph.addEdge(
                 tdNode,
                 fdNode,
@@ -449,6 +458,8 @@ public class SemanticGraphBuilder2 {
                   cd.getBody().toString(),
                   cd.getRange());
           graph.addVertex(cdNode);
+
+          tdNode.appendChild(cdNode);
           graph.addEdge(
               tdNode,
               cdNode,
@@ -504,6 +515,8 @@ public class SemanticGraphBuilder2 {
                   md.getBody().map(BlockStmt::toString).orElse(""),
                   md.getRange());
           graph.addVertex(mdNode);
+
+          tdNode.appendChild(mdNode);
           graph.addEdge(
               tdNode,
               mdNode,
