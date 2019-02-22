@@ -71,14 +71,14 @@ public class SemanticGraphBuilder {
   private Side side;
   private String collectedFilePath;
   //  the context files for symbolsolving, i.e. the source folder of this java project
-  private String sourceFolderPath;
+  private String sourceDir;
 
   public SemanticGraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
     this.mergeScenario = mergeScenario;
     this.side = side;
     this.collectedFilePath = collectedFilePath;
     // TODO this cause failed resolving in case of file level changes
-    this.sourceFolderPath = mergeScenario.repoPath + mergeScenario.srcPath;
+    this.sourceDir = mergeScenario.repoPath + mergeScenario.srcPath;
 
     this.graph = initGraph();
     this.nodeCount = 0;
@@ -86,7 +86,7 @@ public class SemanticGraphBuilder {
 
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(sourceFolderPath));
+    TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(new File(sourceDir));
     reflectionTypeSolver.setParent(reflectionTypeSolver);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
     combinedTypeSolver.add(reflectionTypeSolver);

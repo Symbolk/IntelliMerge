@@ -198,28 +198,28 @@ public class FilesManager {
   /**
    * Empty the result folder
    *
-   * @param folderPath absolute path
+   * @param resultDir absolute path
    * @return
    */
-  public static void clearResultFolder(String folderPath) {
+  public static void clearResultDir(String resultDir) {
     // if exist, remove all files under it
-    File folderFile = new File(folderPath);
-    if (folderFile.exists()) {
-      emptyFolder(folderPath);
+    File dirFile = new File(resultDir);
+    if (dirFile.exists()) {
+      emptyFolder(resultDir);
     } else {
       // if not exist, create
-      folderFile.mkdirs();
+      dirFile.mkdirs();
     }
   }
 
   /**
    * Delete all files and subfolders to empty the folder
    *
-   * @param path absolute path
+   * @param dir absolute path
    * @return
    */
-  public static boolean emptyFolder(String path) {
-    File file = new File(path);
+  public static boolean emptyFolder(String dir) {
+    File file = new File(dir);
     if (!file.exists()) {
       System.err.println("The dir are not exists!");
       return false;
@@ -227,7 +227,7 @@ public class FilesManager {
 
     String[] content = file.list();
     for (String name : content) {
-      File temp = new File(path, name);
+      File temp = new File(dir, name);
       if (temp.isDirectory()) {
         emptyFolder(temp.getAbsolutePath());
         temp.delete();

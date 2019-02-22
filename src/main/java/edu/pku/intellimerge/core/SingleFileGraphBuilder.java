@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 /** Build Semantic Graph for one single java file (Mainly for testing) */
 public class SingleFileGraphBuilder {
   private static final Logger logger = LoggerFactory.getLogger(SingleFileGraphBuilder.class);
-  private String folderPath;
+  private String dirPath;
   private String fileRelativePath;
   private Graph<SemanticNode, SemanticEdge> graph;
   // incremental id, unique in one side's graph
@@ -66,8 +66,8 @@ public class SingleFileGraphBuilder {
   private Map<SemanticNode, List<String>> writeFieldEdges = new HashMap<>();
   private Map<SemanticNode, List<String>> callMethodEdges = new HashMap<>();
 
-  public SingleFileGraphBuilder(String folderPath, String fileRelativePath) {
-    this.folderPath = folderPath;
+  public SingleFileGraphBuilder(String dirPath, String fileRelativePath) {
+    this.dirPath = dirPath;
     this.fileRelativePath = fileRelativePath;
     this.graph = initGraph();
     this.nodeCount = 0;
@@ -111,7 +111,7 @@ public class SingleFileGraphBuilder {
     // set up the typsolver
     TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
     TypeSolver javaParserTypeSolver =
-        new JavaParserTypeSolver(new File(folderPath + File.separator + side.asString()));
+        new JavaParserTypeSolver(new File(dirPath + File.separator + side.asString()));
     reflectionTypeSolver.setParent(reflectionTypeSolver);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
     combinedTypeSolver.add(reflectionTypeSolver);
@@ -127,7 +127,7 @@ public class SingleFileGraphBuilder {
      * build the graph by analyzing every CU
      */
     String fileAbsPath =
-        folderPath + File.separator + side.asString() + File.separator + fileRelativePath;
+        dirPath + File.separator + side.asString() + File.separator + fileRelativePath;
     CompilationUnit cu = JavaParser.parse(new File(fileAbsPath));
     String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
     String absolutePath =

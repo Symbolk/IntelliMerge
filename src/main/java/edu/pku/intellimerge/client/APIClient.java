@@ -24,32 +24,34 @@ public class APIClient {
   private Logger logger = LoggerFactory.getLogger(APIClient.class);
 
   private String REPO_NAME;
-  private String REPO_PATH;
+  private String REPO_DIR;
   private String GIT_URL;
-  private String SRC_PATH;
-  private String DIFF_PATH;
-  private String RESULT_PATH;
+  private String SRC_DIR;
+  private String DIFF_DIR;
+  private String RESULT_DIR;
   private String STATISTICS_PATH;
   // to export graph as dot file
-  private String DOT_PATH;
+  private String DOT_DIR;
+
+  public APIClient() {}
 
   public APIClient(
       String REPO_NAME,
-      String REPO_PATH,
+      String REPO_DIR,
       String GIT_URL,
-      String SRC_PATH,
-      String DIFF_PATH,
-      String RESULT_PATH,
+      String SRC_DIR,
+      String DIFF_DIR,
+      String RESULT_DIR,
       String STATISTICS_PATH,
-      String DOT_PATH) {
+      String DOT_DIR) {
     this.REPO_NAME = REPO_NAME;
-    this.REPO_PATH = REPO_PATH;
+    this.REPO_DIR = REPO_DIR;
     this.GIT_URL = GIT_URL;
-    this.SRC_PATH = SRC_PATH;
-    this.DIFF_PATH = DIFF_PATH;
-    this.RESULT_PATH = RESULT_PATH;
+    this.SRC_DIR = SRC_DIR;
+    this.DIFF_DIR = DIFF_DIR;
+    this.RESULT_DIR = RESULT_DIR;
     this.STATISTICS_PATH = STATISTICS_PATH;
-    this.DOT_PATH = DOT_PATH;
+    this.DOT_DIR = DOT_DIR;
   }
 
   public MergeScenario generateSingleMergeSenario() {
@@ -61,8 +63,8 @@ public class APIClient {
     MergeScenario mergeScenario =
         new MergeScenario(
             REPO_NAME,
-            REPO_PATH,
-            SRC_PATH,
+                REPO_DIR,
+                SRC_DIR,
             mergeCommitID,
             oursCommitID,
             baseCommitID,
@@ -87,8 +89,8 @@ public class APIClient {
       MergeScenario mergeScenario =
           new MergeScenario(
               REPO_NAME,
-              REPO_PATH,
-              SRC_PATH,
+                  REPO_DIR,
+                  SRC_DIR,
               mergeCommitID,
               oursCommitID,
               baseCommitID,
@@ -97,6 +99,19 @@ public class APIClient {
     }
     return mergeScenarios;
   }
+
+  private void saveDotToFile(
+      MergeScenario mergeScenario, Graph<SemanticNode, SemanticEdge> graph, Side side) {
+    SemanticGraphExporter.saveAsDot(
+        graph,
+        DOT_DIR
+            + File.separator
+            + side
+            + File.separator
+            + mergeScenario.mergeCommitID.substring(0, 7)
+            + ".dot");
+  }
+
   /**
    * Handle one single merge scenario
    *
@@ -111,7 +126,7 @@ public class APIClient {
 
     // source files collected to be parse later
     String collectedFilePath =
-        DIFF_PATH + File.separator + mergeScenario.mergeCommitID + File.separator;
+        DIFF_DIR + File.separator + mergeScenario.mergeCommitID + File.separator;
 
     SourceFileCollector collector =
         new SourceFileCollector(mergeScenario, repository, collectedFilePath);
@@ -129,6 +144,7 @@ public class APIClient {
         new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedFilePath);
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
+
     //    saveDotToFile(mergeScenario, oursGraph, Side.OURS);
     //    SemanticGraphExporter.printAsDot(oursGraph);
 
@@ -142,38 +158,33 @@ public class APIClient {
 
     logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
 
-    // 3. Match node and merge the 3-way graphs
-    String resultFolder =
-        RESULT_PATH
+    String resultDir =
+        RESULT_DIR
             + File.separator
             + mergeScenario.mergeCommitID
             + File.separator
             + "intelliMerged";
-    FilesManager.clearResultFolder(resultFolder);
+    FilesManager.clearResultDir(resultDir);
     ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
-    merger.threewayMerge();
-    logger.info("Merging versions done for {}", mergeScenario.mergeCommitID);
+        new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
+    // 3. Match node and merge the 3-way graphs
+
+    merger.threewayMap();
+    logger.info("Matching done for {}", mergeScenario.mergeCommitID);
 
     // 4. Print the merged graph into code, keep the original format as possible
-
+    merger.threewayMerge();
+    logger.info("Merging done for {}", mergeScenario.mergeCommitID);
   }
 
-  private void saveDotToFile(
-      MergeScenario mergeScenario, Graph<SemanticNode, SemanticEdge> baseGraph, Side side) {
-    SemanticGraphExporter.saveAsDot(
-        baseGraph,
-        DOT_PATH
-            + File.separator
-            + side
-            + File.separator
-            + mergeScenario.mergeCommitID.substring(0, 7)
-            + ".txt");
-  }
-
-  /** Given three versions of one single java file, convert and merge them with graph */
-  private void processSingleFiles(String folderPath, String fileRelativePath) throws Exception {
-    SingleFileGraphBuilder builder = new SingleFileGraphBuilder(folderPath, fileRelativePath);
+  /**
+   * Given three versions of one single java file, convert and merge them with graph
+   * @param directory
+   * @param fileRelativePath
+   * @throws Exception
+   */
+  public void processSingleFiles(String directory, String fileRelativePath) throws Exception {
+    SingleFileGraphBuilder builder = new SingleFileGraphBuilder(directory, fileRelativePath);
     //    Triple<
     //            Graph<SemanticNode, SemanticEdge>,
     //            Graph<SemanticNode, SemanticEdge>,

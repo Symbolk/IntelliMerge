@@ -18,8 +18,8 @@ public class Graph2CodePrinter {
 
   private static final Logger logger = LoggerFactory.getLogger(Graph2CodePrinter.class);
 
-  public static void printCU(SemanticNode node, CompilationUnitNode cu, String resultFolder) {
-    String resultFilePath = resultFolder + File.separator + cu.getRelativePath();
+  public static void printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
+    String resultFilePath = resultDir + File.separator + cu.getRelativePath();
     // merged package imports
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getPackageStatement());

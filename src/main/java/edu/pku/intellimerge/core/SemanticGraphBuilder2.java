@@ -60,12 +60,12 @@ public class SemanticGraphBuilder2 {
 
   private MergeScenario mergeScenario;
   private Side side;
-  private String collectedFilePath;
+  private String targetFilesDir;
 
-  public SemanticGraphBuilder2(MergeScenario mergeScenario, Side side, String collectedFilePath) {
+  public SemanticGraphBuilder2(MergeScenario mergeScenario, Side side, String targetFilesDir) {
     this.mergeScenario = mergeScenario;
     this.side = side;
-    this.collectedFilePath = collectedFilePath;
+    this.targetFilesDir = targetFilesDir;
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
@@ -93,7 +93,7 @@ public class SemanticGraphBuilder2 {
   public Graph<SemanticNode, SemanticEdge> build() {
 
     // the folder path which contains collected files to build the graph upon
-    String sideDiffPath = collectedFilePath + File.separator + side.asString() + File.separator;
+    String sideDiffPath = targetFilesDir + File.separator + side.asString() + File.separator;
     // just for sure: reinit the graph
     this.graph = initGraph();
 
@@ -176,7 +176,7 @@ public class SemanticGraphBuilder2 {
     String absolutePath =
         cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
     String relativePath =
-        absolutePath.replace(collectedFilePath + side.asString() + File.separator, "");
+        absolutePath.replace(targetFilesDir + side.asString() + File.separator, "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
     boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);

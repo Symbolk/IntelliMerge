@@ -23,7 +23,7 @@ import java.util.*;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
-  private String resultFolder; // merge result path
+  private String resultDir; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
@@ -32,11 +32,11 @@ public class ThreewayGraphMerger {
   private List<ThreewayMapping> mappings;
 
   public ThreewayGraphMerger(
-      String resultFolder,
+      String resultDir,
       Graph<SemanticNode, SemanticEdge> oursGraph,
       Graph<SemanticNode, SemanticEdge> baseGraph,
       Graph<SemanticNode, SemanticEdge> theirsGraph) {
-    this.resultFolder = resultFolder;
+    this.resultDir = resultDir;
     this.oursGraph = oursGraph;
     this.baseGraph = baseGraph;
     this.theirsGraph = theirsGraph;
@@ -73,7 +73,6 @@ public class ThreewayGraphMerger {
 
   /** Merge CUs according to the mappings */
   public void threewayMerge() {
-    threewayMap();
     // bottom up merge children of the needToMerge CU
     for (ThreewayMapping mapping : mappings) {
       if (mapping.baseNode.isPresent()) {
@@ -83,7 +82,7 @@ public class ThreewayGraphMerger {
         CompilationUnitNode mergedPackageAndImports = mergePackageAndImports(mapping.baseNode.get());
         if (mergedCU != null && mergedPackageAndImports!=null) {
           // save the merged result to file
-          Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultFolder);
+          Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultDir);
         }
       }
     }
@@ -130,7 +129,7 @@ public class ThreewayGraphMerger {
       SemanticNode oursNode = b2oMatchings.one2oneMatchings.getOrDefault(node, null);
       SemanticNode theirsNode = b2tMatchings.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
-        // exist in both side
+        // exist in BothSides side
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
