@@ -10,8 +10,6 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.FilesManager;
-import edu.pku.intellimerge.util.GitService;
-import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
@@ -23,44 +21,38 @@ import java.util.List;
 
 public class APIClient {
 
-  private static final Logger logger = LoggerFactory.getLogger(APIClient.class);
+  private Logger logger = LoggerFactory.getLogger(APIClient.class);
 
-  private static final String REPO_NAME = "javaparser";
-  private static final String REPO_PATH = "D:\\github\\repos\\" + REPO_NAME;
-  private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
-  private static final String SRC_PATH =
-      "/javaparser-core/src/main/java/"; // java project source folder
-  //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
-  private static final String DIFF_PATH = "D:\\github\\diffs\\" + REPO_NAME;
-  private static final String RESULT_PATH = "D:\\github\\merges\\" + REPO_NAME;
-  private static final String STATISTICS_PATH = "D:\\github\\merges\\javaparser\\statistics.csv";
+  private String REPO_NAME;
+  private String REPO_PATH;
+  private String GIT_URL;
+  private String SRC_PATH;
+  private String DIFF_PATH;
+  private String RESULT_PATH;
+  private String STATISTICS_PATH;
   // to export graph as dot file
-  private static final String DOT_PATH = "C:\\Users\\Name\\Desktop\\GraphData\\";
+  private String DOT_PATH;
 
-  public static void main(String[] args) {
-    PropertyConfigurator.configure("log4j.properties");
-    //      BasicConfigurator.configure();
-
-    try {
-      // process merge scenarios in repository
-      Repository repository = GitService.cloneIfNotExists(REPO_PATH, GIT_URL);
-
-//            for (MergeScenario mergeScenario : generateMergeScenarios()) {
-//              processSingleMergeScenario(mergeScenario, repository);
-//            }
-
-      processSingleMergeScenario(generateSingleMergeSenario(), repository);
-
-      // process single file
-      String folderPath = "src/test/resources/RenameMethod/renameinboth/";
-      String fileRelativePath = "SourceRoot.java";
-      //      processSingleFiles(folderPath, fileRelativePath);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+  public APIClient(
+      String REPO_NAME,
+      String REPO_PATH,
+      String GIT_URL,
+      String SRC_PATH,
+      String DIFF_PATH,
+      String RESULT_PATH,
+      String STATISTICS_PATH,
+      String DOT_PATH) {
+    this.REPO_NAME = REPO_NAME;
+    this.REPO_PATH = REPO_PATH;
+    this.GIT_URL = GIT_URL;
+    this.SRC_PATH = SRC_PATH;
+    this.DIFF_PATH = DIFF_PATH;
+    this.RESULT_PATH = RESULT_PATH;
+    this.STATISTICS_PATH = STATISTICS_PATH;
+    this.DOT_PATH = DOT_PATH;
   }
 
-  public static MergeScenario generateSingleMergeSenario() {
+  public MergeScenario generateSingleMergeSenario() {
     String mergeCommitID = "d9c990a94c725b8d112ba02897988b7400100ce3";
     String oursCommitID = "dee6b3f144f3d3bf0f0469cfb3a5c9176b57b9d5";
     String theirsCommitID = "4d3a53a47d34f7d93d2b1af76d0b2d7250028397";
@@ -83,7 +75,7 @@ public class APIClient {
    *
    * @return
    */
-  public static List<MergeScenario> generateMergeScenarios() {
+  public List<MergeScenario> generateMergeScenarios() {
     List<MergeScenario> mergeScenarios = new ArrayList<>();
     for (String[] items : FilesManager.readCSV(STATISTICS_PATH, ";")) {
 
@@ -112,7 +104,7 @@ public class APIClient {
    * @param repository
    * @throws Exception
    */
-  public static void processSingleMergeScenario(MergeScenario mergeScenario, Repository repository)
+  public void processSingleMergeScenario(MergeScenario mergeScenario, Repository repository)
       throws Exception {
 
     // 1. Collect diff java files and imported files between merge parent commit and base commit
@@ -138,7 +130,7 @@ public class APIClient {
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
     //    saveDotToFile(mergeScenario, oursGraph, Side.OURS);
-//    SemanticGraphExporter.printAsDot(oursGraph);
+    //    SemanticGraphExporter.printAsDot(oursGraph);
 
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
@@ -151,23 +143,23 @@ public class APIClient {
     logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
 
     // 3. Match node and merge the 3-way graphs
-        String resultFolder =
-            RESULT_PATH
-                + File.separator
-                + mergeScenario.mergeCommitID
-                + File.separator
-                + "intelliMerged";
-        FilesManager.clearResultFolder(resultFolder);
-        ThreewayGraphMerger merger =
-            new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
-        merger.threewayMerge();
-        logger.info("Merging versions done for {}", mergeScenario.mergeCommitID);
+    String resultFolder =
+        RESULT_PATH
+            + File.separator
+            + mergeScenario.mergeCommitID
+            + File.separator
+            + "intelliMerged";
+    FilesManager.clearResultFolder(resultFolder);
+    ThreewayGraphMerger merger =
+        new ThreewayGraphMerger(resultFolder, oursGraph, baseGraph, theirsGraph);
+    merger.threewayMerge();
+    logger.info("Merging versions done for {}", mergeScenario.mergeCommitID);
 
     // 4. Print the merged graph into code, keep the original format as possible
 
   }
 
-  private static void saveDotToFile(
+  private void saveDotToFile(
       MergeScenario mergeScenario, Graph<SemanticNode, SemanticEdge> baseGraph, Side side) {
     SemanticGraphExporter.saveAsDot(
         baseGraph,
@@ -180,8 +172,7 @@ public class APIClient {
   }
 
   /** Given three versions of one single java file, convert and merge them with graph */
-  private static void processSingleFiles(String folderPath, String fileRelativePath)
-      throws Exception {
+  private void processSingleFiles(String folderPath, String fileRelativePath) throws Exception {
     SingleFileGraphBuilder builder = new SingleFileGraphBuilder(folderPath, fileRelativePath);
     //    Triple<
     //            Graph<SemanticNode, SemanticEdge>,
