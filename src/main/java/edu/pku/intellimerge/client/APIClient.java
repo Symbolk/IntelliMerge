@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.client;
 
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
-import edu.pku.intellimerge.core.SingleFileGraphBuilder;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
@@ -54,6 +53,11 @@ public class APIClient {
     this.DOT_DIR = DOT_DIR;
   }
 
+  /**
+   * Generate one single merge scenario (mainly for testing)
+   *
+   * @return
+   */
   public MergeScenario generateSingleMergeSenario() {
     String mergeCommitID = "d9c990a94c725b8d112ba02897988b7400100ce3";
     String oursCommitID = "dee6b3f144f3d3bf0f0469cfb3a5c9176b57b9d5";
@@ -63,8 +67,8 @@ public class APIClient {
     MergeScenario mergeScenario =
         new MergeScenario(
             REPO_NAME,
-                REPO_DIR,
-                SRC_DIR,
+            REPO_DIR,
+            SRC_DIR,
             mergeCommitID,
             oursCommitID,
             baseCommitID,
@@ -89,8 +93,8 @@ public class APIClient {
       MergeScenario mergeScenario =
           new MergeScenario(
               REPO_NAME,
-                  REPO_DIR,
-                  SRC_DIR,
+              REPO_DIR,
+              SRC_DIR,
               mergeCommitID,
               oursCommitID,
               baseCommitID,
@@ -100,6 +104,13 @@ public class APIClient {
     return mergeScenarios;
   }
 
+  /**
+   * Save built graph into a .dot file
+   *
+   * @param mergeScenario
+   * @param graph
+   * @param side
+   */
   private void saveDotToFile(
       MergeScenario mergeScenario, Graph<SemanticNode, SemanticEdge> graph, Side side) {
     SemanticGraphExporter.saveAsDot(
@@ -113,13 +124,13 @@ public class APIClient {
   }
 
   /**
-   * Handle one single merge scenario
+   * Collect, analyze, match and merge java files collected in one merge scenario
    *
    * @param mergeScenario
    * @param repository
    * @throws Exception
    */
-  public void processSingleMergeScenario(MergeScenario mergeScenario, Repository repository)
+  public void processMergeScenario(MergeScenario mergeScenario, Repository repository)
       throws Exception {
 
     // 1. Collect diff java files and imported files between merge parent commit and base commit
@@ -137,11 +148,11 @@ public class APIClient {
 
     // 2.1 Build ours/theirs graphs with collected files
     SemanticGraphBuilder2 oursBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedFilePath);
+        new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedFilePath, true);
     SemanticGraphBuilder2 baseBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedFilePath);
+        new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedFilePath, true);
     SemanticGraphBuilder2 theirsBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedFilePath);
+        new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedFilePath, true);
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
 
@@ -178,18 +189,34 @@ public class APIClient {
   }
 
   /**
-   * Given three versions of one single java file, convert and merge them with graph
-   * @param directory
-   * @param fileRelativePath
+   * Analyze all java files under the target directory, as if they are collected from merge scenario
+   *
+   * @param targetDir
    * @throws Exception
    */
-  public void processSingleFiles(String directory, String fileRelativePath) throws Exception {
-    SingleFileGraphBuilder builder = new SingleFileGraphBuilder(directory, fileRelativePath);
-    //    Triple<
-    //            Graph<SemanticNode, SemanticEdge>,
-    //            Graph<SemanticNode, SemanticEdge>,
-    //            Graph<SemanticNode, SemanticEdge>> graphs= builder.buildGraphsForAllSides();
-    Graph<SemanticNode, SemanticEdge> oursGraph = builder.buildGraphForOneSide(Side.OURS);
-    SemanticGraphExporter.printAsDot(oursGraph);
+  public ThreewayGraphMerger processDirectory(String targetDir, String resultDir) throws Exception {
+    SemanticGraphBuilder2 oursBuilder = new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
+    SemanticGraphBuilder2 baseBuilder = new SemanticGraphBuilder2(null, Side.BASE, targetDir, false);
+    SemanticGraphBuilder2 theirsBuilder =
+        new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, false);
+
+    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
+    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
+
+    logger.info("Building graph done for {}", targetDir);
+
+    FilesManager.clearResultDir(resultDir);
+    ThreewayGraphMerger merger =
+        new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
+    // 3. Match node and merge the 3-way graphs
+    merger.threewayMap();
+    logger.info("Matching done for {}", targetDir);
+
+    // 4. Print the merged graph into code, keep the original format as possible
+    //    merger.threewayMerge();
+    //    logger.info("Merging done for {}", targetDir);
+
+    return merger;
   }
 }

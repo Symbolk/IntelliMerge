@@ -27,9 +27,9 @@ public class ThreewayGraphMerger {
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
-  private TwowayMatching b2oMatchings;
-  private TwowayMatching b2tMatchings;
-  private List<ThreewayMapping> mappings;
+  public TwowayMatching b2oMatchings;
+  public TwowayMatching b2tMatchings;
+  public List<ThreewayMapping> mappings;
 
   public ThreewayGraphMerger(
       String resultDir,

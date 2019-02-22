@@ -30,7 +30,7 @@ public class Main {
       Repository repository = GitService.cloneIfNotExists(REPO_DIR, GIT_URL);
 
       //            for (MergeScenario mergeScenario : generateMergeScenarios()) {
-      //              processSingleMergeScenario(mergeScenario, repository);
+      //              processMergeScenario(mergeScenario, repository);
       //            }
       APIClient apiClient =
           new APIClient(
@@ -43,7 +43,7 @@ public class Main {
               STATISTICS_PATH,
                   DOT_DIR);
       MergeScenario mergeScenario = apiClient.generateSingleMergeSenario();
-      apiClient.processSingleMergeScenario(mergeScenario, repository);
+      apiClient.processMergeScenario(mergeScenario, repository);
 
     } catch (Exception e) {
       e.printStackTrace();

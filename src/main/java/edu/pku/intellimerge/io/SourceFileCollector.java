@@ -37,7 +37,7 @@ public class SourceFileCollector {
   private Repository repository;
   private String collectedFilePath;
   private MergeScenario mergeScenario;
-  // care only both modified (possibly textually conflict files)
+  // care only BothSides modified (possibly textually conflict files)
   private boolean onlyBothModified = false;
   // copy imported files or not
   private boolean copyImportedFiles = true;
@@ -77,7 +77,7 @@ public class SourceFileCollector {
     try {
       getDiffJavaFiles();
       if (this.onlyBothModified) {
-        // collect only both modified files in two sides
+        // collect only BothSides modified files in two sides
         // TODO collect static imported files
 //        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
 //        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
@@ -164,9 +164,9 @@ public class SourceFileCollector {
   public ArrayList<SourceFile> scanJavaFiles(String commitID) throws Exception {
     GitService.checkout(repository, commitID);
     ArrayList<SourceFile> temp = new ArrayList<>();
-    String targetFolder = mergeScenario.repoPath + mergeScenario.srcPath;
+    String targetDir = mergeScenario.repoPath + mergeScenario.srcPath;
     ArrayList<SourceFile> javaSourceFiles =
-        FilesManager.scanJavaSourceFiles(targetFolder, temp, mergeScenario.repoPath);
+        FilesManager.scanJavaSourceFiles(targetDir, temp, mergeScenario.repoPath);
     return javaSourceFiles;
   }
 
@@ -270,7 +270,7 @@ public class SourceFileCollector {
       throws Exception {
 
     for (SimpleDiffEntry diffEntry : diffEntries) {
-      // only care about both modified files now
+      // only care about BothSides modified files now
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
         // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
         String relativePath = diffEntry.getOldPath();

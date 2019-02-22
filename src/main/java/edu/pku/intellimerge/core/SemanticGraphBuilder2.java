@@ -44,6 +44,7 @@ public class SemanticGraphBuilder2 {
   // incremental id, unique in one side's graph
   private int nodeCount;
   private int edgeCount;
+  private boolean hasMultiModule;
   /*
    * a series of temp containers to keep relationships between node and symbol
    * if the symbol is internal: draw the edge in graph;
@@ -60,12 +61,15 @@ public class SemanticGraphBuilder2 {
 
   private MergeScenario mergeScenario;
   private Side side;
-  private String targetFilesDir;
+  private String targetDir; // directory of the target files to be analyzed
 
-  public SemanticGraphBuilder2(MergeScenario mergeScenario, Side side, String targetFilesDir) {
+  public SemanticGraphBuilder2(
+      MergeScenario mergeScenario, Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = mergeScenario;
     this.side = side;
-    this.targetFilesDir = targetFilesDir;
+    this.targetDir = targetDir;
+    this.hasMultiModule = hasMultiModule;
+
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
@@ -93,30 +97,35 @@ public class SemanticGraphBuilder2 {
   public Graph<SemanticNode, SemanticEdge> build() {
 
     // the folder path which contains collected files to build the graph upon
-    String sideDiffPath = targetFilesDir + File.separator + side.asString() + File.separator;
+    String sideDir = targetDir + File.separator + side.asString() + File.separator;
     // just for sure: reinit the graph
     this.graph = initGraph();
 
     // parse all java files in the file
     // regular project: only one source folder
-    File root = new File(sideDiffPath);
-    //    SourceRoot sourceRoot = new SourceRoot(root.toPath());
+    File root = new File(sideDir);
     //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
-    // multi-module project: separated source folder for sub-projects/modules
-    ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
     List<CompilationUnit> compilationUnits = new ArrayList<>();
+    List<ParseResult<CompilationUnit>> parseResults = new ArrayList<>();
+    if (hasMultiModule) {
 
-    for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
-      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
-      //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
-      compilationUnits.addAll(
-          parseResults
-              .stream()
-              .filter(ParseResult::isSuccessful)
-              .map(r -> r.getResult().get())
-              .collect(Collectors.toList()));
+      // multi-module project: separated source folder for sub-projects/modules
+      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
+
+      for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
+        parseResults = sourceRoot.tryToParseParallelized();
+      }
+    } else {
+      SourceRoot sourceRoot = new SourceRoot(root.toPath());
+      parseResults = sourceRoot.tryToParseParallelized();
     }
+    compilationUnits.addAll(
+        parseResults
+            .stream()
+            .filter(ParseResult::isSuccessful)
+            .map(r -> r.getResult().get())
+            .collect(Collectors.toList()));
 
     /*
      * build the graph by analyzing every CU
@@ -175,11 +184,11 @@ public class SemanticGraphBuilder2 {
     String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
     String absolutePath =
         cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
-    String relativePath =
-        absolutePath.replace(targetFilesDir + side.asString() + File.separator, "");
+    String relativePath = absolutePath.replace(targetDir + side.asString() + File.separator, "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
-    boolean isInChangedFile = mergeScenario.isInChangedFile(side, relativePath);
+    boolean isInChangedFile =
+        mergeScenario == null ? true : mergeScenario.isInChangedFile(side, relativePath);
 
     CompilationUnitNode cuNode =
         new CompilationUnitNode(
