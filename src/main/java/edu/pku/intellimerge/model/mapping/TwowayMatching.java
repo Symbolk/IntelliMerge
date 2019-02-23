@@ -1,6 +1,7 @@
 package edu.pku.intellimerge.model.mapping;
 
 import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.constant.MatchingType;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
@@ -29,14 +30,14 @@ public class TwowayMatching {
   }
 
   public void addMatchingEdge(
-      SemanticNode node1, SemanticNode node2, String label, double confidence) {
+          SemanticNode node1, SemanticNode node2, MatchingType matchingType, double confidence) {
     partition1.add(node1);
     partition2.add(node2);
     biPartite.addVertex(node1);
     biPartite.addVertex(node2);
     biPartite.addEdge(node1, node2);
     biPartite.setEdgeWeight(node1, node2, confidence);
-    biPartite.getEdge(node1, node2).setLabel(label);
+    biPartite.getEdge(node1, node2).setMatchingType(matchingType);
   }
 
   public void getRefactoredOne2OneMatching() {

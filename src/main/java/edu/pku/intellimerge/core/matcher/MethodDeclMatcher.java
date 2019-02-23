@@ -2,6 +2,7 @@ package edu.pku.intellimerge.core.matcher;
 
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.constant.MatchingType;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
 import edu.pku.intellimerge.util.SimilarityAlg;
@@ -51,7 +52,7 @@ public class MethodDeclMatcher {
       double confidence = biPartite.getEdgeWeight(edge);
       methodDeclNodes1.remove(sourceNode);
       methodDeclNodes2.remove(targetNode);
-      matchings.addMatchingEdge(sourceNode, targetNode, "change_signature", confidence);
+      matchings.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
     }
   }
 
@@ -108,7 +109,7 @@ public class MethodDeclMatcher {
         caller.outgoingEdges = outUnion;
         double similarityAfter = SimilarityAlg.method(caller, callerBase);
         if (similarityAfter > similarityBefore) {
-          matchings.addMatchingEdge(callerBase, callee, "extract_method", similarityAfter);
+          matchings.addMatchingEdge(callerBase, callee, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
         }
       }
     }

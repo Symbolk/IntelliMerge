@@ -194,9 +194,11 @@ public class APIClient {
    * @param targetDir
    * @throws Exception
    */
-  public ThreewayGraphMerger processDirectory(String targetDir, String resultDir) throws Exception {
-    SemanticGraphBuilder2 oursBuilder = new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
-    SemanticGraphBuilder2 baseBuilder = new SemanticGraphBuilder2(null, Side.BASE, targetDir, false);
+  public void processDirectory(String targetDir, String resultDir) throws Exception {
+    SemanticGraphBuilder2 oursBuilder =
+        new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
+    SemanticGraphBuilder2 baseBuilder =
+        new SemanticGraphBuilder2(null, Side.BASE, targetDir, false);
     SemanticGraphBuilder2 theirsBuilder =
         new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, false);
 
@@ -214,9 +216,7 @@ public class APIClient {
     logger.info("Matching done for {}", targetDir);
 
     // 4. Print the merged graph into code, keep the original format as possible
-    //    merger.threewayMerge();
-    //    logger.info("Merging done for {}", targetDir);
-
-    return merger;
+    merger.threewayMerge();
+    logger.info("Merging done for {}", targetDir);
   }
 }

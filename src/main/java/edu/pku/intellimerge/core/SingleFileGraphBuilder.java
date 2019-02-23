@@ -423,8 +423,8 @@ public class SingleFileGraphBuilder {
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
-            //            if (!field.getType().isClassOrInterfaceType()) {
-            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getType();
+            //            if (!field.getMatchingType().isClassOrInterfaceType()) {
+            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getMatchingType();
             //              SymbolReference<ResolvedTypeDeclaration> ref =
             // javaParserFacade.solve();
             //              if (ref.isSolved()) {

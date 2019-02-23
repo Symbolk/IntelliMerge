@@ -11,7 +11,6 @@ public class ThreewayMapping {
   public Optional<SemanticNode> oursNode;
   public Optional<SemanticNode> baseNode;
   public Optional<SemanticNode> theirsNode;
-  //    private MappingType mappingType;
 
   public ThreewayMapping() {}
 
