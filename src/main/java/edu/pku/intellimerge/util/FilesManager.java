@@ -249,4 +249,12 @@ public class FilesManager {
   public static String formatPathSeparator(String path) {
     return path.replaceAll(Pattern.quote(File.separator), "/");
   }
+
+  /**
+   * Get the project root directory path, e.g. F:\workspace\dev\IntelliMerge
+   * @return
+   */
+  public static String getProjectRootDir(){
+    return System.getProperty("user.dir");
+  }
 }
