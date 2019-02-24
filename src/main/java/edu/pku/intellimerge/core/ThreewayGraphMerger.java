@@ -160,6 +160,8 @@ public class ThreewayGraphMerger {
           mergedNonTerminal.appendChild(mergedChild);
         }
       }
+      // consider unmatched nodes as added, and insert them between nearest neighbors
+
       return mergedNonTerminal;
     }
   }

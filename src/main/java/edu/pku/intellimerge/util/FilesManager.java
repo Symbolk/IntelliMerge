@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.util;
 
+import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -257,4 +259,70 @@ public class FilesManager {
   public static String getProjectRootDir(){
     return System.getProperty("user.dir");
   }
+
+  /**
+   * Extracts the merge conflicts of a string representation of merged code.
+   * @param mergedCode
+   * @return list o merge conflicts
+   */
+  public static List<ConflictBlock> extractConflictBlocks(String mergedCode){
+    String CONFLICT_HEADER_BEGIN= "<<<<<<<";
+    String CONFLICT_BASE_BEGIN	= "|||||||";
+    String CONFLICT_BASE_END	= "=======";
+    String CONFLICT_HEADER_END 	= ">>>>>>>";
+    String leftConflictingContent = "";
+    String baseConflictingContent = "";
+    String rightConflictingContent= "";
+    boolean isConflictOpen		  = false;
+    boolean isBaseContent		  = false;
+    boolean isLeftContent		  = false;
+    int lineCounter				  = 0;
+    int startLOC				  = 0;
+    int endLOC				  	  = 0;
+
+    List<ConflictBlock> mergeConflicts = new ArrayList<ConflictBlock>();
+    List<String> lines = new ArrayList<>();
+    BufferedReader reader = new BufferedReader(new StringReader(mergedCode));
+    lines = reader.lines().collect(Collectors.toList());
+    Iterator<String> itlines = lines.iterator();
+    while(itlines.hasNext()){
+      String line = itlines.next();
+      lineCounter++;
+      if(line.contains(CONFLICT_HEADER_BEGIN)){
+        isConflictOpen = true;
+        isLeftContent  = true;
+        startLOC = lineCounter;
+      } else if(line.contains(CONFLICT_BASE_BEGIN)){
+        isLeftContent = false;
+        isBaseContent = true;
+      } else if(line.contains(CONFLICT_BASE_END)){
+        isBaseContent = false;
+      }else if(line.contains(CONFLICT_HEADER_END)) {
+        endLOC = lineCounter;
+        ConflictBlock mergeConflict =
+                new ConflictBlock(leftConflictingContent, baseConflictingContent,rightConflictingContent,startLOC,endLOC);
+        mergeConflicts.add(mergeConflict);
+
+        //reseting the flags
+        isConflictOpen	= false;
+        isBaseContent   = false;
+        isLeftContent   = false;
+        leftConflictingContent = "";
+        baseConflictingContent = "";
+        rightConflictingContent= "";
+      } else {
+        if(isConflictOpen){
+          if(isLeftContent){
+            leftConflictingContent += line + "\n";
+          }else if(isBaseContent){
+            baseConflictingContent += line + "\n";
+          }else{
+            rightConflictingContent += line + "\n";
+          }
+        }
+      }
+    }
+    return mergeConflicts;
+  }
+
 }

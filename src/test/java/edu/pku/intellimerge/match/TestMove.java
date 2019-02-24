@@ -24,7 +24,7 @@ public class TestMove {
   }
 
   @Test
-  public void testMoveInsideFile() throws Exception {
+  public void testMoveMethodInsideFile() throws Exception {
     String targetDir =
         FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/InsideFile";
     String resultDir = targetDir + File.separator + Side.INTELLI.asString();
@@ -51,7 +51,7 @@ public class TestMove {
   }
 
   @Test
-  public void testMoveAcrossFiles() throws Exception {
+  public void testMoveMethodAcrossFiles() throws Exception {
     String targetDir =
         FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/AcrossFiles";
     TwowayMatching matching = Util.matchTwoGraphs(targetDir, Side.BASE, Side.OURS);
@@ -64,4 +64,20 @@ public class TestMove {
             .collect(Collectors.toSet());
     assertThat(refsOurs.size()).isEqualTo(48);
   }
+
+  @Test
+  public void testMoveFieldInsideFile() throws Exception {
+    String targetDir =
+            FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveField/InsideFile";
+    TwowayMatching matching = Util.matchTwoGraphs(targetDir, Side.BASE, Side.OURS);
+    Set<MatchingEdge> refsOurs =
+            matching
+                    .biPartite
+                    .edgeSet()
+                    .stream()
+                    .filter(edge -> edge.getMatchingType().equals(MatchingType.MATCHED_FIELD))
+                    .collect(Collectors.toSet());
+    assertThat(refsOurs.size()).isEqualTo(4);
+  }
+
 }
