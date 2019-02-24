@@ -51,6 +51,7 @@ public class TypeDeclNode extends NonTerminalNode {
     this.outgoingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_INNER_CLASS, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE_CONSTANT, new ArrayList<>());
   }
 
   public void setExtendType(String extendType) {

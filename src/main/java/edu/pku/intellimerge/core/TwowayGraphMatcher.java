@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.core;
 
+import edu.pku.intellimerge.core.matcher.FieldDeclMatcher;
 import edu.pku.intellimerge.core.matcher.MethodDeclMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -73,17 +74,31 @@ public class TwowayGraphMatcher {
     Map<NodeType, List<SemanticNode>> unmatchedNodesByType2 =
         splitUnmatchedNodesByType(matching.unmatchedNodes2);
 
+    // 1. Methods
     // if only there are unmatched nodes, try to match
+    MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
     List<SemanticNode> unmatchedMethods1 =
-        unmatchedNodesByType1.getOrDefault(NodeType.METHOD, null);
+        unmatchedNodesByType1.getOrDefault(NodeType.METHOD, new ArrayList<>());
     List<SemanticNode> unmatchedMethods2 =
-        unmatchedNodesByType2.getOrDefault(NodeType.METHOD, null);
-    if (unmatchedMethods1 != null && unmatchedMethods2 != null) {
-      MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
-      methodDeclMatcher.matchChangeMethodSignature(matching, unmatchedMethods1, unmatchedMethods2);
-      methodDeclMatcher.matchExtractMethod(matching, unmatchedMethods1, unmatchedMethods2);
-      matching.getRefactoredOne2OneMatching();
+        unmatchedNodesByType2.getOrDefault(NodeType.METHOD, new ArrayList<>());
+    if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
+      methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }
+    if (!unmatchedMethods2.isEmpty()) {
+      methodDeclMatcher.matchExtractMethod(matching, unmatchedMethods2);
+    }
+    if (!unmatchedMethods2.isEmpty()) {}
+
+    // 2. Fields
+    FieldDeclMatcher fieldDeclMatcher = new FieldDeclMatcher();
+    List<SemanticNode> unmatchedFields1 =
+        unmatchedNodesByType1.getOrDefault(NodeType.FIELD, new ArrayList<>());
+    List<SemanticNode> unmatchedFields2 =
+        unmatchedNodesByType2.getOrDefault(NodeType.FIELD, new ArrayList<>());
+    if (!unmatchedFields1.isEmpty() && !unmatchedFields2.isEmpty()) {
+      fieldDeclMatcher.matchFields(matching, unmatchedFields1, unmatchedFields2);
+    }
+    matching.getRefactoredOne2OneMatching();
   }
 
   /**
@@ -94,7 +109,7 @@ public class TwowayGraphMatcher {
    */
   private Map<NodeType, List<SemanticNode>> splitUnmatchedNodesByType(
       List<SemanticNode> unmatchedNodes) {
-    Map<NodeType, List<SemanticNode>> unmatchedNodesByType = new HashMap<>();
+    Map<NodeType, List<SemanticNode>> unmatchedNodesByType = new LinkedHashMap<>();
     for (SemanticNode node : unmatchedNodes) {
       if (unmatchedNodesByType.containsKey(node.getNodeType())) {
         unmatchedNodesByType.get(node.getNodeType()).add(node);

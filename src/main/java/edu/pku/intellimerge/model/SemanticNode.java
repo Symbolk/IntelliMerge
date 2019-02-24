@@ -78,12 +78,9 @@ public abstract class SemanticNode {
   }
 
   /**
-   * Get the unique fully qualified signature in this project, which should represent the MAIN
-   * identification of this node
+   * The unique identifier of the node in this project
    */
-  public String getSignature() {
-    return getQualifiedName();
-  }
+  public abstract String getSignature();
 
   public String getComment() {
     return comment;

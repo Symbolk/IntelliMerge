@@ -125,7 +125,7 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
             md.getBody().map(BlockStmt::toString).orElse(""),
             md.getRange());
     graph.addVertex(mdNode);
-    // TODO need to find the parent node, but maybe it haven't been visited
+    // need to find the parent node, but maybe it haven't been visited
     //    graph.addEdge(
     //            classOrInterfaceDeclNode,
     //            mdNode,

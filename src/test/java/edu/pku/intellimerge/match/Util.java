@@ -57,11 +57,11 @@ public class Util {
     SemanticGraphBuilder2 builder1 = new SemanticGraphBuilder2(null, side1, targetDir, false);
     SemanticGraphBuilder2 builder2 = new SemanticGraphBuilder2(null, side2, targetDir, false);
 
-    Graph<SemanticNode, SemanticEdge> otherGraph = builder1.build();
-    Graph<SemanticNode, SemanticEdge> baseGraph = builder2.build();
+    Graph<SemanticNode, SemanticEdge> graph1 = builder1.build();
+    Graph<SemanticNode, SemanticEdge> graph2 = builder2.build();
 
     logger.info("Building graph done for {}", targetDir);
-    TwowayGraphMatcher matcher = new TwowayGraphMatcher(baseGraph, otherGraph);
+    TwowayGraphMatcher matcher = new TwowayGraphMatcher(graph1, graph2);
     matcher.topDownMatch();
     matcher.bottomUpMatch();
     logger.info("Matching done for {}", targetDir);

@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.core.matcher;
 
+import com.google.common.collect.BiMap;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.MatchingType;
@@ -11,25 +12,29 @@ import org.jgrapht.graph.DefaultUndirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MethodDeclMatcher {
-  // use bipartite to match methods
-  private Set<SemanticNode> partition1 = new HashSet<>();
-  private Set<SemanticNode> partition2 = new HashSet<>();
-  private DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite;
+  public MethodDeclMatcher() {}
 
-  public MethodDeclMatcher() {
-    this.biPartite = new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
-  }
+  /**
+   * Match methods that are unmatched for signature change, including many kinds of refactorings
+   *
+   * @param matching
+   * @param unmatchedMethods1
+   * @param unmatchedMethods2
+   */
+  public void matchMethods(
+      TwowayMatching matching,
+      List<SemanticNode> unmatchedMethods1,
+      List<SemanticNode> unmatchedMethods2) {
+    // use bipartite to match methods according to similarity
+    Set<SemanticNode> partition1 = new HashSet<>();
+    Set<SemanticNode> partition2 = new HashSet<>();
+    DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite =
+        new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-  // check field and method signature change first
-  public void matchChangeMethodSignature(
-      TwowayMatching matchings,
-      List<SemanticNode> methodDeclNodes1,
-      List<SemanticNode> methodDeclNodes2) {
-    for (SemanticNode node1 : methodDeclNodes1) {
-      for (SemanticNode node2 : methodDeclNodes2) {
+    for (SemanticNode node1 : unmatchedMethods1) {
+      for (SemanticNode node2 : unmatchedMethods2) {
         biPartite.addVertex(node1);
         partition1.add(node1);
         biPartite.addVertex(node2);
@@ -39,8 +44,8 @@ public class MethodDeclMatcher {
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
-    // bipartite matching to match most likely renamed methods
-    // find the maximum matching, one method cannot be renamed to two
+    // bipartite / to match most likely renamed methods
+    // find the maximum /, one method cannot be renamed to two
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -50,47 +55,51 @@ public class MethodDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      methodDeclNodes1.remove(sourceNode);
-      methodDeclNodes2.remove(targetNode);
-      matchings.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
+      unmatchedMethods1.remove(sourceNode);
+      unmatchedMethods2.remove(targetNode);
+      matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
     }
   }
 
-  public void matchExtractMethod(
-      TwowayMatching matchings,
-      List<SemanticNode> methodDeclNodes1,
-      List<SemanticNode> methodDeclNodes2) {
-    Map<SemanticNode, SemanticNode> reversedMatchings =
-        matchings
-            .one2oneMatchings
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-    // Rule: one of callers in the matching && original caller's parent==current parent&&union
+  /**
+   * Match possible extracted methods from unmatched methods
+   *
+   * @param matching
+   * @param unmatchedMethods
+   */
+  public void matchExtractMethod(TwowayMatching matching, List<SemanticNode> unmatchedMethods) {
+    BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();
+    // Rule: one of callers in the / && original caller's parent==current parent&&union
     // context confidence > confidence before
+    // The added method is called by an existing method in the same class
     Map<MethodDeclNode, List<MethodDeclNode>> alternates = new HashMap<>();
-    for (SemanticNode possiblyAddedMethod : methodDeclNodes2) {
+    for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
       List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL_METHOD);
       List<MethodDeclNode> possiblyExtractedFromMethods = new ArrayList<>();
       for (SemanticNode caller : callers) {
-        if (reversedMatchings.containsKey(caller)
+        if (reversedMatching.containsKey(caller)
             && caller.getParent().equals(possiblyAddedMethod.getParent())
             && caller instanceof MethodDeclNode) {
           possiblyExtractedFromMethods.add((MethodDeclNode) caller);
         }
       }
-      alternates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
+      if (!possiblyExtractedFromMethods.isEmpty()) {
+        alternates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
+      }
     }
     // try to inline the new method to the caller
-    // if the similarity improves, we think it is extracted from the caller
+    // if the similarity improves, consider it as extracted from the caller
     for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : alternates.entrySet()) {
       MethodDeclNode callee = alternate.getKey();
       List<MethodDeclNode> callers = alternate.getValue();
       for (MethodDeclNode caller : callers) {
-        MethodDeclNode callerBase = (MethodDeclNode) reversedMatchings.get(caller);
-        double similarityBefore = SimilarityAlg.method(caller, callerBase);
+        MethodDeclNode callerBase = (MethodDeclNode) reversedMatching.get(caller);
+        double similarityBefore =
+            SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
+                + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
 
-        // TODO inline method body, i.e. revert extract
+        // TODO detect inline methods
+        // combine the context edges
         Map<EdgeType, List<SemanticNode>> inUnion = new HashMap<>();
         inUnion.putAll(callee.incomingEdges);
         caller
@@ -107,9 +116,18 @@ public class MethodDeclMatcher {
             .forEach(entry -> outUnion.get(entry.getKey()).addAll(entry.getValue()));
         caller.incomingEdges = inUnion;
         caller.outgoingEdges = outUnion;
-        double similarityAfter = SimilarityAlg.method(caller, callerBase);
-        if (similarityAfter > similarityBefore) {
-          matchings.addMatchingEdge(callerBase, callee, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
+        // combine the body
+        double similarityAfter =
+            SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
+                + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
+
+        // TODO
+        if (similarityAfter >= similarityBefore) {
+          matching.addMatchingEdge(
+              callerBase, caller, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
+          matching.addMatchingEdge(
+              callerBase, callee, MatchingType.EXTRACT_TO_METHOD, similarityAfter);
+          unmatchedMethods.remove(callee);
         }
       }
     }

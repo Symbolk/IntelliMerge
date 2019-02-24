@@ -13,6 +13,7 @@ public class FieldDeclNode extends TerminalNode {
   private List<String> modifiers;
   private String fieldType;
   private String fieldName;
+  // initializer as the body of field
 
   public FieldDeclNode(
       Integer nodeID,
@@ -39,5 +40,21 @@ public class FieldDeclNode extends TerminalNode {
     this.incomingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
+  }
+
+  public String getAccess() {
+    return access;
+  }
+
+  public List<String> getModifiers() {
+    return modifiers;
+  }
+
+  public String getFieldType() {
+    return fieldType;
+  }
+
+  public String getFieldName() {
+    return fieldName;
   }
 }

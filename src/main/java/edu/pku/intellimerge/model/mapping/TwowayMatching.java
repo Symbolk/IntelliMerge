@@ -1,5 +1,7 @@
 package edu.pku.intellimerge.model.mapping;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.MatchingType;
 import org.jgrapht.Graph;
@@ -9,7 +11,7 @@ import java.util.*;
 
 public class TwowayMatching {
   // 2 kinds of matching: match by unchanged signature & signature changed but match by their roles
-  public Map<SemanticNode, SemanticNode> one2oneMatchings; // confidence: 1
+  public BiMap<SemanticNode, SemanticNode> one2oneMatchings; // confidence: 1
   public List<SemanticNode> unmatchedNodes1; // possibly deleted nodes
   public List<SemanticNode> unmatchedNodes2; // possibly added nodes
   //  private DefaultUndirectedWeightedGraph<SemanticNode, MatchingEdge> biPartite;
@@ -19,7 +21,7 @@ public class TwowayMatching {
   private Set<SemanticNode> partition2; // usually others
 
   public TwowayMatching() {
-    this.one2oneMatchings = new LinkedHashMap<>();
+    this.one2oneMatchings = HashBiMap.create();
     this.unmatchedNodes1 = new ArrayList<>();
     this.unmatchedNodes2 = new ArrayList<>();
 

@@ -196,7 +196,7 @@ public class SemanticGraphBuilder2 {
             isInChangedFile,
             NodeType.CU,
             fileName,
-            "",
+            fileName,
             fileName,
             cu.getComment().map(Comment::toString).orElse(""),
             fileName,

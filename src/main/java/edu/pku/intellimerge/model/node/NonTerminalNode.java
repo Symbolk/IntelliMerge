@@ -38,4 +38,9 @@ public class NonTerminalNode extends SemanticNode {
   public SemanticNode deepClone() {
     return null;
   }
+
+  @Override
+  public String getSignature(){
+    return getQualifiedName();
+  }
 }

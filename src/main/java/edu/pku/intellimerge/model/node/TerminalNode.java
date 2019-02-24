@@ -75,4 +75,9 @@ public class TerminalNode extends SemanticNode {
   public void setBody(String body) {
     this.body = body;
   }
+
+  @Override
+  public String getSignature(){
+    return getQualifiedName();
+  }
 }
