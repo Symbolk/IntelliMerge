@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRename {
-  private Logger logger = LoggerFactory.getLogger(TestRename.class);
 
   @BeforeAll
   public static void setUpBeforeAll() {
@@ -31,11 +30,10 @@ public class TestRename {
 
   @Test
   public void testRenameMethodOneSide() throws Exception {
-    // process single file
     String targetDir =
         FilesManager.getProjectRootDir() + "/src/test/resources/Rename/RenameMethod/BothSides";
     String resultDir = targetDir + File.separator + Side.INTELLI.asString();
-    ThreewayGraphMerger merger = matchGraphs(targetDir, resultDir);
+    ThreewayGraphMerger merger = Util.matchGraphs(targetDir, resultDir);
     Set<MatchingEdge> refsOurs =
         merger
             .b2oMatchings
@@ -46,35 +44,5 @@ public class TestRename {
             .collect(Collectors.toSet());
 
     assertThat(refsOurs.size()).isEqualTo(3);
-  }
-
-  /**
-   * Build and match graphs
-   * @param targetDir
-   * @param resultDir
-   * @return
-   * @throws Exception
-   */
-  private ThreewayGraphMerger matchGraphs(String targetDir, String resultDir) throws Exception {
-    SemanticGraphBuilder2 oursBuilder =
-        new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
-    SemanticGraphBuilder2 baseBuilder =
-        new SemanticGraphBuilder2(null, Side.BASE, targetDir, false);
-    SemanticGraphBuilder2 theirsBuilder =
-        new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, false);
-
-    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
-    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
-    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
-
-    logger.info("Building graph done for {}", targetDir);
-
-    FilesManager.clearResultDir(resultDir);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
-    merger.threewayMap();
-    logger.info("Matching done for {}", targetDir);
-
-    return merger;
   }
 }
