@@ -55,8 +55,8 @@ public class MethodDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      unmatchedMethods1.remove(sourceNode);
-      unmatchedMethods2.remove(targetNode);
+      matching.unmatchedNodes1.remove(sourceNode);
+      matching.unmatchedNodes2.remove(targetNode);
       matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
     }
   }
@@ -127,7 +127,7 @@ public class MethodDeclMatcher {
               callerBase, caller, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
           matching.addMatchingEdge(
               callerBase, callee, MatchingType.EXTRACT_TO_METHOD, similarityAfter);
-          unmatchedMethods.remove(callee);
+          matching.unmatchedNodes2.remove(callee);
         }
       }
     }

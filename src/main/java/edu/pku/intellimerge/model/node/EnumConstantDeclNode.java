@@ -1,12 +1,15 @@
 package edu.pku.intellimerge.model.node;
 
 import com.github.javaparser.Range;
+import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class EnumConstantDeclNode extends TerminalNode {
+  // e.g.   CONTAIN(0, true, "contains"), // physical relation
   private String name;
   private List<String> arguments;
 
@@ -30,5 +33,6 @@ public class EnumConstantDeclNode extends TerminalNode {
         comment,
         body,
         range);
+    this.incomingEdges.put(EdgeType.DEFINE_CONSTANT, new ArrayList<>());
   }
 }

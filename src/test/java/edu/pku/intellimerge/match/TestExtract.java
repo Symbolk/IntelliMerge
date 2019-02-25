@@ -23,8 +23,8 @@ public class TestExtract {
   @Test
   public void testExtractMethod() {
     String targetDir =
-        FilesManager.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod";
-    TwowayMatching matching = Util.matchTwoGraphs(targetDir, Side.BASE, Side.OURS);
+        FilesManager.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
+    TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
     Set<MatchingEdge> refsOurs =
         matching
             .biPartite

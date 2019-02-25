@@ -9,6 +9,8 @@ import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
+import edu.pku.intellimerge.util.FilesManager;
+import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Constants;
@@ -23,13 +25,13 @@ import java.util.*;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
+  public TwowayMatching b2oMatching;
+  public TwowayMatching b2tMatching;
+  public List<ThreewayMapping> mapping;
   private String resultDir; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
-  public TwowayMatching b2oMatchings;
-  public TwowayMatching b2tMatchings;
-  public List<ThreewayMapping> mappings;
 
   public ThreewayGraphMerger(
       String resultDir,
@@ -40,7 +42,7 @@ public class ThreewayGraphMerger {
     this.oursGraph = oursGraph;
     this.baseGraph = baseGraph;
     this.theirsGraph = theirsGraph;
-    this.mappings = new ArrayList<>();
+    this.mapping = new ArrayList<>();
   }
 
   /** Threeway map the CUs that need to merge */
@@ -52,47 +54,57 @@ public class ThreewayGraphMerger {
     b2oMatcher.bottomUpMatch();
     b2tMatcher.topDownMatch();
     b2tMatcher.bottomUpMatch();
-    b2oMatchings = b2oMatcher.matching;
-    b2tMatchings = b2tMatcher.matching;
+    b2oMatching = b2oMatcher.matching;
+    b2tMatching = b2tMatcher.matching;
 
-    // collect CU mappings that need to merge
+    // collect CU mapping that need to merge
     for (SemanticNode node : baseGraph.vertexSet()) {
       if (node instanceof CompilationUnitNode) {
         CompilationUnitNode cu = (CompilationUnitNode) node;
         if (cu.getNeedToMerge() == true) {
           ThreewayMapping mapping =
               new ThreewayMapping(
-                  Optional.ofNullable(b2oMatchings.one2oneMatchings.getOrDefault(node, null)),
+                  Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
                   Optional.of(node),
-                  Optional.ofNullable(b2tMatchings.one2oneMatchings.getOrDefault(node, null)));
-          mappings.add(mapping);
+                  Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
+          this.mapping.add(mapping);
         }
       }
     }
   }
 
-  /** Merge CUs according to the mappings */
-  public void threewayMerge() {
+  /**
+   * Merge CUs according to the mapping
+   *
+   * @return
+   */
+  public List<String> threewayMerge() {
     // bottom up merge children of the needToMerge CU
-    for (ThreewayMapping mapping : mappings) {
+    List<String> mergedFilePaths = new ArrayList<>();
+    for (ThreewayMapping mapping : mapping) {
       if (mapping.baseNode.isPresent()) {
         // merge the CU by merging its content
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
-        CompilationUnitNode mergedPackageAndImports = mergePackageAndImports(mapping.baseNode.get());
-        if (mergedCU != null && mergedPackageAndImports!=null) {
+        CompilationUnitNode mergedPackageAndImports =
+            mergePackageAndImports(mapping.baseNode.get());
+        if (mergedCU != null && mergedPackageAndImports != null) {
           // save the merged result to file
-          Graph2CodePrinter.printCU(mergedCU, mergedPackageAndImports, resultDir);
+          String resultFilePath =
+              Graph2CodePrinter.printCU(
+                  mergedCU, mergedPackageAndImports, FilesManager.formatPathSeparator(resultDir));
+          mergedFilePaths.add(resultFilePath);
         }
       }
     }
+    return mergedFilePaths;
   }
 
   private CompilationUnitNode mergePackageAndImports(SemanticNode node) {
     if (node instanceof CompilationUnitNode) {
       CompilationUnitNode mergedCU = (CompilationUnitNode) node;
-      SemanticNode oursNode = b2oMatchings.one2oneMatchings.getOrDefault(node, null);
-      SemanticNode theirsNode = b2tMatchings.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
@@ -121,19 +133,26 @@ public class ThreewayGraphMerger {
     //    SemanticGraphExporter.printAsDot(mergedGraph);
   }
 
+  /**
+   * Merge a single node and its children in iterative way
+   * @param node
+   * @return
+   */
   private SemanticNode mergeSingleNode(SemanticNode node) {
     // if node is terminal: merge and return result
     SemanticNode mergedNode = node.shallowClone();
     if (node instanceof TerminalNode) {
       TerminalNode mergedTerminal = (TerminalNode) mergedNode;
-      SemanticNode oursNode = b2oMatchings.one2oneMatchings.getOrDefault(node, null);
-      SemanticNode theirsNode = b2tMatchings.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
+      SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         // exist in BothSides side
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
-        String mergedComment = mergeTextually(oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
+        String mergedComment =
+            mergeTextually(
+                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
         String mergedSignature =
             mergeTextually(
                 oursTerminal.getOriginalSignature(),
@@ -160,12 +179,89 @@ public class ThreewayGraphMerger {
           mergedNonTerminal.appendChild(mergedChild);
         }
       }
-      // consider unmatched nodes as added, and insert them between nearest neighbors
-
+      // consider unmatched nodes as added ones
+      // if parent matched, insert it into the children of parent, between nearest neighbors
+      mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
+      mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
       return mergedNonTerminal;
     }
   }
 
+  /**
+   * Merge unmatched nodes (added) from ours and theirs
+   *
+   * @param node
+   * @param mergedNonTerminal
+   * @param matching
+   */
+  private void mergeUnmatchedNodes(
+      SemanticNode node, NonTerminalNode mergedNonTerminal, TwowayMatching matching) {
+    SemanticNode matchedNodeOurs = matching.one2oneMatchings.getOrDefault(node, null);
+    if (matchedNodeOurs != null) {
+      for (SemanticNode addedOurs : matching.unmatchedNodes2) {
+        SemanticNode parent = addedOurs.getParent();
+        if (parent.equals(matchedNodeOurs)) {
+          insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, addedOurs));
+        }
+      }
+    }
+  }
+  /**
+   * Insert the added node betwen its neighbors
+   *
+   * @param node
+   * @param triple
+   */
+  private void insertBetweenNeighbors(
+      SemanticNode node, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
+    boolean foundNeighor = false;
+    if (triple.getLeft() != null) {
+      int position = node.getChildPosition(triple.getLeft());
+      if (position != -1) {
+        node.insertChild(triple.getMiddle(), position + 1);
+        foundNeighor = true;
+      }
+    }
+    if (!foundNeighor && triple.getRight() != null) {
+      int position = node.getChildPosition(triple.getRight());
+      if (position != -1) {
+        node.insertChild(triple.getMiddle(), position);
+        foundNeighor = true;
+      }
+    }
+    if (!foundNeighor) {
+      node.appendChild(triple.getMiddle());
+    }
+  }
+  /**
+   * Get two neighbours before and after the child in its siblings
+   *
+   * @param parent
+   * @param child
+   * @return
+   */
+  private Triple<SemanticNode, SemanticNode, SemanticNode> getNeighbors(
+      SemanticNode parent, SemanticNode child) {
+    SemanticNode nodeBefore = null;
+    SemanticNode nodeAfter = null;
+    int position = parent.getChildPosition(child);
+    if (position > 0) {
+      nodeBefore = parent.getChildAtPosition(position - 1);
+    }
+    if (position < parent.getChildren().size() - 1) {
+      nodeAfter = parent.getChildAtPosition(position + 1);
+    }
+    return Triple.of(nodeBefore, child, nodeAfter);
+  }
+
+  /**
+   * Merge content string textually with jGit
+   *
+   * @param leftContent
+   * @param baseContent
+   * @param rightContent
+   * @return
+   */
   private String mergeTextually(String leftContent, String baseContent, String rightContent) {
     String textualMergeResult = null;
     try {

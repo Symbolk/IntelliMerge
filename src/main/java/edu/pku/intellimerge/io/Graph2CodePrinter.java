@@ -9,16 +9,20 @@ import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.FilesManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
 public class Graph2CodePrinter {
 
-  private static final Logger logger = LoggerFactory.getLogger(Graph2CodePrinter.class);
-
-  public static void printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
+  /**
+   * Print the merged compilation unit to file and return its path
+   *
+   * @param node
+   * @param cu
+   * @param resultDir
+   * @return
+   */
+  public static String printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
     String resultFilePath = resultDir + File.separator + cu.getRelativePath();
     // merged package imports
     StringBuilder builder = new StringBuilder();
@@ -28,7 +32,7 @@ public class Graph2CodePrinter {
     builder.append(printNode(node));
     String reformattedCode = reformatCode(builder.toString());
     FilesManager.writeContent(resultFilePath, reformattedCode);
-    logger.info("Merge result saved in: {}", resultFilePath);
+    return resultFilePath;
   }
 
   /**
@@ -77,16 +81,26 @@ public class Graph2CodePrinter {
     if (node instanceof TerminalNode) {
       builder.append(node.getComment());
       builder.append(node.getOriginalSignature());
-      builder.append(((TerminalNode) node).getBody()).append("\n");
+      builder.append(((TerminalNode) node).getBody());
     } else if (node instanceof NonTerminalNode) {
       if (!node.getNodeType().equals(NodeType.CU)) {
         builder.append(node.getComment());
         builder.append(node.getOriginalSignature());
         builder.append("{\n");
       }
-      for (SemanticNode child : node.getChildren()) {
-        builder.append(printNode(child));
+      if (node.getNodeType().equals(NodeType.ENUM)) {
+        for (int i = 0; i < node.getChildren().size(); ++i) {
+          if (i != 0) {
+            builder.append(",");
+          }
+          builder.append(printNode(node.getChildAtPosition(i)));
+        }
+      } else {
+        for (SemanticNode child : node.getChildren()) {
+          builder.append(printNode(child)).append("\n");
+        }
       }
+
       if (!node.getNodeType().equals(NodeType.CU)) {
         builder.append("\n}\n");
       }

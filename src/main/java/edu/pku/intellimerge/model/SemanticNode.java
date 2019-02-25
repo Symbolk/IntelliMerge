@@ -183,10 +183,6 @@ public abstract class SemanticNode {
         + nodeType
         + ", qualifiedName='"
         + qualifiedName
-        + '\''
-        + ", originalSignature='"
-        + originalSignature
-        + '\''
         + '}';
   }
 

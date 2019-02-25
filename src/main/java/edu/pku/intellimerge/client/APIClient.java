@@ -216,7 +216,10 @@ public class APIClient {
     logger.info("Matching done for {}", targetDir);
 
     // 4. Print the merged graph into code, keep the original format as possible
-    merger.threewayMerge();
+    List<String> mergedFilePaths = merger.threewayMerge();
+    for(String mergedFilePath : mergedFilePaths){
+      logger.info(mergedFilePath);
+    }
     logger.info("Merging done for {}", targetDir);
   }
 }

@@ -26,12 +26,12 @@ public class TestMove {
   @Test
   public void testMoveMethodInsideFile() throws Exception {
     String targetDir =
-        FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/InsideFile";
-    String resultDir = targetDir + File.separator + Side.INTELLI.asString();
-    ThreewayGraphMerger merger = Util.matchGraphs(targetDir, resultDir);
+        FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/InsideFile/";
+    String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
+    ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
     Set<MatchingEdge> refsOurs =
         merger
-            .b2oMatchings
+            .b2oMatching
             .biPartite
             .edgeSet()
             .stream()
@@ -39,7 +39,7 @@ public class TestMove {
             .collect(Collectors.toSet());
     Set<MatchingEdge> refsTheirs =
         merger
-            .b2oMatchings
+            .b2oMatching
             .biPartite
             .edgeSet()
             .stream()
@@ -53,8 +53,8 @@ public class TestMove {
   @Test
   public void testMoveMethodAcrossFiles() throws Exception {
     String targetDir =
-        FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/AcrossFiles";
-    TwowayMatching matching = Util.matchTwoGraphs(targetDir, Side.BASE, Side.OURS);
+        FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/AcrossFiles/";
+    TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
     Set<MatchingEdge> refsOurs =
         matching
             .biPartite
@@ -68,8 +68,8 @@ public class TestMove {
   @Test
   public void testMoveFieldInsideFile() throws Exception {
     String targetDir =
-            FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveField/InsideFile";
-    TwowayMatching matching = Util.matchTwoGraphs(targetDir, Side.BASE, Side.OURS);
+            FilesManager.getProjectRootDir() + "/src/test/resources/Move/MoveField/InsideFile/";
+    TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
     Set<MatchingEdge> refsOurs =
             matching
                     .biPartite

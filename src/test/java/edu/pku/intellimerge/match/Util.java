@@ -12,6 +12,8 @@ import org.jgrapht.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class Util {
   private static Logger logger = LoggerFactory.getLogger(Util.class);
 
@@ -23,8 +25,7 @@ public class Util {
    * @return
    * @throws Exception
    */
-  public static ThreewayGraphMerger matchGraphs(String targetDir, String resultDir)
-      throws Exception {
+  public static ThreewayGraphMerger matchGraphsThreeway(String targetDir, String resultDir) {
     SemanticGraphBuilder2 oursBuilder =
         new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
     SemanticGraphBuilder2 baseBuilder =
@@ -48,12 +49,24 @@ public class Util {
   }
 
   /**
+   * Match and merge code in three way
+   *
+   * @param targetDir
+   * @param resultDir
+   */
+  public static List<String> mergeGraphsThreeway(String targetDir, String resultDir) {
+    ThreewayGraphMerger merger = matchGraphsThreeway(targetDir, resultDir);
+    List<String> mergedFilePaths = merger.threewayMerge();
+    logger.info("Merging done for {}", targetDir);
+    return mergedFilePaths;
+  }
+  /**
    * Build and match graphs in two ways, usually base and ours/theirs
    *
    * @param targetDir
    * @return
    */
-  public static TwowayMatching matchTwoGraphs(String targetDir, Side side1, Side side2) {
+  public static TwowayMatching matchGraphsTwoway(String targetDir, Side side1, Side side2) {
     SemanticGraphBuilder2 builder1 = new SemanticGraphBuilder2(null, side1, targetDir, false);
     SemanticGraphBuilder2 builder2 = new SemanticGraphBuilder2(null, side2, targetDir, false);
 

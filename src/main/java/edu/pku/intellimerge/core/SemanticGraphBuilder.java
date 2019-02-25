@@ -707,7 +707,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Add edges according to recorded temp mappings
+   * Add edges according to recorded temp mapping
    *
    * @param edgeCount edge id
    * @param edges recorded temp mapping from source node to qualified name of target node

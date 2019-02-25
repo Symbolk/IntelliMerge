@@ -25,12 +25,12 @@ public class TestRename {
   @Test
   public void testRenameMethodOneSide() throws Exception {
     String targetDir =
-        FilesManager.getProjectRootDir() + "/src/test/resources/Rename/RenameMethod/BothSides";
-    String resultDir = targetDir + File.separator + Side.INTELLI.asString();
-    ThreewayGraphMerger merger = Util.matchGraphs(targetDir, resultDir);
+        FilesManager.getProjectRootDir() + "/src/test/resources/Rename/RenameMethod/BothSides/";
+    String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
+    ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
     Set<MatchingEdge> refsOurs =
         merger
-            .b2oMatchings
+            .b2oMatching
             .biPartite
             .edgeSet()
             .stream()
@@ -42,12 +42,12 @@ public class TestRename {
 
   @Test
   public void testRenameFieldOneSide() throws Exception {
-    String targetDir = FilesManager.getProjectRootDir() + "/src/test/resources/Rename/RenameField";
-    String resultDir = targetDir + File.separator + Side.INTELLI.asString();
-    ThreewayGraphMerger merger = Util.matchGraphs(targetDir, resultDir);
+    String targetDir = FilesManager.getProjectRootDir() + "/src/test/resources/Rename/RenameField/";
+    String resultDir = targetDir + Side.INTELLI.asString() + File.separator ;
+    ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
     Set<MatchingEdge> refsOurs =
         merger
-            .b2oMatchings
+            .b2oMatching
             .biPartite
             .edgeSet()
             .stream()

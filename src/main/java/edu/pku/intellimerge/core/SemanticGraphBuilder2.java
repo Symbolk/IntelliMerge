@@ -27,6 +27,7 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.*;
+import edu.pku.intellimerge.util.FilesManager;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.slf4j.Logger;
@@ -183,8 +184,11 @@ public class SemanticGraphBuilder2 {
   private void processCompilationUnit(CompilationUnit cu) {
     String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
     String absolutePath =
-        cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse("");
-    String relativePath = absolutePath.replace(targetDir + side.asString() + File.separator, "");
+        FilesManager.formatPathSeparator(
+            cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""));
+    String relativePath =
+        absolutePath.replace(
+            FilesManager.formatPathSeparator(targetDir + side.asString() + File.separator), "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
     boolean isInChangedFile =
@@ -487,7 +491,7 @@ public class SemanticGraphBuilder2 {
                   displayName,
                   qualifiedName,
                   cd.getDeclarationAsString(),
-                  cd.getComment().map(Comment::toString).orElse(";"),
+                  cd.getComment().map(Comment::toString).orElse(""),
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());
@@ -687,7 +691,7 @@ public class SemanticGraphBuilder2 {
   }
 
   /**
-   * Add edges according to recorded temp mappings
+   * Add edges according to recorded temp mapping
    *
    * @param edgeCount edge id
    * @param edges recorded temp mapping from source node to qualified name of target node
