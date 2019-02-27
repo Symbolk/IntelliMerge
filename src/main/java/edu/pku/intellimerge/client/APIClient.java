@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.client;
 
+import edu.pku.intellimerge.core.SemanticGraphBuilder;
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
@@ -154,10 +155,16 @@ public class APIClient {
     SemanticGraphBuilder2 theirsBuilder =
         new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedFilePath, true);
 
+//    SemanticGraphBuilder oursBuilder =
+//            new SemanticGraphBuilder(mergeScenario, Side.OURS, collectedFilePath);
+//    SemanticGraphBuilder baseBuilder =
+//            new SemanticGraphBuilder(mergeScenario, Side.BASE, collectedFilePath);
+//    SemanticGraphBuilder theirsBuilder =
+//            new SemanticGraphBuilder(mergeScenario, Side.THEIRS, collectedFilePath);
+
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
 
     //    saveDotToFile(mergeScenario, oursGraph, Side.OURS);
-    //    SemanticGraphExporter.printAsDot(oursGraph);
 
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
@@ -166,6 +173,10 @@ public class APIClient {
     // 2.2 Build base/merge graphs among ours/theirs files
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
     //    saveDotToFile(mergeScenario, baseGraph, Side.BASE);
+
+//    SemanticGraphExporter.printAsDot(oursGraph);
+//    SemanticGraphExporter.printAsDot(baseGraph);
+//    SemanticGraphExporter.printAsDot(theirsGraph);
 
     logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
 
@@ -203,8 +214,8 @@ public class APIClient {
         new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, false);
 
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
-    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
 
     logger.info("Building graph done for {}", targetDir);
 

@@ -23,13 +23,13 @@ public class TestBothAdd {
   public void testBothAdd() {
     String targetDir =
         FilesManager.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
-    String resultDir = targetDir  + Side.INTELLI.asString() + File.separator;
+    String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
 
     List<String> mergedFilePaths = Util.mergeGraphsThreeway(targetDir, resultDir);
     for (String path : mergedFilePaths) {
       String code = FilesManager.readFileContent(new File(path));
       List<ConflictBlock> conflictBlocks = FilesManager.extractConflictBlocks(code);
-      assertThat(conflictBlocks.size()).isEqualTo(1);
+      assertThat(conflictBlocks.size()).isEqualTo(0);
     }
   }
 }
