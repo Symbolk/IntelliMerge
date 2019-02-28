@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.MatchingType;
+import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
 import edu.pku.intellimerge.util.SimilarityAlg;
@@ -50,13 +51,12 @@ public class MethodDeclMatcher {
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
     // add one2oneMatchings found and remove from unmatched
-    biPartite.edgeSet();
     for (DefaultWeightedEdge edge : edges) {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      matching.unmatchedNodes1.remove(sourceNode);
-      matching.unmatchedNodes2.remove(targetNode);
+      matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
+      matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
       matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
     }
   }
@@ -127,7 +127,7 @@ public class MethodDeclMatcher {
               callerBase, caller, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
           matching.addMatchingEdge(
               callerBase, callee, MatchingType.EXTRACT_TO_METHOD, similarityAfter);
-          matching.unmatchedNodes2.remove(callee);
+          matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
         }
       }
     }

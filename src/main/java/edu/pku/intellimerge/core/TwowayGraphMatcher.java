@@ -60,27 +60,22 @@ public class TwowayGraphMatcher {
         // remove the mapped node from other
         map2.remove(entry.getKey());
       } else {
-        matching.unmatchedNodes1.add(entry.getValue());
+        matching.addUnmatchedNodes(entry.getValue(), true);
       }
     }
-    map2.entrySet().forEach(entry -> matching.unmatchedNodes2.add(entry.getValue()));
+    map2.entrySet().forEach(entry -> matching.addUnmatchedNodes(entry.getValue(), false));
   }
 
   /** Bottom-up match unmatched nodes in the last step, considering some kinds of refactorings */
   public void bottomUpMatch() {
     // divide and conquer: match each type of nodes separately
-    Map<NodeType, List<SemanticNode>> unmatchedNodesByType1 =
-        splitUnmatchedNodesByType(matching.unmatchedNodes1);
-    Map<NodeType, List<SemanticNode>> unmatchedNodesByType2 =
-        splitUnmatchedNodesByType(matching.unmatchedNodes2);
-
     // 1. Methods
     // if only there are unmatched nodes, try to match
     MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
     List<SemanticNode> unmatchedMethods1 =
-        unmatchedNodesByType1.getOrDefault(NodeType.METHOD, new ArrayList<>());
+        matching.unmatchedNodes1.getOrDefault(NodeType.METHOD, new ArrayList<>());
     List<SemanticNode> unmatchedMethods2 =
-        unmatchedNodesByType2.getOrDefault(NodeType.METHOD, new ArrayList<>());
+        matching.unmatchedNodes2.getOrDefault(NodeType.METHOD, new ArrayList<>());
     if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }
@@ -92,34 +87,15 @@ public class TwowayGraphMatcher {
     // 2. Fields
     FieldDeclMatcher fieldDeclMatcher = new FieldDeclMatcher();
     List<SemanticNode> unmatchedFields1 =
-        unmatchedNodesByType1.getOrDefault(NodeType.FIELD, new ArrayList<>());
+            matching.unmatchedNodes1.getOrDefault(NodeType.FIELD, new ArrayList<>());
     List<SemanticNode> unmatchedFields2 =
-        unmatchedNodesByType2.getOrDefault(NodeType.FIELD, new ArrayList<>());
+            matching.unmatchedNodes2.getOrDefault(NodeType.FIELD, new ArrayList<>());
     if (!unmatchedFields1.isEmpty() && !unmatchedFields2.isEmpty()) {
       fieldDeclMatcher.matchFields(matching, unmatchedFields1, unmatchedFields2);
     }
     matching.getRefactoredOne2OneMatching();
   }
 
-  /**
-   * Split the unmatched nodes by type
-   *
-   * @param unmatchedNodes
-   * @return
-   */
-  private Map<NodeType, List<SemanticNode>> splitUnmatchedNodesByType(
-      List<SemanticNode> unmatchedNodes) {
-    Map<NodeType, List<SemanticNode>> unmatchedNodesByType = new LinkedHashMap<>();
-    for (SemanticNode node : unmatchedNodes) {
-      if (unmatchedNodesByType.containsKey(node.getNodeType())) {
-        unmatchedNodesByType.get(node.getNodeType()).add(node);
-      } else {
-        unmatchedNodesByType.put(node.getNodeType(), new ArrayList<>());
-        unmatchedNodesByType.get(node.getNodeType()).add(node);
-      }
-    }
-    return unmatchedNodesByType;
-  }
   /**
    * Sort the node list in the reverse hierarchy order, i.e. bottom up in AST
    *

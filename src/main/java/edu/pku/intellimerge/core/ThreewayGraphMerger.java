@@ -3,6 +3,7 @@ package edu.pku.intellimerge.core;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
@@ -135,6 +136,7 @@ public class ThreewayGraphMerger {
 
   /**
    * Merge a single node and its children in iterative way
+   *
    * @param node
    * @return
    */
@@ -198,10 +200,12 @@ public class ThreewayGraphMerger {
       SemanticNode node, NonTerminalNode mergedNonTerminal, TwowayMatching matching) {
     SemanticNode matchedNodeOurs = matching.one2oneMatchings.getOrDefault(node, null);
     if (matchedNodeOurs != null) {
-      for (SemanticNode addedOurs : matching.unmatchedNodes2) {
-        SemanticNode parent = addedOurs.getParent();
-        if (parent.equals(matchedNodeOurs)) {
-          insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, addedOurs));
+      for (Map.Entry<NodeType, List<SemanticNode>> entry : matching.unmatchedNodes2.entrySet()) {
+        for (SemanticNode addedOurs : entry.getValue()) {
+          SemanticNode parent = addedOurs.getParent();
+          if (parent.equals(matchedNodeOurs)) {
+            insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, addedOurs));
+          }
         }
       }
     }
