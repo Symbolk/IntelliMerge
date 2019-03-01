@@ -115,7 +115,7 @@ public class SemanticGraphBuilder2 {
       ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
 
       for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
-        parseResults = sourceRoot.tryToParseParallelized();
+        parseResults.addAll(sourceRoot.tryToParseParallelized());
       }
     } else {
       SourceRoot sourceRoot = new SourceRoot(root.toPath());
@@ -146,10 +146,9 @@ public class SemanticGraphBuilder2 {
     edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
 
-    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD,
-    // NodeType.FIELD);
-    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD,
-    // NodeType.FIELD);
+//    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
+//    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
+
     edgeCount = buildEdgesForMethodCall(edgeCount, callMethodEdges);
 
     // now edges are fixed
@@ -644,10 +643,21 @@ public class SemanticGraphBuilder2 {
     //    return source.trim();
   }
 
+  /**
+   * Remove comment from a string
+   * @param source
+   * @return
+   */
   private String removeComment(String source) {
     return source.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", "");
   }
 
+  /**
+   * For method calls, build the edge
+   * @param edgeCount
+   * @param callMethodEdges
+   * @return
+   */
   private int buildEdgesForMethodCall(
       int edgeCount, Map<SemanticNode, List<MethodCallExpr>> callMethodEdges) {
     // for every method call, find its declaration by method name and paramater num
