@@ -4,10 +4,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
@@ -58,7 +55,7 @@ public class SemanticGraphBuilder2 {
   private Map<SemanticNode, List<String>> initObjectEdges = new HashMap<>();
   private Map<SemanticNode, List<FieldAccessExpr>> readFieldEdges = new HashMap<>();
   private Map<SemanticNode, List<FieldAccessExpr>> writeFieldEdges = new HashMap<>();
-  private Map<SemanticNode, List<MethodCallExpr>> callMethodEdges = new HashMap<>();
+  private Map<SemanticNode, List<MethodCallExpr>> methodCallExprs = new HashMap<>();
 
   private MergeScenario mergeScenario;
   private Side side;
@@ -146,10 +143,12 @@ public class SemanticGraphBuilder2 {
     edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
 
-//    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-//    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
+    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD,
+    // NodeType.FIELD);
+    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD,
+    // NodeType.FIELD);
 
-    edgeCount = buildEdgesForMethodCall(edgeCount, callMethodEdges);
+    edgeCount = buildEdgesForMethodCall(edgeCount, methodCallExprs);
 
     // now edges are fixed
     // save incoming edges and outgoing edges in corresponding nodes
@@ -613,7 +612,7 @@ public class SemanticGraphBuilder2 {
     }
     // 3 method call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
-    callMethodEdges.put(node, methodCallExprs);
+    this.methodCallExprs.put(node, methodCallExprs);
   }
 
   /**
@@ -645,6 +644,7 @@ public class SemanticGraphBuilder2 {
 
   /**
    * Remove comment from a string
+   *
    * @param source
    * @return
    */
@@ -653,46 +653,64 @@ public class SemanticGraphBuilder2 {
   }
 
   /**
-   * For method calls, build the edge
+   * Fuzzy match methods, by method name and argument numbers (to be refined)
+   *
    * @param edgeCount
-   * @param callMethodEdges
+   * @param methodCallExprs
    * @return
    */
   private int buildEdgesForMethodCall(
-      int edgeCount, Map<SemanticNode, List<MethodCallExpr>> callMethodEdges) {
+      int edgeCount, Map<SemanticNode, List<MethodCallExpr>> methodCallExprs) {
     // for every method call, find its declaration by method name and paramater num
-    for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : callMethodEdges.entrySet()) {
+    for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : methodCallExprs.entrySet()) {
       SemanticNode caller = entry.getKey();
       List<MethodCallExpr> exprs = entry.getValue();
       for (MethodCallExpr expr : exprs) {
-        String displayName = expr.getNameAsString();
+        boolean edgeBuilt = false;
+        String methodName = expr.getNameAsString();
         int argNum = expr.getArguments().size();
-        List<SemanticNode> methodNodes =
+        List<SemanticNode> candidates =
             graph
                 .vertexSet()
                 .stream()
                 .filter(
-                    node ->
-                        node.getNodeType().equals(NodeType.METHOD)
-                            && node.getDisplayName()
-                                .substring(0, node.getDisplayName().indexOf("("))
-                                .equals(displayName))
+                    node -> {
+                      if (node.getNodeType().equals(NodeType.METHOD)) {
+                        MethodDeclNode method = (MethodDeclNode) node;
+                        return method.getMethodName().equals(methodName)
+                            && method.getParameterNames().size() == argNum;
+                      }
+                      return false;
+                    })
                 .collect(Collectors.toList());
-        for (SemanticNode node : methodNodes) {
-          MethodDeclNode methodDeclNode = (MethodDeclNode) node;
-          if (methodDeclNode.getParameterNames().size() == argNum) {
-            boolean isSuccessful =
-                graph.addEdge(
-                    caller,
-                    methodDeclNode,
-                    new SemanticEdge(edgeCount++, EdgeType.CALL_METHOD, caller, methodDeclNode));
-            if (!isSuccessful) {
-              SemanticEdge edge = graph.getEdge(caller, methodDeclNode);
-              if (edge != null) {
-                edge.setWeight(edge.getWeight() + 1);
-              }
-            }
-            break;
+        if (candidates.isEmpty()) {
+          // fail to find the target node and build the edge, consider it as external
+          List<String> argumentNames =
+              expr.getArguments().stream().map(Expression::toString).collect(Collectors.toList());
+          MethodDeclNode externalMethod =
+              new MethodDeclNode(
+                  nodeCount++,
+                  false,
+                  NodeType.METHOD,
+                  expr.getNameAsString(),
+                  expr.getNameAsString(),
+                  expr.toString(),
+                  methodName,
+                  argumentNames,
+                  expr.getRange());
+          graph.addVertex(externalMethod);
+          createEdge(edgeCount++, caller, externalMethod, EdgeType.CALL_METHOD, false);
+        } else {
+          if (candidates.size() == 1) {
+            createEdge(
+                edgeCount++,
+                caller,
+                candidates.get(0),
+                EdgeType.CALL_METHOD,
+                candidates.get(0).isInternal());
+          } else {
+            // TODO if fuzzy matching gets multiple results
+            logger.error("Multiple candidates: " + candidates);
           }
         }
       }
@@ -700,6 +718,29 @@ public class SemanticGraphBuilder2 {
     return edgeCount;
   }
 
+  /**
+   * Create an edge in the graph, if it already exists, increase the weight by one
+   *
+   * @param source
+   * @param target
+   * @param edgeId
+   * @param edgeType
+   * @return
+   */
+  private boolean createEdge(
+      int edgeId, SemanticNode source, SemanticNode target, EdgeType edgeType, boolean isInternal) {
+    boolean isSuccessful =
+        graph.addEdge(
+            source, target, new SemanticEdge(edgeId, edgeType, source, target, isInternal));
+    if (!isSuccessful) {
+      SemanticEdge edge = graph.getEdge(source, target);
+      if (edge != null) {
+        edge.setWeight(edge.getWeight() + 1);
+        isSuccessful = true;
+      }
+    }
+    return isSuccessful;
+  }
   /**
    * Add edges according to recorded temp mapping
    *

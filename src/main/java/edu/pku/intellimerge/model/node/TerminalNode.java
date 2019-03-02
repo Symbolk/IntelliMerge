@@ -31,11 +31,23 @@ public class TerminalNode extends SemanticNode {
     this.range = range; // since javaparser stores range in Optional, so directly save it
   }
 
+  public TerminalNode(
+          Integer nodeID,
+          Boolean needToMerge,
+          NodeType nodeType,
+          String displayName,
+          String qualifiedName,
+          String originalSignature,
+          Optional<Range> range) {
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, "", false);
+    this.range = range; // since javaparser stores range in Optional, so directly save it
+  }
+
   @Override
   public SemanticNode shallowClone() {
     return new TerminalNode(
         this.getNodeID(),
-        this.getNeedToMerge(),
+        this.needToMerge(),
         this.getNodeType(),
         this.getDisplayName(),
         this.getQualifiedName(),

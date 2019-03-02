@@ -61,6 +61,40 @@ public class MethodDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
   }
 
+  // fake method constructor, only invocation but no definition
+  public MethodDeclNode(
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature,
+      String methodName,
+      List<String> parameterNames,
+      Optional<Range> range) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature
+        , range);
+    this.methodName = methodName;
+    this.parameterNames = parameterNames;
+
+    this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
+  }
+
+  public String getMethodName() {
+    return methodName;
+  }
+
   public List<String> getParameterTypes() {
     return parameterTypes;
   }

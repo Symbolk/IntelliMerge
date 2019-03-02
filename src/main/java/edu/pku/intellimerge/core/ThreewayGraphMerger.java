@@ -62,7 +62,7 @@ public class ThreewayGraphMerger {
     for (SemanticNode node : baseGraph.vertexSet()) {
       if (node instanceof CompilationUnitNode) {
         CompilationUnitNode cu = (CompilationUnitNode) node;
-        if (cu.getNeedToMerge() == true) {
+        if (cu.needToMerge() == true) {
           ThreewayMapping mapping =
               new ThreewayMapping(
                   Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),

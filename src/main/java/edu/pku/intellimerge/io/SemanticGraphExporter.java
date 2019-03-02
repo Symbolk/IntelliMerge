@@ -65,6 +65,7 @@ public class SemanticGraphExporter {
   public static void printAsDot(Graph<SemanticNode, SemanticEdge> graph) {
     System.out.println(SemanticGraphExporter.exportAsDotWithType(graph));
     //    System.out.println(SemanticGraphExporter.exportAsDotWithType(graph));
+//    graph.removeAllEdges()
   }
 
   /**

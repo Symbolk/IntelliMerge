@@ -36,7 +36,7 @@ public class TwowayGraphMatcher {
     Map<Integer, SemanticNode> map1 =
         nodeSet1
             .stream()
-            .filter(SemanticNode::getNeedToMerge)
+            .filter(SemanticNode::needToMerge)
             .collect(
                 Collectors.toMap(
                     SemanticNode::hashCodeSignature,
@@ -46,7 +46,7 @@ public class TwowayGraphMatcher {
     Map<Integer, SemanticNode> map2 =
         nodeSet2
             .stream()
-            .filter(SemanticNode::getNeedToMerge)
+            .filter(SemanticNode::needToMerge)
             .collect(
                 Collectors.toMap(
                     SemanticNode::hashCodeSignature,
@@ -76,6 +76,7 @@ public class TwowayGraphMatcher {
         matching.unmatchedNodes1.getOrDefault(NodeType.METHOD, new ArrayList<>());
     List<SemanticNode> unmatchedMethods2 =
         matching.unmatchedNodes2.getOrDefault(NodeType.METHOD, new ArrayList<>());
+    // TODO avoid sujection
     if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }

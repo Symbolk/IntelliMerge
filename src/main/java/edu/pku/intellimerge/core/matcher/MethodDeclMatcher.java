@@ -72,7 +72,7 @@ public class MethodDeclMatcher {
     // Rule: one of callers in the / && original caller's parent==current parent&&union
     // context confidence > confidence before
     // The added method is called by an existing method in the same class
-    Map<MethodDeclNode, List<MethodDeclNode>> alternates = new HashMap<>();
+    Map<MethodDeclNode, List<MethodDeclNode>> candidates = new HashMap<>();
     for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
       List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL_METHOD);
       List<MethodDeclNode> possiblyExtractedFromMethods = new ArrayList<>();
@@ -84,12 +84,12 @@ public class MethodDeclMatcher {
         }
       }
       if (!possiblyExtractedFromMethods.isEmpty()) {
-        alternates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
+        candidates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
       }
     }
     // try to inline the new method to the caller
     // if the similarity improves, consider it as extracted from the caller
-    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : alternates.entrySet()) {
+    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : candidates.entrySet()) {
       MethodDeclNode callee = alternate.getKey();
       List<MethodDeclNode> callers = alternate.getValue();
       for (MethodDeclNode caller : callers) {

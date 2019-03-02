@@ -24,6 +24,8 @@ public abstract class SemanticNode {
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
   private String comment;
+  // whether the node is defined inside the graph or not
+  private boolean isInternal;
 
   public SemanticNode() {}
 
@@ -43,6 +45,34 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
     this.comment = comment;
     this.children = new ArrayList<>();
+    this.isInternal = true;
+  }
+
+  public SemanticNode(
+          Integer nodeID,
+          Boolean needToMerge,
+          NodeType nodeType,
+          String displayName,
+          String qualifiedName,
+          String originalSignature,
+          String comment,boolean isInternal) {
+    this.nodeID = nodeID;
+    this.needToMerge = needToMerge;
+    this.nodeType = nodeType;
+    this.displayName = displayName;
+    this.qualifiedName = qualifiedName;
+    this.originalSignature = originalSignature;
+    this.comment = comment;
+    this.children = new ArrayList<>();
+    this.isInternal = isInternal;
+  }
+
+  public boolean isInternal() {
+    return isInternal;
+  }
+
+  public void setInternal(boolean internal) {
+    isInternal = internal;
   }
 
   public Integer getNodeID() {
@@ -77,9 +107,7 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
   }
 
-  /**
-   * The unique identifier of the node in this project
-   */
+  /** The unique identifier of the node in this project */
   public abstract String getSignature();
 
   public String getComment() {
@@ -94,9 +122,10 @@ public abstract class SemanticNode {
     return getSignature().hashCode();
   }
 
-  public Boolean getNeedToMerge() {
+  public Boolean needToMerge() {
     return needToMerge;
   }
+
 
   /**
    * Clone the object without children and edges
@@ -178,12 +207,7 @@ public abstract class SemanticNode {
    * @return
    */
   public String asString() {
-    return "SemanticNode{"
-        + "nodeType="
-        + nodeType
-        + ", qualifiedName='"
-        + qualifiedName
-        + '}';
+    return "SemanticNode{" + "nodeType=" + nodeType + ", qualifiedName='" + qualifiedName + '}';
   }
 
   /**
@@ -196,6 +220,6 @@ public abstract class SemanticNode {
   }
 
   public boolean equals(Object o) {
-    return (o instanceof SemanticNode) && (asString().equals(((SemanticNode) o).asString()));
+    return (o instanceof SemanticNode) && (toString().equals(((SemanticNode) o).toString()));
   }
 }

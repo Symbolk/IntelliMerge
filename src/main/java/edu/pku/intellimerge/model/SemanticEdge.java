@@ -9,6 +9,8 @@ public class SemanticEdge {
   // not good to keep vertex here, since the edge and the connectivity are suggested to be separated
   private SemanticNode source;
   private SemanticNode target;
+  // whether the target node is defined inside the graph or not
+  private boolean isInternal;
 
   public SemanticEdge(Integer edgeID, EdgeType edgeType, SemanticNode source, SemanticNode target) {
     this.edgeID = edgeID;
@@ -16,6 +18,16 @@ public class SemanticEdge {
     this.source = source;
     this.target = target;
     this.weight = 1;
+    this.isInternal = true;
+  }
+
+  public SemanticEdge(Integer edgeID, EdgeType edgeType, SemanticNode source, SemanticNode target, boolean isInternal) {
+    this.edgeID = edgeID;
+    this.edgeType = edgeType;
+    this.source = source;
+    this.target = target;
+    this.weight = 1;
+    this.isInternal = isInternal;
   }
 
   public EdgeType getEdgeType() {
@@ -32,6 +44,13 @@ public class SemanticEdge {
         + ", target="
         + target
         + '}';
+  }
+  public boolean isInternal() {
+    return isInternal;
+  }
+
+  public void setInternal(boolean internal) {
+    isInternal = internal;
   }
 
   public int hashCode() {

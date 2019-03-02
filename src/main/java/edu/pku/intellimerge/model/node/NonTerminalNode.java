@@ -26,7 +26,7 @@ public class NonTerminalNode extends SemanticNode {
   public SemanticNode shallowClone() {
     return new NonTerminalNode(
         this.getNodeID(),
-        this.getNeedToMerge(),
+        this.needToMerge(),
         this.getNodeType(),
         this.getDisplayName(),
         this.getQualifiedName(),
