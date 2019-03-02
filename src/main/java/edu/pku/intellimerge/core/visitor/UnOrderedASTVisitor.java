@@ -130,7 +130,7 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
     //            classOrInterfaceDeclNode,
     //            mdNode,
     //            new SemanticEdge(
-    //                    edgeCount++, EdgeType.DEFINE_METHOD, classOrInterfaceDeclNode, mdNode));
+    //                    edgeCount++, EdgeType.DEFINE, classOrInterfaceDeclNode, mdNode));
     System.out.println("Method " + md.getName());
   }
 }

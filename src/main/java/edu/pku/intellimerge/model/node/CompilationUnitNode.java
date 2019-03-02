@@ -38,7 +38,7 @@ public class CompilationUnitNode extends NonTerminalNode {
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
 
     this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE, new ArrayList<>());
   }
 
   public String getPackageStatement() {

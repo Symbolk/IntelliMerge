@@ -25,13 +25,12 @@ public class ConstructorDeclNode extends TerminalNode {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range);
     this.constructorName = constructorName;
 
-    this.incomingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.CALL_CONSTRUCTOR, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL_CONSTRUCTOR, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.CALL, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
   }
 
 }

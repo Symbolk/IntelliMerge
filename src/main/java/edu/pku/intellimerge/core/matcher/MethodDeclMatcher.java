@@ -74,7 +74,7 @@ public class MethodDeclMatcher {
     // The added method is called by an existing method in the same class
     Map<MethodDeclNode, List<MethodDeclNode>> candidates = new HashMap<>();
     for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
-      List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL_METHOD);
+      List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL);
       List<MethodDeclNode> possiblyExtractedFromMethods = new ArrayList<>();
       for (SemanticNode caller : callers) {
         if (reversedMatching.containsKey(caller)

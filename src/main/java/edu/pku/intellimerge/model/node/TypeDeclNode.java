@@ -38,20 +38,15 @@ public class TypeDeclNode extends NonTerminalNode {
     this.implementTypes = new ArrayList<>();
     // Notice: here the order matters
     this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DECLARE, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
     this.incomingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
     this.incomingEdges.put(EdgeType.EXTEND, new ArrayList<>());
 
     this.outgoingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.EXTEND, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_CONSTRUCTOR, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_INNER_CLASS, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_TYPE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE_CONSTANT, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE, new ArrayList<>());
   }
 
   public void setExtendType(String extendType) {

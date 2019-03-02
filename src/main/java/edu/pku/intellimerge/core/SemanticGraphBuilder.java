@@ -167,12 +167,12 @@ public class SemanticGraphBuilder {
     edgeCount = buildEdges(graph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
     edgeCount =
         buildEdges(graph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
-    edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD, NodeType.FIELD);
-    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD, NodeType.FIELD);
+    edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECLARE, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INITIALIZE, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ, NodeType.FIELD);
+    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE, NodeType.FIELD);
     edgeCount =
-        buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL_METHOD, NodeType.METHOD);
+        buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL, NodeType.METHOD);
 
     // now edges are fixed
     // save incoming edges and outgoing edges in corresponding nodes
@@ -292,7 +292,7 @@ public class SemanticGraphBuilder {
 
       if (td.isTopLevelType()) {
         graph.addEdge(
-            cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
+            cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, cuNode, tdNode));
 
         if (td.isClassOrInterfaceDeclaration()) {
           ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
@@ -399,7 +399,7 @@ public class SemanticGraphBuilder {
           graph.addEdge(
               tdNode,
               childTDNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, tdNode, childTDNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, childTDNode));
           // process nested td members iteratively
           processMemebers(childTD, childTDNode, packageName, isInChangedFile);
         }
@@ -444,7 +444,7 @@ public class SemanticGraphBuilder {
             graph.addEdge(
                 tdNode,
                 fdNode,
-                new SemanticEdge(edgeCount++, EdgeType.DEFINE_FIELD, tdNode, fdNode));
+                new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
@@ -492,7 +492,7 @@ public class SemanticGraphBuilder {
           graph.addEdge(
               tdNode,
               cdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTRUCTOR, tdNode, cdNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
 
           processMethodOrConstructorBody(cd, cdNode);
         }
@@ -547,7 +547,7 @@ public class SemanticGraphBuilder {
           graph.addEdge(
               tdNode,
               mdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_METHOD, tdNode, mdNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
 
           processMethodOrConstructorBody(md, mdNode);
         }

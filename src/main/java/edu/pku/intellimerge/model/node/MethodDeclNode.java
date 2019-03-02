@@ -52,13 +52,13 @@ public class MethodDeclNode extends TerminalNode {
     this.parameterNames = parameterNames;
     this.throwExceptions = throwExceptions;
 
-    this.incomingEdges.put(EdgeType.DEFINE_METHOD, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.CALL, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
   // fake method constructor, only invocation but no definition
@@ -83,12 +83,12 @@ public class MethodDeclNode extends TerminalNode {
     this.methodName = methodName;
     this.parameterNames = parameterNames;
 
-    this.incomingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL_METHOD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.CALL, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
   public String getMethodName() {

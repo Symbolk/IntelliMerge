@@ -35,11 +35,11 @@ public class FieldDeclNode extends TerminalNode {
     this.fieldType = fieldType;
     this.fieldName = fieldName;
 
-    this.incomingEdges.put(EdgeType.DEFINE_FIELD, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.READ_FIELD, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.WRITE_FIELD, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECL_OBJECT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INIT_OBJECT, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.READ, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.WRITE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
   }
 
   public String getAccess() {

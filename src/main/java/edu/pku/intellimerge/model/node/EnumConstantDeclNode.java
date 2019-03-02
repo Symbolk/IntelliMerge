@@ -33,6 +33,7 @@ public class EnumConstantDeclNode extends TerminalNode {
         comment,
         body,
         range);
-    this.incomingEdges.put(EdgeType.DEFINE_CONSTANT, new ArrayList<>());
+    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
+    this.outgoingEdges.put(EdgeType.DEFINE, new ArrayList<>());
   }
 }

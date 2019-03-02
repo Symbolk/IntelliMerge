@@ -140,12 +140,12 @@ public class SemanticGraphBuilder2 {
     edgeCount = buildEdges(graph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
     edgeCount =
         buildEdges(graph, edgeCount, implementEdges, EdgeType.IMPLEMENT, NodeType.INTERFACE);
-    edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECL_OBJECT, NodeType.CLASS);
-    edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INIT_OBJECT, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECLARE, NodeType.CLASS);
+    edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INITIALIZE, NodeType.CLASS);
 
-    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ_FIELD,
+    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ,
     // NodeType.FIELD);
-    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE_FIELD,
+    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE,
     // NodeType.FIELD);
 
     edgeCount = buildEdgesForMethodCall(edgeCount, methodCallExprs);
@@ -276,7 +276,7 @@ public class SemanticGraphBuilder2 {
 
         cuNode.appendChild(tdNode);
         graph.addEdge(
-            cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, cuNode, tdNode));
+            cuNode, tdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, cuNode, tdNode));
 
         if (td.isClassOrInterfaceDeclaration()) {
           ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) td;
@@ -382,7 +382,7 @@ public class SemanticGraphBuilder2 {
           graph.addEdge(
               tdNode,
               childTDNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_TYPE, tdNode, childTDNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, childTDNode));
           // process nested td members iteratively
           processMemebers(childTD, childTDNode, qualifiedTypeName, isInChangedFile);
         }
@@ -412,7 +412,7 @@ public class SemanticGraphBuilder2 {
           graph.addEdge(
               tdNode,
               ecdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTANT, tdNode, ecdNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, ecdNode));
         }
         // 4. field
         if (child instanceof FieldDeclaration) {
@@ -454,7 +454,7 @@ public class SemanticGraphBuilder2 {
             graph.addEdge(
                 tdNode,
                 fdNode,
-                new SemanticEdge(edgeCount++, EdgeType.DEFINE_FIELD, tdNode, fdNode));
+                new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
@@ -499,7 +499,7 @@ public class SemanticGraphBuilder2 {
           graph.addEdge(
               tdNode,
               cdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_CONSTRUCTOR, tdNode, cdNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
 
           processMethodOrConstructorBody(cd, cdNode);
         }
@@ -556,7 +556,7 @@ public class SemanticGraphBuilder2 {
           graph.addEdge(
               tdNode,
               mdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE_METHOD, tdNode, mdNode));
+              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
 
           processMethodOrConstructorBody(md, mdNode);
         }
@@ -699,14 +699,14 @@ public class SemanticGraphBuilder2 {
                   argumentNames,
                   expr.getRange());
           graph.addVertex(externalMethod);
-          createEdge(edgeCount++, caller, externalMethod, EdgeType.CALL_METHOD, false);
+          createEdge(edgeCount++, caller, externalMethod, EdgeType.CALL, false);
         } else {
           if (candidates.size() == 1) {
             createEdge(
                 edgeCount++,
                 caller,
                 candidates.get(0),
-                EdgeType.CALL_METHOD,
+                EdgeType.CALL,
                 candidates.get(0).isInternal());
           } else {
             // TODO if fuzzy matching gets multiple results
