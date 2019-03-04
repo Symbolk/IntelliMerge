@@ -8,6 +8,8 @@ import org.jgrapht.io.*;
 
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SemanticGraphExporter {
   /** Export a graph into DOT format. */
@@ -62,10 +64,16 @@ public class SemanticGraphExporter {
    *
    * @param graph
    */
-  public static void printAsDot(Graph<SemanticNode, SemanticEdge> graph) {
-    System.out.println(SemanticGraphExporter.exportAsDotWithType(graph));
-    //    System.out.println(SemanticGraphExporter.exportAsDotWithType(graph));
-//    graph.removeAllEdges()
+  public static void printAsDot(Graph<SemanticNode, SemanticEdge> graph, boolean showExternal) {
+    if(showExternal){
+      System.out.println(exportAsDotWithType(graph));
+    }else{
+      Set<SemanticEdge> externalEdges = graph.edgeSet().stream().filter(edge -> edge.isInternal()==false).collect(Collectors.toSet());
+      graph.removeAllEdges(externalEdges);
+      Set<SemanticNode> externalVertices = graph.vertexSet().stream().filter(node -> node.isInternal()== false).collect(Collectors.toSet());
+      graph.removeAllVertices(externalVertices);
+      System.out.println(exportAsDotWithType(graph));
+    }
   }
 
   /**

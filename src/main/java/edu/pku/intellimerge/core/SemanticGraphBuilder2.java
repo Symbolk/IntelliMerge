@@ -401,7 +401,7 @@ public class SemanticGraphBuilder2 {
                   NodeType.ENUM_CONSTANT,
                   displayName,
                   qualifiedName,
-                  ecd.toString(),
+                  displayName,
                   ecd.getComment().map(Comment::toString).orElse(""),
                   body,
                   ecd.getRange());
