@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,9 +84,8 @@ public class SourceRoot {
             Log.trace("Saving %s", path);
             path.getParent().toFile().mkdirs();
 
-            final String code = new PrettyPrinter().print(cu.getValue().getResult().get());
-            try (PrintWriter out = new PrintWriter(path.toFile(), UTF8.toString())) {
-                out.println(code);
+            try (PrintWriter out = new PrintWriter(path.toFile(), StandardCharsets.UTF_8.displayName())) {
+                out.println(new PrettyPrinter().print(cu.getValue().getResult().get()));
             }
         }
     }

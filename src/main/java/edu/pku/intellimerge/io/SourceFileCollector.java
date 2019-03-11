@@ -79,9 +79,9 @@ public class SourceFileCollector {
       if (this.onlyBothModified) {
         // collect only BothSides modified files in two sides
         // TODO collect static imported files
-//        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
-//        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
-//        collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
+        collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
       } else {
         // collect diff files for all sides
         collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);

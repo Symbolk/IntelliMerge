@@ -9,6 +9,7 @@ import com.github.javaparser.printer.PrettyPrinter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,16 +24,16 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ParseStart.COMPILATION_UNIT;
 import static com.github.javaparser.Providers.UTF8;
 import static com.github.javaparser.Providers.provider;
-<<<<<<< F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\gitMerged\SourceRoot.java
+<<<<<<< src/test/resources/Extract/ExtractMethod/ours/SourceRoot2.java
 import static com.github.javaparser.utils.CodeGenerationUtils.fileInPackageRelativePath;
 import static com.github.javaparser.utils.CodeGenerationUtils.packageAbsolutePath;
 import static com.github.javaparser.utils.SourceRoot.Callback.Result.SAVE;
-||||||| F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\base\SourceRoot.java
+||||||| src/test/resources/Extract/ExtractMethod/base/SourceRoot.java
 import static com.github.javaparser.utils.CodeGenerationUtils.*;
 =======
 import static com.github.javaparser.utils.CodeGenerationUtils.fileInPackageRelativePath;
 import static com.github.javaparser.utils.CodeGenerationUtils.packageAbsolutePath;
->>>>>>> F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\theirs\SourceRoot.java
+>>>>>>> src/test/resources/Extract/ExtractMethod/theirs/SourceRoot.java
 
 /**
  * A collection of Java source files located in one directory and its subdirectories on the file system.
@@ -41,7 +42,7 @@ import static com.github.javaparser.utils.CodeGenerationUtils.packageAbsolutePat
 public class SourceRoot {
     private final Path root;
     private final Map<Path, ParseResult<CompilationUnit>> content = new HashMap<>();
-<<<<<<< F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\gitMerged\SourceRoot.java
+<<<<<<< src/test/resources/Extract/ExtractMethod/ours/SourceRoot2.java
     public interface Callback {
         enum Result {SAVE, DONT_SAVE}
 
@@ -52,10 +53,10 @@ public class SourceRoot {
          */
         Result process(Path localPath, Path absolutePath, ParseResult<CompilationUnit> result) throws IOException;
     }
-||||||| F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\base\SourceRoot.java
+||||||| src/test/resources/Extract/ExtractMethod/base/SourceRoot.java
 =======
     private JavaParser javaParser = new JavaParser();
->>>>>>> F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\theirs\SourceRoot.java
+>>>>>>> src/test/resources/Extract/ExtractMethod/theirs/SourceRoot.java
 
     public SourceRoot(Path root) {
         this.root = root.normalize();
@@ -128,9 +129,24 @@ public class SourceRoot {
         Log.info("Saving all files (%s) to %s", content.size(), root);
         for (Map.Entry<Path, ParseResult<CompilationUnit>> cu : content.entrySet()) {
             final Path path = root.resolve(cu.getKey());
+<<<<<<< src/test/resources/Extract/ExtractMethod/ours/SourceRoot2.java
             if (cu.getValue().getResult().isPresent()) {
                 Log.trace("Saving %s", path);
                 save(cu.getValue().getResult().get(), path);
+||||||| src/test/resources/Extract/ExtractMethod/base/SourceRoot.java
+            Log.trace("Saving %s", path);
+            path.getParent().toFile().mkdirs();
+
+            final String code = new PrettyPrinter().print(cu.getValue().getResult().get());
+            try (PrintWriter out = new PrintWriter(path.toFile(), UTF8.toString())) {
+                out.println(code);
+=======
+            Log.trace("Saving %s", path);
+            path.getParent().toFile().mkdirs();
+
+            try (PrintWriter out = new PrintWriter(path.toFile(), StandardCharsets.UTF_8.displayName())) {
+                out.println(new PrettyPrinter().print(cu.getValue().getResult().get()));
+>>>>>>> src/test/resources/Extract/ExtractMethod/theirs/SourceRoot.java
             }
         }
     }
@@ -207,7 +223,7 @@ public class SourceRoot {
         final ParseResult<CompilationUnit> parseResult = new ParseResult<>(compilationUnit, new ArrayList<>(), null, null);
         content.put(path, parseResult);
     }
-<<<<<<< F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\gitMerged\SourceRoot.java
+<<<<<<< src/test/resources/Extract/ExtractMethod/ours/SourceRoot2.java
 
     /**
      * The path that was passed in the constructor.
@@ -215,7 +231,7 @@ public class SourceRoot {
     public Path getRoot() {
         return root;
     }
-||||||| F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\base\SourceRoot.java
+||||||| src/test/resources/Extract/ExtractMethod/base/SourceRoot.java
 =======
 
     public JavaParser getJavaParser() {
@@ -226,5 +242,5 @@ public class SourceRoot {
         this.javaParser = javaParser;
         return this;
     }
->>>>>>> F:\workspace\dev\IntelliMerge\src\test\resources\Extract\ExtractMethod\theirs\SourceRoot.java
+>>>>>>> src/test/resources/Extract/ExtractMethod/theirs/SourceRoot.java
 }

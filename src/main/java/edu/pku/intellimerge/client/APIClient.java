@@ -174,9 +174,9 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
     //    saveDotToFile(mergeScenario, baseGraph, Side.BASE);
 
-    SemanticGraphExporter.printAsDot(oursGraph, false);
-//    SemanticGraphExporter.printAsDot(baseGraph);
-//    SemanticGraphExporter.printAsDot(theirsGraph);
+//    SemanticGraphExporter.printAsDot(oursGraph, false);
+//    SemanticGraphExporter.printAsDot(baseGraph, false);
+//    SemanticGraphExporter.printAsDot(theirsGraph, false);
 
     logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
 
