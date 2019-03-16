@@ -207,7 +207,7 @@ public abstract class SemanticNode {
    * @return
    */
   public String asString() {
-    return "SemanticNode{" + "nodeType=" + nodeType + ", qualifiedName='" + qualifiedName + '}';
+    return "nodeType=" + nodeType + ", qualifiedName='" + qualifiedName + '}';
   }
 
   /**
@@ -220,6 +220,6 @@ public abstract class SemanticNode {
   }
 
   public boolean equals(Object o) {
-    return (o instanceof SemanticNode) && (toString().equals(((SemanticNode) o).toString()));
+    return (o instanceof SemanticNode) && (asString().equals(((SemanticNode) o).asString()));
   }
 }

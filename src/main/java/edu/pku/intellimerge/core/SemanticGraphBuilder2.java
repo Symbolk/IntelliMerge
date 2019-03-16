@@ -410,9 +410,7 @@ public class SemanticGraphBuilder2 {
           // add edge between field and class
           tdNode.appendChild(ecdNode);
           graph.addEdge(
-              tdNode,
-              ecdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, ecdNode));
+              tdNode, ecdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, ecdNode));
         }
         // 4. field
         if (child instanceof FieldDeclaration) {
@@ -452,9 +450,7 @@ public class SemanticGraphBuilder2 {
             // add edge between field and class
             tdNode.appendChild(fdNode);
             graph.addEdge(
-                tdNode,
-                fdNode,
-                new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
+                tdNode, fdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
@@ -497,9 +493,7 @@ public class SemanticGraphBuilder2 {
 
           tdNode.appendChild(cdNode);
           graph.addEdge(
-              tdNode,
-              cdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
+              tdNode, cdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
 
           processMethodOrConstructorBody(cd, cdNode);
         }
@@ -554,9 +548,7 @@ public class SemanticGraphBuilder2 {
 
           tdNode.appendChild(mdNode);
           graph.addEdge(
-              tdNode,
-              mdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
+              tdNode, mdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
 
           processMethodOrConstructorBody(md, mdNode);
         }
@@ -622,23 +614,23 @@ public class SemanticGraphBuilder2 {
    * @return
    */
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
-    String source = fieldDeclaration.toString();
+    String source = removeComment(fieldDeclaration.toString());
     //    if (fieldDeclaration.getComment().isPresent()) {
     //      source = source.replace(fieldDeclaration.getComment().get().getContent(), "");
     //    }
-    return removeComment(
-            source.substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";"))))
+    return source
+        .substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";")))
         .trim();
   }
 
   /** Get signature of type in original code */
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
-    String source = typeDeclaration.toString();
+    String source = removeComment(typeDeclaration.toString());
     //    if (typeDeclaration.getComment().isPresent()) {
     //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
     //    }
-    return removeComment(source.substring(0, source.indexOf("{"))).trim();
+    return source.substring(0, source.indexOf("{")).trim();
     //    return source.trim();
   }
 
@@ -701,17 +693,13 @@ public class SemanticGraphBuilder2 {
           graph.addVertex(externalMethod);
           createEdge(edgeCount++, caller, externalMethod, EdgeType.CALL, false);
         } else {
-          if (candidates.size() == 1) {
-            createEdge(
-                edgeCount++,
-                caller,
-                candidates.get(0),
-                EdgeType.CALL,
-                candidates.get(0).isInternal());
-          } else {
-            // TODO if fuzzy matching gets multiple results
-            logger.error("Multiple candidates: " + candidates);
-          }
+          // TODO if fuzzy matching gets multiple results, just select the first one for now
+          createEdge(
+              edgeCount++,
+              caller,
+              candidates.get(0),
+              EdgeType.CALL,
+              candidates.get(0).isInternal());
         }
       }
     }
