@@ -23,7 +23,7 @@ public class Graph2CodePrinter {
    * @return
    */
   public static String printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
-    String resultFilePath = resultDir + File.separator + cu.getRelativePath();
+    String resultFilePath = FilesManager.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getPackageStatement());

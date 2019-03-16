@@ -33,10 +33,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /** Build Semantic Graph for one merge scenario, with fuzzy matching instead of symbolsolving */
-public class SemanticGraphBuilder2 {
+public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, SemanticEdge>> {
   private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder2.class);
   private Graph<SemanticNode, SemanticEdge> graph;
   // incremental id, unique in one side's graph
@@ -92,7 +93,8 @@ public class SemanticGraphBuilder2 {
    *
    * @return
    */
-  public Graph<SemanticNode, SemanticEdge> build() {
+  @Override
+  public Graph<SemanticNode, SemanticEdge> call() {
 
     // the folder path which contains collected files to build the graph upon
     String sideDir = targetDir + File.separator + side.asString() + File.separator;
@@ -107,7 +109,6 @@ public class SemanticGraphBuilder2 {
     List<CompilationUnit> compilationUnits = new ArrayList<>();
     List<ParseResult<CompilationUnit>> parseResults = new ArrayList<>();
     if (hasMultiModule) {
-
       // multi-module project: separated source folder for sub-projects/modules
       ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
 
@@ -128,6 +129,7 @@ public class SemanticGraphBuilder2 {
     /*
      * build the graph by analyzing every CU
      */
+    logger.info("({}) CUs in {}", compilationUnits.size(), side);
     for (CompilationUnit cu : compilationUnits) {
       processCompilationUnit(cu);
     }
@@ -186,7 +188,7 @@ public class SemanticGraphBuilder2 {
             cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""));
     String relativePath =
         absolutePath.replace(
-            FilesManager.formatPathSeparator(targetDir + side.asString() + File.separator), "");
+            FilesManager.formatPathSeparator(targetDir + File.separator + side.asString() + File.separator), "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
     boolean isInChangedFile =

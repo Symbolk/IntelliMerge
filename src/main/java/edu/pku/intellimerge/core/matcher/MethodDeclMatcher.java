@@ -31,6 +31,7 @@ public class MethodDeclMatcher {
     // use bipartite to match methods according to similarity
     Set<SemanticNode> partition1 = new HashSet<>();
     Set<SemanticNode> partition2 = new HashSet<>();
+    // should be simple graph: no self-loops and no multiple edges
     DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite =
         new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
 

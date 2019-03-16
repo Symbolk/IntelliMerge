@@ -1,6 +1,6 @@
 package edu.pku.intellimerge.client;
 
-import edu.pku.intellimerge.core.SemanticGraphBuilder;
+import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
@@ -18,6 +18,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class APIClient {
 
@@ -137,58 +141,54 @@ public class APIClient {
     // 1. Collect diff java files and imported files between merge parent commit and base commit
 
     // source files collected to be parse later
-    String collectedFilePath =
+    String collectedFileDir =
         DIFF_DIR + File.separator + mergeScenario.mergeCommitID + File.separator;
 
     SourceFileCollector collector =
-        new SourceFileCollector(mergeScenario, repository, collectedFilePath);
+        new SourceFileCollector(mergeScenario, repository, collectedFileDir);
     collector.setOnlyBothModified(true);
     collector.setCopyImportedFiles(false);
     collector.collectFilesForAllSides();
     logger.info("Collecting files done for {}", mergeScenario.mergeCommitID);
 
     // 2.1 Build ours/theirs graphs with collected files
-    SemanticGraphBuilder2 oursBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedFilePath, true);
-    SemanticGraphBuilder2 baseBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedFilePath, true);
-    SemanticGraphBuilder2 theirsBuilder =
-        new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedFilePath, true);
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    boolean hasMultipleModule = true;
+    ExecutorService executorService = Executors.newFixedThreadPool(3);
 
-//    SemanticGraphBuilder oursBuilder =
-//            new SemanticGraphBuilder(mergeScenario, Side.OURS, collectedFilePath);
-//    SemanticGraphBuilder baseBuilder =
-//            new SemanticGraphBuilder(mergeScenario, Side.BASE, collectedFilePath);
-//    SemanticGraphBuilder theirsBuilder =
-//            new SemanticGraphBuilder(mergeScenario, Side.THEIRS, collectedFilePath);
+    Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(
+                mergeScenario, Side.OURS, collectedFileDir, hasMultipleModule));
+    Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(
+                mergeScenario, Side.BASE, collectedFileDir, hasMultipleModule));
+    Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(
+                mergeScenario, Side.THEIRS, collectedFileDir, hasMultipleModule));
+    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
+    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
 
-    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
+    stopwatch.stop();
+    logger.info(
+        "Building graph done for {} within {}ms.",
+        mergeScenario.mergeCommitID,
+        stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    //    stopwatch.reset().start();
 
-    //    saveDotToFile(mergeScenario, oursGraph, Side.OURS);
-
-    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
-
-    //    saveDotToFile(mergeScenario, theirsGraph, Side.THEIRS);
-
-    // 2.2 Build base/merge graphs among ours/theirs files
-    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
-    //    saveDotToFile(mergeScenario, baseGraph, Side.BASE);
-
-//    SemanticGraphExporter.printAsDot(oursGraph, false);
-//    SemanticGraphExporter.printAsDot(baseGraph, false);
-//    SemanticGraphExporter.printAsDot(theirsGraph, false);
-
-    logger.info("Building graph done for {}", mergeScenario.mergeCommitID);
-
-    String resultDir =
+    String mergeResultDir =
         RESULT_DIR
             + File.separator
             + mergeScenario.mergeCommitID
             + File.separator
-            + "intelliMerged";
-    FilesManager.clearResultDir(resultDir);
+            + Side.INTELLI.asString()
+            + File.separator;
+    FilesManager.clearResultDir(mergeResultDir);
     ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
+        new ThreewayGraphMerger(mergeResultDir, oursGraph, baseGraph, theirsGraph);
     // 3. Match node and merge the 3-way graphs
 
     merger.threewayMap();
@@ -206,31 +206,46 @@ public class APIClient {
    * @throws Exception
    */
   public void processDirectory(String targetDir, String resultDir) throws Exception {
-    SemanticGraphBuilder2 oursBuilder =
-        new SemanticGraphBuilder2(null, Side.OURS, targetDir, false);
-    SemanticGraphBuilder2 baseBuilder =
-        new SemanticGraphBuilder2(null, Side.BASE, targetDir, false);
-    SemanticGraphBuilder2 theirsBuilder =
-        new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, false);
+    String targetDirName = FilesManager.getDirSimpleName(targetDir);
 
-    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.build();
-    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.build();
-    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.build();
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    boolean hasMultipleModule = true;
+    ExecutorService executorService = Executors.newFixedThreadPool(3);
 
-    logger.info("Building graph done for {}", targetDir);
+    Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(null, Side.OURS, targetDir, hasMultipleModule));
+    Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(null, Side.BASE, targetDir, hasMultipleModule));
+    Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModule));
+    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
+    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
+
+    stopwatch.stop();
+    long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Building graph done for {}.", buildingTime, targetDirName);
 
     FilesManager.clearResultDir(resultDir);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
-    // 3. Match node and merge the 3-way graphs
+    // 3. Match node and merge the 3-way graphs.
+    stopwatch.reset().start();
     merger.threewayMap();
-    logger.info("Matching done for {}", targetDir);
+    stopwatch.stop();
+    long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Matching done for {}.", matchingTime, targetDirName);
 
     // 4. Print the merged graph into code, keep the original format as possible
+    stopwatch.reset().start();
     List<String> mergedFilePaths = merger.threewayMerge();
-    for(String mergedFilePath : mergedFilePaths){
-      logger.info(mergedFilePath);
-    }
-    logger.info("Merging done for {}", targetDir);
+    stopwatch.stop();
+    long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Merging done for {}.", matchingTime, targetDirName);
+
+    logger.info("Overall time cost: {}ms.", buildingTime + matchingTime + mergingTime);
   }
 }

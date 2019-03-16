@@ -1,14 +1,20 @@
-package edu.pku.intellimerge.client;
+package edu.pku.intellimerge.evaluation;
 
-import edu.pku.intellimerge.model.MergeScenario;
-import edu.pku.intellimerge.util.GitService;
+import edu.pku.intellimerge.client.APIClient;
+import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.util.FilesManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.eclipse.jgit.lib.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Main {
-  private static final Logger logger = LoggerFactory.getLogger(Main.class);
+import java.io.File;
+
+/**
+ * Class responsible to evaluate the result and the performance of IntelliMerge Comparing with
+ * git-merge & jFSTMerge
+ */
+public class Evaluator {
+  private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
   private static final String REPO_NAME = "javaparser";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
@@ -24,27 +30,20 @@ public class Main {
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
     //      BasicConfigurator.configure();
-
     try {
-      // process merge scenarios in repository
-      Repository repository = GitService.cloneIfNotExists(REPO_DIR, GIT_URL);
-
-      //            for (MergeScenario mergeScenario : generateMergeScenarios()) {
-      //              processMergeScenario(mergeScenario, repository);
-      //            }
       APIClient apiClient =
           new APIClient(
               REPO_NAME,
-                  REPO_DIR,
+              REPO_DIR,
               GIT_URL,
-                  SRC_DIR,
-                  DIFF_DIR,
-                  MERGE_RESULT_DIR,
+              SRC_DIR,
+              DIFF_DIR,
+              MERGE_RESULT_DIR,
               STATISTICS_PATH,
-                  DOT_DIR);
-      MergeScenario mergeScenario = apiClient.generateSingleMergeSenario();
-      apiClient.processMergeScenario(mergeScenario, repository);
-
+              DOT_DIR);
+      String targetDir = "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
+      String mergeResultDir = targetDir + File.separator + Side.INTELLI.asString() + File.separator;
+      apiClient.processDirectory(targetDir, mergeResultDir);
     } catch (Exception e) {
       e.printStackTrace();
     }

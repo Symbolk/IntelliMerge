@@ -254,69 +254,76 @@ public class FilesManager {
 
   /**
    * Get the project root directory path, e.g. F:\workspace\dev\IntelliMerge
+   *
    * @return
    */
-  public static String getProjectRootDir(){
+  public static String getProjectRootDir() {
     return System.getProperty("user.dir");
   }
 
   /**
    * Extracts the merge conflicts of a string representation of merged code.
+   *
    * @param mergedCode
    * @return list o merge conflicts
    */
-  public static List<ConflictBlock> extractConflictBlocks(String mergedCode){
-    String CONFLICT_HEADER_BEGIN= "<<<<<<<";
-    String CONFLICT_BASE_BEGIN	= "|||||||";
-    String CONFLICT_BASE_END	= "=======";
-    String CONFLICT_HEADER_END 	= ">>>>>>>";
+  public static List<ConflictBlock> extractConflictBlocks(String mergedCode) {
+    String CONFLICT_HEADER_BEGIN = "<<<<<<<";
+    String CONFLICT_BASE_BEGIN = "|||||||";
+    String CONFLICT_BASE_END = "=======";
+    String CONFLICT_HEADER_END = ">>>>>>>";
     String leftConflictingContent = "";
     String baseConflictingContent = "";
-    String rightConflictingContent= "";
-    boolean isConflictOpen		  = false;
-    boolean isBaseContent		  = false;
-    boolean isLeftContent		  = false;
-    int lineCounter				  = 0;
-    int startLOC				  = 0;
-    int endLOC				  	  = 0;
+    String rightConflictingContent = "";
+    boolean isConflictOpen = false;
+    boolean isBaseContent = false;
+    boolean isLeftContent = false;
+    int lineCounter = 0;
+    int startLOC = 0;
+    int endLOC = 0;
 
     List<ConflictBlock> mergeConflicts = new ArrayList<ConflictBlock>();
     List<String> lines = new ArrayList<>();
     BufferedReader reader = new BufferedReader(new StringReader(mergedCode));
     lines = reader.lines().collect(Collectors.toList());
     Iterator<String> itlines = lines.iterator();
-    while(itlines.hasNext()){
+    while (itlines.hasNext()) {
       String line = itlines.next();
       lineCounter++;
-      if(line.contains(CONFLICT_HEADER_BEGIN)){
+      if (line.contains(CONFLICT_HEADER_BEGIN)) {
         isConflictOpen = true;
-        isLeftContent  = true;
+        isLeftContent = true;
         startLOC = lineCounter;
-      } else if(line.contains(CONFLICT_BASE_BEGIN)){
+      } else if (line.contains(CONFLICT_BASE_BEGIN)) {
         isLeftContent = false;
         isBaseContent = true;
-      } else if(line.contains(CONFLICT_BASE_END)){
+      } else if (line.contains(CONFLICT_BASE_END)) {
         isBaseContent = false;
-      }else if(line.contains(CONFLICT_HEADER_END)) {
+      } else if (line.contains(CONFLICT_HEADER_END)) {
         endLOC = lineCounter;
         ConflictBlock mergeConflict =
-                new ConflictBlock(leftConflictingContent, baseConflictingContent,rightConflictingContent,startLOC,endLOC);
+            new ConflictBlock(
+                leftConflictingContent,
+                baseConflictingContent,
+                rightConflictingContent,
+                startLOC,
+                endLOC);
         mergeConflicts.add(mergeConflict);
 
-        //reseting the flags
-        isConflictOpen	= false;
-        isBaseContent   = false;
-        isLeftContent   = false;
+        // reseting the flags
+        isConflictOpen = false;
+        isBaseContent = false;
+        isLeftContent = false;
         leftConflictingContent = "";
         baseConflictingContent = "";
-        rightConflictingContent= "";
+        rightConflictingContent = "";
       } else {
-        if(isConflictOpen){
-          if(isLeftContent){
+        if (isConflictOpen) {
+          if (isLeftContent) {
             leftConflictingContent += line + "\n";
-          }else if(isBaseContent){
+          } else if (isBaseContent) {
             baseConflictingContent += line + "\n";
-          }else{
+          } else {
             rightConflictingContent += line + "\n";
           }
         }
@@ -325,4 +332,20 @@ public class FilesManager {
     return mergeConflicts;
   }
 
+  /**
+   * Get simple name for directory e.g. /home/xyz/github/repo/javaparser(/) --> javaparser
+   *
+   * @param dir
+   * @return
+   */
+  public static String getDirSimpleName(String dir) {
+    int offset = 0;
+    if (dir.endsWith(File.separator)) {
+      dir = dir.substring(0, dir.lastIndexOf(File.separator));
+      offset = dir.lastIndexOf(File.separator);
+    } else {
+      offset = dir.lastIndexOf(File.separator);
+    }
+    return dir.substring(offset + 1);
+  }
 }
