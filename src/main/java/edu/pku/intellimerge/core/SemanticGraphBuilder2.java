@@ -332,13 +332,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       nodeType = cid.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
       nodeType = cid.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
     }
-    // TODO why the toString cannot be resolved?
     List<String> modifiers = new ArrayList<>();
-    //    List<String> modifiers =
-    //        td.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+
     String access = td.getAccessSpecifier().asString();
-    //
-    // Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
+    // why the map(Modifier::toString) cannot be resolved for td, but no problem with md and fd?
+    modifiers = (List<String>) td.getModifiers().stream().map(modifier -> modifier.toString()).collect(Collectors.toList());
+
     String originalSignature = getTypeOriginalSignature(td);
 
     TypeDeclNode tdNode =
