@@ -188,7 +188,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""));
     String relativePath =
         absolutePath.replace(
-            FilesManager.formatPathSeparator(targetDir + File.separator + side.asString() + File.separator), "");
+            FilesManager.formatPathSeparator(
+                targetDir + File.separator + side.asString() + File.separator),
+            "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
     boolean isInChangedFile =
@@ -336,7 +338,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
 
     String access = td.getAccessSpecifier().asString();
     // why the map(Modifier::toString) cannot be resolved for td, but no problem with md and fd?
-    modifiers = (List<String>) td.getModifiers().stream().map(modifier -> modifier.toString()).collect(Collectors.toList());
+    modifiers =
+        (List<String>)
+            td.getModifiers()
+                .stream()
+                .map(modifier -> modifier.toString())
+                .collect(Collectors.toList());
 
     String originalSignature = getTypeOriginalSignature(td);
 
@@ -370,7 +377,18 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     List<String> modifiers;
     String access, displayName, qualifiedName, originalSignature;
     // if contains nested type declaration, iterate into it
-    for (Node child : td.getChildNodes()) {
+    List<Node> orderedChildNodes = new ArrayList<>(td.getChildNodes());
+    orderedChildNodes.sort(
+        new Comparator<Node>() {
+          @Override
+          public int compare(Node o1, Node o2) {
+            Integer startLine1 = o1.getRange().get().begin.line;
+            Integer startLine2 = o2.getRange().get().begin.line;
+            return startLine1.compareTo(startLine2);
+          }
+        });
+
+    for (Node child : orderedChildNodes) {
       if (child instanceof TypeDeclaration) {
         TypeDeclaration childTD = (TypeDeclaration) child;
         if (childTD.isNestedType()) {
@@ -394,7 +412,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           EnumConstantDeclaration ecd = (EnumConstantDeclaration) child;
           displayName = ecd.getNameAsString();
           qualifiedName = qualifiedTypeName + "." + displayName;
-          String body = ecd.toString().replace(displayName, "");
+          String body = "(" + ecd.getChildNodes().get(1).toString() + ")";
           EnumConstantDeclNode ecdNode =
               new EnumConstantDeclNode(
                   nodeCount++,

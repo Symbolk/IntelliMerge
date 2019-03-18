@@ -23,7 +23,8 @@ public class Graph2CodePrinter {
    * @return
    */
   public static String printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
-    String resultFilePath = FilesManager.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
+    String resultFilePath =
+        FilesManager.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getComment()).append("\n");
@@ -66,6 +67,7 @@ public class Graph2CodePrinter {
                   "/\\* >>>>>>> " + Side.THEIRS.asString() + " \\*/",
                   ">>>>>>> " + Side.THEIRS.asString());
     } catch (FormatterException e) {
+      System.err.println(reformattedCode);
       e.printStackTrace();
     }
     return reformattedCode;
@@ -90,11 +92,18 @@ public class Graph2CodePrinter {
         builder.append("{\n");
       }
       if (node.getNodeType().equals(NodeType.ENUM)) {
-        for (int i = 0; i < node.getChildren().size(); ++i) {
-          if (i != 0) {
-            builder.append(",");
+        int childrenSize = node.getChildren().size();
+        for (int i = 0; i < childrenSize; ++i) {
+          SemanticNode child = node.getChildAtPosition(i);
+          builder.append(printNode(child));
+          if (i + 1 < childrenSize && child.getNodeType().equals(NodeType.ENUM_CONSTANT)) {
+            // if next is another constant
+            if (node.getChildAtPosition(i + 1).getNodeType().equals(NodeType.ENUM_CONSTANT)) {
+              builder.append(",");
+            } else {
+              builder.append(";");
+            }
           }
-          builder.append(printNode(node.getChildAtPosition(i)));
         }
       } else {
         for (SemanticNode child : node.getChildren()) {
