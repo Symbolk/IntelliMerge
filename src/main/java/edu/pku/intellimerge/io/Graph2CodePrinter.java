@@ -26,10 +26,11 @@ public class Graph2CodePrinter {
     String resultFilePath = FilesManager.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
-    builder.append(cu.getPackageStatement());
+    builder.append(cu.getComment()).append("\n");
+    builder.append(cu.getPackageStatement()).append("\n");
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
     // merged content, field-constructor-method, and reformat in google-java-format
-    builder.append(printNode(node));
+    builder.append("\n").append(printNode(node));
     String reformattedCode = reformatCode(builder.toString());
     FilesManager.writeContent(resultFilePath, reformattedCode);
     return resultFilePath;

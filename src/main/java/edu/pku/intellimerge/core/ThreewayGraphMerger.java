@@ -88,7 +88,7 @@ public class ThreewayGraphMerger {
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
         CompilationUnitNode mergedPackageAndImports =
-            mergePackageAndImports(mapping.baseNode.get());
+            mergeCUHeader(mapping.baseNode.get());
         if (mergedCU != null && mergedPackageAndImports != null) {
           // save the merged result to file
           String resultFilePath =
@@ -101,7 +101,12 @@ public class ThreewayGraphMerger {
     return mergedFilePaths;
   }
 
-  private CompilationUnitNode mergePackageAndImports(SemanticNode node) {
+  /**
+   * Merge the header part of CU, including comment, package and imports
+   * @param node
+   * @return
+   */
+  private CompilationUnitNode mergeCUHeader(SemanticNode node) {
     if (node instanceof CompilationUnitNode) {
       CompilationUnitNode mergedCU = (CompilationUnitNode) node;
       SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
@@ -109,6 +114,7 @@ public class ThreewayGraphMerger {
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
+        mergedCU.setComment(mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
         mergedCU.setPackageStatement(
             mergeTextually(
                 oursCU.getPackageStatement(),
