@@ -89,7 +89,7 @@ public class Graph2CodePrinter {
       } else {
         builder.append(node.getOriginalSignature());
       }
-      builder.append(((TerminalNode) node).getBody());
+      builder.append(((TerminalNode) node).getBody()).append("\n");
     } else if (node instanceof NonTerminalNode) {
       if (!node.getNodeType().equals(NodeType.CU)) {
         builder.append(node.getComment());

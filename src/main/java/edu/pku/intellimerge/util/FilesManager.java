@@ -4,6 +4,8 @@ import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
+import edu.pku.intellimerge.model.constant.Side;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,14 +204,14 @@ public class FilesManager {
   /**
    * Empty the result folder
    *
-   * @param resultDir absolute path
+   * @param dir absolute path
    * @return
    */
-  public static void clearResultDir(String resultDir) {
+  public static void clearDir(String dir) {
     // if exist, remove all files under it
-    File dirFile = new File(resultDir);
-    if (dirFile.exists()) {
-      emptyFolder(resultDir);
+    File dirFile = new File(dir);
+    if (dirFile.exists() && dirFile.isDirectory()) {
+      emptyFolder(dir);
     } else {
       // if not exist, create
       dirFile.mkdirs();
@@ -351,7 +353,10 @@ public class FilesManager {
     return dir.substring(offset + 1);
   }
 
-  /** Format source code files with google-java-formatter for comparing with other results */
+  /**
+   * (For evaluation) Format source code files with google-java-formatter for comparing with other
+   * results
+   */
   public static void formatManualMergedResults(String manualMergedDir) {
     // read file content as string
     File file = new File(manualMergedDir);
@@ -375,6 +380,56 @@ public class FilesManager {
       }
     } else {
       logger.error("{} does not exist!", manualMergedDir);
+    }
+  }
+
+  /**
+   * (For evaluation) Copy all versions of specific file from the source folder to the target folder
+   * (like a sandbox)
+   *
+   * @param sourceDir
+   * @param relativePaths
+   * @param targetDir
+   */
+  public static void copyAllVersions(
+      String sourceDir, List<String> relativePaths, String targetDir) {
+    try {
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.OURS);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.BASE);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.THEIRS);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.MANUAL);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.GIT);
+//      copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Copy one version every time
+   *
+   * @param sourceDir
+   * @param relativePaths
+   * @param targetDir
+   * @param side
+   * @throws IOException
+   */
+  private static void copyOneVersion(
+      String sourceDir, List<String> relativePaths, String targetDir, Side side)
+      throws IOException {
+    clearDir(targetDir + File.separator + side.asString());
+    for (String relativePath : relativePaths) {
+      File sourceFile =
+          new File(sourceDir + File.separator + side.asString() + File.separator + relativePath);
+      File targetFile =
+          new File(
+              targetDir + File.separator + side.asString() + File.separator + sourceFile.getName());
+      if (sourceFile.exists()) {
+        FileUtils.copyFile(sourceFile, targetFile);
+        logger.info("Copying {}...", sourceFile.getName());
+      } else {
+        logger.error("{} not exists", sourceFile.getAbsolutePath());
+      }
     }
   }
 }
