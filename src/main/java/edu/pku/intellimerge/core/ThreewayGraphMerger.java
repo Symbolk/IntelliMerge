@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.core;
 
 import com.google.common.base.Stopwatch;
-import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -30,11 +29,10 @@ import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
-  private Logger logger = LoggerFactory.getLogger(ThreewayGraphMerger.class);
-
   public TwowayMatching b2oMatching;
   public TwowayMatching b2tMatching;
   public List<ThreewayMapping> mapping;
+  private Logger logger = LoggerFactory.getLogger(ThreewayGraphMerger.class);
   private String resultDir; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
@@ -73,7 +71,14 @@ public class ThreewayGraphMerger {
       logger.info("({}ms) Matching base and theirs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
       // collect CU mapping that need to merge
-      for (SemanticNode node : baseGraph.vertexSet()) {
+      Set<SemanticNode> internalAndNeedToMergeNodes =
+          baseGraph
+              .vertexSet()
+              .stream()
+              .filter(SemanticNode::isInternal)
+              .filter(SemanticNode::needToMerge)
+              .collect(Collectors.toSet());
+      for (SemanticNode node : internalAndNeedToMergeNodes) {
         if (node instanceof CompilationUnitNode) {
           CompilationUnitNode cu = (CompilationUnitNode) node;
           if (cu.needToMerge() == true) {

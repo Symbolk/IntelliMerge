@@ -49,13 +49,14 @@ public abstract class SemanticNode {
   }
 
   public SemanticNode(
-          Integer nodeID,
-          Boolean needToMerge,
-          NodeType nodeType,
-          String displayName,
-          String qualifiedName,
-          String originalSignature,
-          String comment,boolean isInternal) {
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature,
+      String comment,
+      boolean isInternal) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -119,13 +120,12 @@ public abstract class SemanticNode {
   }
 
   public Integer hashCodeSignature() {
-    return getSignature().hashCode();
+    return (getNodeType() + getSignature()).hashCode();
   }
 
   public Boolean needToMerge() {
     return needToMerge;
   }
-
 
   /**
    * Clone the object without children and edges

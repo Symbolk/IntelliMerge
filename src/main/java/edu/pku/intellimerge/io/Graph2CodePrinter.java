@@ -6,6 +6,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
+import edu.pku.intellimerge.model.node.InitializerDeclNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.FilesManager;
@@ -83,7 +84,11 @@ public class Graph2CodePrinter {
     StringBuilder builder = new StringBuilder();
     if (node instanceof TerminalNode) {
       builder.append(node.getComment());
-      builder.append(node.getOriginalSignature());
+      if (node.getNodeType().equals(NodeType.INITIALIZER_BLOCK)) {
+        builder.append(node.getOriginalSignature().contains("static") ? "static" : "");
+      } else {
+        builder.append(node.getOriginalSignature());
+      }
       builder.append(((TerminalNode) node).getBody());
     } else if (node instanceof NonTerminalNode) {
       if (!node.getNodeType().equals(NodeType.CU)) {

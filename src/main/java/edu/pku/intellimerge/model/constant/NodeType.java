@@ -19,7 +19,8 @@ public enum NodeType {
   CONSTRUCTOR(6, "constructor"),
   FIELD(6, "field"),
   METHOD(6, "method"),
-  ENUM_CONSTANT(6, "enum_constant");
+  ENUM_CONSTANT(6, "enum_constant"),
+  INITIALIZER_BLOCK(6, "initializer_block");
 
   // the hierarchy/nesting level of code elements, from outer to inner
   public int level;

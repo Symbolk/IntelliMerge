@@ -2,7 +2,6 @@ package edu.pku.intellimerge.evaluation;
 
 import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.FilesManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,18 +40,15 @@ public class Evaluator {
               MERGE_RESULT_DIR,
               STATISTICS_PATH,
               DOT_DIR);
-            String targetDir =
-       "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
-//      String targetDir = "D:\\github\\test";
+//      String targetDir = "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
+            String targetDir = "D:\\github\\test";
       String mergeResultDir = targetDir + File.separator + Side.INTELLI.asString() + File.separator;
       String manualMergedDir = targetDir + File.separator + Side.MANUAL.asString() + File.separator;
       apiClient.processDirectory(targetDir, mergeResultDir);
-//      FilesManager.formatManualMergedResults(manualMergedDir);
+      //      FilesManager.formatManualMergedResults(manualMergedDir);
 
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
-
-
 }

@@ -112,7 +112,6 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     if (hasMultiModule) {
       // multi-module project: separated source folder for sub-projects/modules
       ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-
       for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
         parseResults.addAll(sourceRoot.tryToParseParallelized());
       }
@@ -515,7 +514,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           graph.addEdge(
               tdNode, cdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
 
-          processMethodOrConstructorBody(cd, cdNode);
+          processBodyContent(cd, cdNode);
         }
         // 6. method
         if (child instanceof MethodDeclaration) {
@@ -531,14 +530,19 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           access = md.getAccessSpecifier().asString();
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
-          List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
-          List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+          List<String> annotations =
+              md.getAnnotations()
+                  .stream()
+                  .map(AnnotationExpr::toString)
+                  .collect(Collectors.toList());
+          List<String> typeParameters =
+              md.getTypeParameters()
+                  .stream()
+                  .map(TypeParameter::asString)
+                  .collect(Collectors.toList());
 
           List<String> parameterList =
-                  md.getParameters()
-                          .stream()
-                          .map(Parameter::toString)
-                          .collect(Collectors.toList());
+              md.getParameters().stream().map(Parameter::toString).collect(Collectors.toList());
 
           List<String> parameterTypes =
               md.getParameters()
@@ -583,8 +587,36 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           graph.addEdge(
               tdNode, mdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
 
-          processMethodOrConstructorBody(md, mdNode);
+          processBodyContent(md, mdNode);
         }
+      }
+
+      // 7. initializer block
+      if (child instanceof InitializerDeclaration) {
+        InitializerDeclaration id = (InitializerDeclaration) child;
+        // since initializer has no name, use the parent type declaration as its name]
+        displayName = td.getNameAsString();
+        qualifiedTypeName = packageName + "." + displayName;
+        String signature = displayName + "." + (id.isStatic() ? "static{}" : "{}");
+        InitializerDeclNode idNode =
+            new InitializerDeclNode(
+                nodeCount++,
+                isInChangedFile,
+                NodeType.INITIALIZER_BLOCK,
+                displayName,
+                qualifiedTypeName,
+                signature,
+                id.getComment().map(Comment::toString).orElse(""),
+                id.isStatic(),
+                id.getBody().toString(),
+                id.getRange());
+        graph.addVertex(idNode);
+
+        tdNode.appendChild(idNode);
+        graph.addEdge(
+            tdNode, idNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, idNode));
+
+        processBodyContent(id, idNode);
       }
     }
   }
@@ -596,9 +628,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param cd
    * @param node
    */
-  private void processMethodOrConstructorBody(CallableDeclaration cd, TerminalNode node) {
-    String displayName = "";
-    String qualifiedName = "";
+  private void processBodyContent(Node cd, TerminalNode node) {
     // 1 new instance
     List<ObjectCreationExpr> objectCreationExprs = cd.findAll(ObjectCreationExpr.class);
     List<String> createObjectNames = new ArrayList<>();
