@@ -1,5 +1,7 @@
 package edu.pku.intellimerge.util;
 
+import com.google.googlejavaformat.java.Formatter;
+import com.google.googlejavaformat.java.FormatterException;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import org.slf4j.Logger;
@@ -347,5 +349,31 @@ public class FilesManager {
       offset = dir.lastIndexOf(File.separator);
     }
     return dir.substring(offset + 1);
+  }
+
+  /** Format source code files with google-java-formatter for comparing with other results */
+  public static void formatManualMergedResults(String manualMergedDir) {
+    // read file content as string
+    File file = new File(manualMergedDir);
+    if (file.exists()) {
+      File[] files = file.listFiles();
+      for (File f : files) {
+        if (f.isDirectory()) {
+          formatManualMergedResults(f.getAbsolutePath());
+        } else if (f.isFile() && isJavaFile(f)) {
+          String code = readFileContent(f);
+          try{
+            // format with google-java-formatter
+            String reformattedCode = new Formatter().formatSource(code);
+            // write string back into the original file
+            writeContent(f.getAbsolutePath(), reformattedCode);
+          }catch (FormatterException e){
+            e.printStackTrace();
+          }
+        }
+      }
+    } else {
+      logger.error("{} does not exist!", manualMergedDir);
+    }
   }
 }
