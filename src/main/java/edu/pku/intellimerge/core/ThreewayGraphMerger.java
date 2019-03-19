@@ -7,9 +7,7 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
-import edu.pku.intellimerge.model.node.CompilationUnitNode;
-import edu.pku.intellimerge.model.node.NonTerminalNode;
-import edu.pku.intellimerge.model.node.TerminalNode;
+import edu.pku.intellimerge.model.node.*;
 import edu.pku.intellimerge.util.FilesManager;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
@@ -23,6 +21,7 @@ import org.jgrapht.Graph;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
@@ -87,8 +86,7 @@ public class ThreewayGraphMerger {
         // merge the CU by merging its content
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
-        CompilationUnitNode mergedPackageAndImports =
-            mergeCUHeader(mapping.baseNode.get());
+        CompilationUnitNode mergedPackageAndImports = mergeCUHeader(mapping.baseNode.get());
         if (mergedCU != null && mergedPackageAndImports != null) {
           // save the merged result to file
           String resultFilePath =
@@ -103,6 +101,7 @@ public class ThreewayGraphMerger {
 
   /**
    * Merge the header part of CU, including comment, package and imports
+   *
    * @param node
    * @return
    */
@@ -114,7 +113,8 @@ public class ThreewayGraphMerger {
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
-        mergedCU.setComment(mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
+        mergedCU.setComment(
+            mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
         mergedCU.setPackageStatement(
             mergeTextually(
                 oursCU.getPackageStatement(),
@@ -129,15 +129,6 @@ public class ThreewayGraphMerger {
       }
     }
     return null;
-  }
-
-  /** Merge 3 graphs simply with jgrapht functions */
-  private void mergeByAdding() {
-    Graph<SemanticNode, SemanticEdge> mergedGraph =
-        baseGraph; // inference copy, in fact mergedGraph points to baseGraph
-    //      System.out.println(Graphs.addGraph(mergedGraph, oursGraph));
-    //    System.out.println(Graphs.addGraph(mergedGraph, theirsGraph));
-    //    SemanticGraphExporter.printAsDot(mergedGraph);
   }
 
   /**
@@ -161,11 +152,7 @@ public class ThreewayGraphMerger {
         String mergedComment =
             mergeTextually(
                 oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
-        String mergedSignature =
-            mergeTextually(
-                oursTerminal.getOriginalSignature(),
-                baseTerminal.getOriginalSignature(),
-                theirsTerminal.getOriginalSignature());
+        String mergedSignature = mergeComponents(oursTerminal, baseTerminal, theirsTerminal);
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
@@ -193,6 +180,69 @@ public class ThreewayGraphMerger {
       mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
       return mergedNonTerminal;
     }
+  }
+
+  /**
+   * Merge signature of terminal nodes by merging composing components
+   *
+   * @param ours
+   * @param base
+   * @param theirs
+   */
+  private String mergeComponents(TerminalNode ours, TerminalNode base, TerminalNode theirs) {
+    StringBuilder builder = new StringBuilder();
+    if (ours.getNodeType().equals(NodeType.METHOD)) {
+      MethodDeclNode oursMD = (MethodDeclNode) ours;
+      MethodDeclNode baseMD = (MethodDeclNode) base;
+      MethodDeclNode theirsMD = (MethodDeclNode) theirs;
+      //      builder.append(mergeTextually(oursMD.getAccess(), baseMD.getAccess(),
+      // theirsMD.getAccess()));
+      // access is considered to be part of modifiers
+      builder
+          .append(
+              mergeByUnion(oursMD.getModifiers(), baseMD.getModifiers(), theirsMD.getModifiers()))
+          .append(" ");
+      builder
+          .append(
+              mergeTextually(
+                  oursMD.getReturnType(), baseMD.getReturnType(), theirsMD.getReturnType()))
+          .append(" ");
+      builder
+          .append(
+              mergeTextually(
+                  oursMD.getMethodName(), baseMD.getMethodName(), theirsMD.getMethodName()))
+          .append("(");
+      builder
+          .append(
+              mergeTextually(
+                  oursMD.getParameterString(),
+                  baseMD.getParameterString(),
+                  theirsMD.getParameterString()))
+          .append(")");
+    } else if (ours.getNodeType().equals(NodeType.FIELD)) {
+      FieldDeclNode oursFD = (FieldDeclNode) ours;
+      FieldDeclNode baseFD = (FieldDeclNode) base;
+      FieldDeclNode theirsFD = (FieldDeclNode) theirs;
+      builder
+          .append(
+              mergeByUnion(oursFD.getModifiers(), baseFD.getModifiers(), theirsFD.getModifiers()))
+          .append(" ");
+      builder
+          .append(
+              mergeTextually(oursFD.getFieldType(), baseFD.getFieldType(), theirsFD.getFieldType()))
+          .append(" ");
+      builder
+          .append(
+              mergeTextually(oursFD.getFieldName(), baseFD.getFieldName(), theirsFD.getFieldName()))
+          .append(" ");
+    } else {
+      builder.append(
+          mergeTextually(
+              ours.getOriginalSignature(),
+              base.getOriginalSignature(),
+              theirs.getOriginalSignature()));
+    }
+    return builder.toString();
   }
 
   /**
@@ -298,5 +348,22 @@ public class ThreewayGraphMerger {
       e.printStackTrace();
     }
     return textualMergeResult;
+  }
+
+  /**
+   * Merge list of strings by union
+   *
+   * @param left
+   * @param base
+   * @param right
+   * @return
+   */
+  private String mergeByUnion(List<String> left, List<String> base, List<String> right) {
+    List<String> unionList = new ArrayList<>();
+    unionList.addAll(left);
+    unionList.addAll(base);
+    unionList.addAll(right);
+    String unionString = unionList.stream().distinct().collect(Collectors.joining(" "));
+    return unionString;
   }
 }

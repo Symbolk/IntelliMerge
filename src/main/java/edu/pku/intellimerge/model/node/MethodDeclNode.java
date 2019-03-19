@@ -72,14 +72,7 @@ public class MethodDeclNode extends TerminalNode {
       String methodName,
       List<String> parameterNames,
       Optional<Range> range) {
-    super(
-        nodeID,
-        needToMerge,
-        nodeType,
-        displayName,
-        qualifiedName,
-        originalSignature
-        , range);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, range);
     this.methodName = methodName;
     this.parameterNames = parameterNames;
 
@@ -89,6 +82,22 @@ public class MethodDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
+  }
+
+  public String getAccess() {
+    return access;
+  }
+
+  public List<String> getModifiers() {
+    return modifiers;
+  }
+
+  public String getReturnType() {
+    return returnType;
+  }
+
+  public List<String> getThrowExceptions() {
+    return throwExceptions;
   }
 
   public String getMethodName() {
@@ -101,5 +110,17 @@ public class MethodDeclNode extends TerminalNode {
 
   public List<String> getParameterNames() {
     return parameterNames;
+  }
+
+  public String getParameterString() {
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < parameterTypes.size(); ++i) {
+      builder.append(parameterTypes.get(i)).append(" ");
+      builder.append(parameterNames.get(i));
+      if (i < parameterNames.size() - 1) {
+        builder.append(", ");
+      }
+    }
+    return builder.toString();
   }
 }
