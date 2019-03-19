@@ -362,12 +362,13 @@ public class FilesManager {
           formatManualMergedResults(f.getAbsolutePath());
         } else if (f.isFile() && isJavaFile(f)) {
           String code = readFileContent(f);
-          try{
+          try {
             // format with google-java-formatter
             String reformattedCode = new Formatter().formatSource(code);
             // write string back into the original file
-            writeContent(f.getAbsolutePath(), reformattedCode);
-          }catch (FormatterException e){
+            boolean isSuccessful = writeContent(f.getAbsolutePath(), reformattedCode);
+            logger.info("Formatting {} : {}", f.getAbsolutePath(), isSuccessful);
+          } catch (FormatterException e) {
             e.printStackTrace();
           }
         }

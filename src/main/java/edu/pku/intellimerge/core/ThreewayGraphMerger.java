@@ -1,5 +1,7 @@
 package edu.pku.intellimerge.core;
 
+import com.google.common.base.Stopwatch;
+import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -17,14 +19,19 @@ import org.eclipse.jgit.merge.MergeAlgorithm;
 import org.eclipse.jgit.merge.MergeFormatter;
 import org.eclipse.jgit.merge.MergeResult;
 import org.jgrapht.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
 public class ThreewayGraphMerger {
+  private Logger logger = LoggerFactory.getLogger(ThreewayGraphMerger.class);
+
   public TwowayMatching b2oMatching;
   public TwowayMatching b2tMatching;
   public List<ThreewayMapping> mapping;
@@ -50,26 +57,39 @@ public class ThreewayGraphMerger {
     // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-    b2oMatcher.topDownMatch();
-    b2oMatcher.bottomUpMatch();
-    b2tMatcher.topDownMatch();
-    b2tMatcher.bottomUpMatch();
-    b2oMatching = b2oMatcher.matching;
-    b2tMatching = b2tMatcher.matching;
 
-    // collect CU mapping that need to merge
-    for (SemanticNode node : baseGraph.vertexSet()) {
-      if (node instanceof CompilationUnitNode) {
-        CompilationUnitNode cu = (CompilationUnitNode) node;
-        if (cu.needToMerge() == true) {
-          ThreewayMapping mapping =
-              new ThreewayMapping(
-                  Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
-                  Optional.of(node),
-                  Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
-          this.mapping.add(mapping);
+    try {
+      ExecutorService executorService = Executors.newFixedThreadPool(2);
+      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
+      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
+
+      Stopwatch stopwatch = Stopwatch.createStarted();
+      b2oMatching = task1.get();
+      stopwatch.stop();
+      logger.info("({}ms) Matching base and ours.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+      stopwatch.reset().start();
+      b2tMatching = task2.get();
+      stopwatch.stop();
+      logger.info("({}ms) Matching base and theirs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+      // collect CU mapping that need to merge
+      for (SemanticNode node : baseGraph.vertexSet()) {
+        if (node instanceof CompilationUnitNode) {
+          CompilationUnitNode cu = (CompilationUnitNode) node;
+          if (cu.needToMerge() == true) {
+            ThreewayMapping mapping =
+                new ThreewayMapping(
+                    Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
+                    Optional.of(node),
+                    Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
+            this.mapping.add(mapping);
+          }
         }
       }
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
     }
   }
 
@@ -121,6 +141,7 @@ public class ThreewayGraphMerger {
                 mergedCU.getPackageStatement(),
                 theirsCU.getPackageStatement()));
 
+        // conservative strategy: remove no imports in case of latent bugs
         Set<String> union = new LinkedHashSet<>();
         union.addAll(oursCU.getImportStatements());
         union.addAll(theirsCU.getImportStatements());

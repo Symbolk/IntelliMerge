@@ -10,10 +10,11 @@ import org.jgrapht.Graph;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class TwowayGraphMatcher {
+public class TwowayGraphMatcher implements Callable<TwowayMatching> {
   public TwowayMatching matching;
 
   private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
@@ -88,9 +89,9 @@ public class TwowayGraphMatcher {
     // 2. Fields
     FieldDeclMatcher fieldDeclMatcher = new FieldDeclMatcher();
     List<SemanticNode> unmatchedFields1 =
-            matching.unmatchedNodes1.getOrDefault(NodeType.FIELD, new ArrayList<>());
+        matching.unmatchedNodes1.getOrDefault(NodeType.FIELD, new ArrayList<>());
     List<SemanticNode> unmatchedFields2 =
-            matching.unmatchedNodes2.getOrDefault(NodeType.FIELD, new ArrayList<>());
+        matching.unmatchedNodes2.getOrDefault(NodeType.FIELD, new ArrayList<>());
     if (!unmatchedFields1.isEmpty() && !unmatchedFields2.isEmpty()) {
       fieldDeclMatcher.matchFields(matching, unmatchedFields1, unmatchedFields2);
     }
@@ -111,5 +112,12 @@ public class TwowayGraphMatcher {
                 .sorted(Comparator.comparing(SemanticNode::getLevel).reversed())
                 .collect(Collectors.toList()));
     return unMatchedNodesSorted;
+  }
+
+  @Override
+  public TwowayMatching call() {
+    topDownMatch();
+    bottomUpMatch();
+    return matching;
   }
 }
