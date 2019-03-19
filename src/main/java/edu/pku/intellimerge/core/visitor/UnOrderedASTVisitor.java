@@ -5,9 +5,11 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -93,6 +95,10 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
     int edgeCount = graph.edgeSet().size();
     String displayName = md.getSignature().toString();
     String qualifiedName = "" + "." + displayName;
+    List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
+    List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+
+    String access = md.getAccessSpecifier().asString();
     List<String> modifiers =
         md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
     List<String> parameterTypes =
@@ -103,7 +109,6 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
             .collect(Collectors.toList());
     List<String> parameterNames =
         md.getParameters().stream().map(Parameter::getNameAsString).collect(Collectors.toList());
-    String access = md.getAccessSpecifier().asString();
     List<String> throwsExceptions =
         md.getThrownExceptions().stream().map(ReferenceType::toString).collect(Collectors.toList());
     MethodDeclNode mdNode =
@@ -115,8 +120,10 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
             qualifiedName,
             md.getDeclarationAsString(),
             md.getComment().map(Comment::getContent).orElse(""),
+            annotations,
             access,
             modifiers,
+            typeParameters,
             md.getTypeAsString(),
             displayName.substring(0, displayName.indexOf("(")),
             parameterTypes,

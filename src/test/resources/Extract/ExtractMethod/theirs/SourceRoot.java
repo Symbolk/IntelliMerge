@@ -84,7 +84,8 @@ public class SourceRoot {
             Log.trace("Saving %s", path);
             path.getParent().toFile().mkdirs();
 
-            try (PrintWriter out = new PrintWriter(path.toFile(), StandardCharsets.UTF_8.displayName())) {
+            try (PrintWriter out = 
+			new PrintWriter(path.toFile(), StandardCharsets.UTF_8.displayName())) {
                 out.println(new PrettyPrinter().print(cu.getValue().getResult().get()));
             }
         }
@@ -97,6 +98,7 @@ public class SourceRoot {
     public Map<Path, ParseResult<CompilationUnit>> getContent() {
         return content;
     }
+
 
     /**
      * The CompilationUnits of the Java files that have been parsed succesfully by this source root object,

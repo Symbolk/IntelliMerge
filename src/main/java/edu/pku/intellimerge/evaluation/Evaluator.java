@@ -48,4 +48,11 @@ public class Evaluator {
       e.printStackTrace();
     }
   }
+
+  /**   
+   * Format source code files with google-java-format for comparing with other results
+   */
+  private static void formatManual(String manualMergedDir){
+
+  }
 }

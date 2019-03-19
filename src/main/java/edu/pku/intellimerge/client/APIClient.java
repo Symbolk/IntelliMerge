@@ -208,7 +208,6 @@ public class APIClient {
   public void processDirectory(String targetDir, String resultDir) throws Exception {
     String targetDirName = FilesManager.getDirSimpleName(targetDir);
 
-    Stopwatch stopwatch = Stopwatch.createStarted();
     boolean hasMultipleModule = true;
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
@@ -221,6 +220,8 @@ public class APIClient {
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
             new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModule));
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();

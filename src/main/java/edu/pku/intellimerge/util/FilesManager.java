@@ -235,7 +235,7 @@ public class FilesManager {
         temp.delete();
       } else {
         if (!temp.delete()) {
-          System.err.println("Failed to delete " + name);
+          System.err.println("Failed to delete the directory: " + name);
         }
       }
     }

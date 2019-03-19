@@ -122,7 +122,7 @@ public class MethodDeclMatcher {
             SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
                 + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
 
-        // TODO improve precision
+        // TODO another way to save and consume the matched nodes
         if (similarityAfter >= similarityBefore) {
           matching.addMatchingEdge(
               callerBase, caller, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);

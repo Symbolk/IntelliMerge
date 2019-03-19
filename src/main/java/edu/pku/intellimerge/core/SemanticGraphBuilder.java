@@ -5,13 +5,11 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedEnumConstantDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
@@ -506,8 +504,12 @@ public class SemanticGraphBuilder {
           }
           displayName = md.getSignature().toString();
           qualifiedName = qualifiedTypeName + "." + displayName;
+          access = md.getAccessSpecifier().asString();
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+          List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
+          List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+
           List<String> parameterTypes =
               md.getParameters()
                   .stream()
@@ -519,7 +521,6 @@ public class SemanticGraphBuilder {
                   .stream()
                   .map(Parameter::getNameAsString)
                   .collect(Collectors.toList());
-          access = md.getAccessSpecifier().asString();
           List<String> throwsExceptions =
               md.getThrownExceptions()
                   .stream()
@@ -534,8 +535,10 @@ public class SemanticGraphBuilder {
                   qualifiedName,
                   md.getDeclarationAsString(),
                   md.getComment().map(Comment::toString).orElse(""),
+                  annotations,
                   access,
                   modifiers,
+                  typeParameters,
                   md.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
                   parameterTypes,

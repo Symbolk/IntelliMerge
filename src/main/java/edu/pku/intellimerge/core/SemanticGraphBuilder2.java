@@ -9,6 +9,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -526,8 +527,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           }
           displayName = md.getSignature().toString();
           qualifiedName = qualifiedTypeName + "." + displayName;
+
+          access = md.getAccessSpecifier().asString();
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+          List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
+          List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
           List<String> parameterTypes =
               md.getParameters()
                   .stream()
@@ -539,7 +544,6 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .stream()
                   .map(Parameter::getNameAsString)
                   .collect(Collectors.toList());
-          access = md.getAccessSpecifier().asString();
           List<String> throwsExceptions =
               md.getThrownExceptions()
                   .stream()
@@ -554,8 +558,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   qualifiedName,
                   md.getDeclarationAsString(),
                   md.getComment().map(Comment::toString).orElse(""),
+                  annotations,
                   access,
                   modifiers,
+                  typeParameters,
                   md.getTypeAsString(),
                   displayName.substring(0, displayName.indexOf("(")),
                   parameterTypes,

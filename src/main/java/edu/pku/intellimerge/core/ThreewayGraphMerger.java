@@ -200,8 +200,32 @@ public class ThreewayGraphMerger {
       // access is considered to be part of modifiers
       builder
           .append(
-              mergeByUnion(oursMD.getModifiers(), baseMD.getModifiers(), theirsMD.getModifiers()))
+              mergeByUnion(
+                  oursMD.getAnnotations(),
+                  baseMD.getAnnotations(),
+                  theirsMD.getAnnotations(),
+                  "\n"))
+          .append("\n");
+      builder
+          .append(
+              mergeByUnion(
+                  oursMD.getModifiers(), baseMD.getModifiers(), theirsMD.getModifiers(), " "))
           .append(" ");
+      if (oursMD.getTypeParameters().size()
+              + baseMD.getTypeParameters().size()
+              + theirsMD.getTypeParameters().size()
+          > 0) {
+
+        builder
+            .append("<")
+            .append(
+                mergeByUnion(
+                    oursMD.getTypeParameters(),
+                    baseMD.getTypeParameters(),
+                    theirsMD.getTypeParameters(),
+                    ","))
+            .append("> ");
+      }
       builder
           .append(
               mergeTextually(
@@ -219,13 +243,20 @@ public class ThreewayGraphMerger {
                   baseMD.getParameterString(),
                   theirsMD.getParameterString()))
           .append(")");
+      builder.append(
+          mergeByUnion(
+              oursMD.getThrowExceptions(),
+              baseMD.getThrowExceptions(),
+              theirsMD.getThrowExceptions(),
+              ","));
     } else if (ours.getNodeType().equals(NodeType.FIELD)) {
       FieldDeclNode oursFD = (FieldDeclNode) ours;
       FieldDeclNode baseFD = (FieldDeclNode) base;
       FieldDeclNode theirsFD = (FieldDeclNode) theirs;
       builder
           .append(
-              mergeByUnion(oursFD.getModifiers(), baseFD.getModifiers(), theirsFD.getModifiers()))
+              mergeByUnion(
+                  oursFD.getModifiers(), baseFD.getModifiers(), theirsFD.getModifiers(), " "))
           .append(" ");
       builder
           .append(
@@ -358,12 +389,13 @@ public class ThreewayGraphMerger {
    * @param right
    * @return
    */
-  private String mergeByUnion(List<String> left, List<String> base, List<String> right) {
+  private String mergeByUnion(
+      List<String> left, List<String> base, List<String> right, String delimiter) {
     List<String> unionList = new ArrayList<>();
     unionList.addAll(left);
     unionList.addAll(base);
     unionList.addAll(right);
-    String unionString = unionList.stream().distinct().collect(Collectors.joining(" "));
+    String unionString = unionList.stream().distinct().collect(Collectors.joining(delimiter));
     return unionString;
   }
 }

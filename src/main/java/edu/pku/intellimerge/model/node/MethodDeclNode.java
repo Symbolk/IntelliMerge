@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Optional;
 
 public class MethodDeclNode extends TerminalNode {
+  private List<String> annotations;
   private String access;
   private List<String> modifiers;
+  private List<String> typeParameters;
   private String returnType;
   private String methodName;
   private List<String> parameterTypes;
@@ -25,8 +27,10 @@ public class MethodDeclNode extends TerminalNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String access,
       List<String> modifiers,
+      List<String> typeParameters,
       String returnType,
       String methodName,
       List<String> parameterTypes,
@@ -44,8 +48,10 @@ public class MethodDeclNode extends TerminalNode {
         comment,
         body,
         range); // block or ""(abstract method or interface)
+    this.annotations = annotations;
     this.access = access;
     this.modifiers = modifiers;
+    this.typeParameters = typeParameters;
     this.returnType = returnType;
     this.methodName = methodName;
     this.parameterTypes = parameterTypes;
@@ -122,5 +128,13 @@ public class MethodDeclNode extends TerminalNode {
       }
     }
     return builder.toString();
+  }
+
+  public List<String> getAnnotations() {
+    return annotations;
+  }
+
+  public List<String> getTypeParameters() {
+    return typeParameters;
   }
 }
