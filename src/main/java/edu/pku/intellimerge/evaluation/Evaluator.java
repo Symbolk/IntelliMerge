@@ -41,7 +41,9 @@ public class Evaluator {
               MERGE_RESULT_DIR,
               STATISTICS_PATH,
               DOT_DIR);
-      String targetDir = "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
+      //      String targetDir =
+      // "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
+      String targetDir = "D:\\github\\test";
       String mergeResultDir = targetDir + File.separator + Side.INTELLI.asString() + File.separator;
       apiClient.processDirectory(targetDir, mergeResultDir);
     } catch (Exception e) {
@@ -49,7 +51,7 @@ public class Evaluator {
     }
   }
 
-  /**   
+  /**
    * Format source code files with google-java-format for comparing with other results
    */
   private static void formatManual(String manualMergedDir){

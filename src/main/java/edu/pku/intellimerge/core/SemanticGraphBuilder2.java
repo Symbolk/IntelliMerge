@@ -533,6 +533,13 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
           List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
           List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+
+          List<String> parameterList =
+                  md.getParameters()
+                          .stream()
+                          .map(Parameter::toString)
+                          .collect(Collectors.toList());
+
           List<String> parameterTypes =
               md.getParameters()
                   .stream()
@@ -569,6 +576,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   throwsExceptions,
                   md.getBody().map(BlockStmt::toString).orElse(";"),
                   md.getRange());
+          mdNode.setParameterList(parameterList);
           graph.addVertex(mdNode);
 
           tdNode.appendChild(mdNode);

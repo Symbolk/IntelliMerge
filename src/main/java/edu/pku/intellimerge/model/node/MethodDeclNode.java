@@ -17,6 +17,8 @@ public class MethodDeclNode extends TerminalNode {
   private String methodName;
   private List<String> parameterTypes;
   private List<String> parameterNames;
+  // fully parameter list, with modifier type name
+  private List<String> parameterList;
   private List<String> throwExceptions;
 
   public MethodDeclNode(
@@ -118,12 +120,15 @@ public class MethodDeclNode extends TerminalNode {
     return parameterNames;
   }
 
+  public void setParameterList(List<String> parameterList) {
+    this.parameterList = parameterList;
+  }
+
   public String getParameterString() {
     StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < parameterTypes.size(); ++i) {
-      builder.append(parameterTypes.get(i)).append(" ");
-      builder.append(parameterNames.get(i));
-      if (i < parameterNames.size() - 1) {
+    for (int i = 0; i < parameterList.size(); ++i) {
+      builder.append(parameterList.get(i));
+      if (i < parameterList.size() - 1) {
         builder.append(", ");
       }
     }

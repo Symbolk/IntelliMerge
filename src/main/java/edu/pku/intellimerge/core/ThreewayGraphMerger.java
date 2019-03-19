@@ -103,7 +103,7 @@ public class ThreewayGraphMerger {
    * Merge the header part of CU, including comment, package and imports
    *
    * @param node
-   * @return
+   * @return a CUNode with header merged
    */
   private CompilationUnitNode mergeCUHeader(SemanticNode node) {
     if (node instanceof CompilationUnitNode) {
@@ -140,10 +140,10 @@ public class ThreewayGraphMerger {
   private SemanticNode mergeSingleNode(SemanticNode node) {
     // if node is terminal: merge and return result
     SemanticNode mergedNode = node.shallowClone();
+    SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
+    SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
     if (node instanceof TerminalNode) {
       TerminalNode mergedTerminal = (TerminalNode) mergedNode;
-      SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
-      SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
       if (oursNode != null && theirsNode != null) {
         // exist in BothSides side
         TerminalNode oursTerminal = (TerminalNode) oursNode;
@@ -178,6 +178,12 @@ public class ThreewayGraphMerger {
       // if parent matched, insert it into the children of parent, between nearest neighbors
       mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
       mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
+      // merge the comment and signature in the last
+      String mergedComment =
+          mergeTextually(oursNode.getComment(), oursNode.getComment(), oursNode.getComment());
+      String mergedSignature = mergeComponents(oursNode, oursNode, oursNode);
+      mergedNonTerminal.setComment(mergedComment);
+      mergedNonTerminal.setOriginalSignature(mergedSignature);
       return mergedNonTerminal;
     }
   }
@@ -189,7 +195,7 @@ public class ThreewayGraphMerger {
    * @param base
    * @param theirs
    */
-  private String mergeComponents(TerminalNode ours, TerminalNode base, TerminalNode theirs) {
+  private String mergeComponents(SemanticNode ours, SemanticNode base, SemanticNode theirs) {
     StringBuilder builder = new StringBuilder();
     if (ours.getNodeType().equals(NodeType.METHOD)) {
       MethodDeclNode oursMD = (MethodDeclNode) ours;
@@ -236,6 +242,7 @@ public class ThreewayGraphMerger {
               mergeTextually(
                   oursMD.getMethodName(), baseMD.getMethodName(), theirsMD.getMethodName()))
           .append("(");
+      // parameters
       builder
           .append(
               mergeTextually(
@@ -243,12 +250,19 @@ public class ThreewayGraphMerger {
                   baseMD.getParameterString(),
                   theirsMD.getParameterString()))
           .append(")");
-      builder.append(
-          mergeByUnion(
-              oursMD.getThrowExceptions(),
-              baseMD.getThrowExceptions(),
-              theirsMD.getThrowExceptions(),
-              ","));
+      if (oursMD.getThrowExceptions().size()
+              + baseMD.getThrowExceptions().size()
+              + theirsMD.getThrowExceptions().size()
+          > 0) {
+        builder
+            .append(" throws ")
+            .append(
+                mergeByUnion(
+                    oursMD.getThrowExceptions(),
+                    baseMD.getThrowExceptions(),
+                    theirsMD.getThrowExceptions(),
+                    ","));
+      }
     } else if (ours.getNodeType().equals(NodeType.FIELD)) {
       FieldDeclNode oursFD = (FieldDeclNode) ours;
       FieldDeclNode baseFD = (FieldDeclNode) base;
@@ -382,7 +396,7 @@ public class ThreewayGraphMerger {
   }
 
   /**
-   * Merge list of strings by union
+   * Merge list of strings by union, when order doesn't matter
    *
    * @param left
    * @param base
