@@ -211,11 +211,13 @@ public class ThreewayGraphMerger {
       mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
       mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
       // merge the comment and signature in the last
-      String mergedComment =
-          mergeTextually(oursNode.getComment(), oursNode.getComment(), oursNode.getComment());
-      String mergedSignature = mergeComponents(oursNode, oursNode, oursNode);
-      mergedNonTerminal.setComment(mergedComment);
-      mergedNonTerminal.setOriginalSignature(mergedSignature);
+      if (oursNode != null && theirsNode != null) {
+        String mergedComment =
+            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
+        String mergedSignature = mergeComponents(oursNode, node, theirsNode);
+        mergedNonTerminal.setComment(mergedComment);
+        mergedNonTerminal.setOriginalSignature(mergedSignature);
+      }
       return mergedNonTerminal;
     }
   }

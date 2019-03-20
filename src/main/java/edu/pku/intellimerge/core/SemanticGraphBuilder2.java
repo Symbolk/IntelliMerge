@@ -421,7 +421,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           EnumConstantDeclaration ecd = (EnumConstantDeclaration) child;
           displayName = ecd.getNameAsString();
           qualifiedName = qualifiedTypeName + "." + displayName;
-          String body = "(" + ecd.getChildNodes().get(1).toString() + ")";
+          String body =
+              ecd.getArguments().size() > 0
+                  ? ecd.toString().replaceFirst(ecd.getNameAsString(), "")
+                  : "";
           EnumConstantDeclNode ecdNode =
               new EnumConstantDeclNode(
                   nodeCount++,
