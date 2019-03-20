@@ -5,6 +5,7 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /** access == public, no return type */
@@ -19,10 +20,21 @@ public class ConstructorDeclNode extends TerminalNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String constructorName,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range);
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations,
+        body,
+        range);
     this.constructorName = constructorName;
 
     this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
@@ -32,5 +44,4 @@ public class ConstructorDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
     this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
   }
-
 }

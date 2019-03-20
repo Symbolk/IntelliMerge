@@ -23,13 +23,24 @@ public class FieldDeclNode extends TerminalNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String access,
       List<String> modifiers,
       String fieldType,
       String fieldName,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, body, range); // body initializer or ""
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations,
+        body,
+        range); // body initializer or ""
     this.access = access;
     this.modifiers = modifiers;
     this.fieldType = fieldType;

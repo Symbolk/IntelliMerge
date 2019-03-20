@@ -31,6 +31,7 @@ public class EnumConstantDeclNode extends TerminalNode {
         qualifiedName,
         originalSignature,
         comment,
+        new ArrayList<>(),
         body,
         range);
     this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());

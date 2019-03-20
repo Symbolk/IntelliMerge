@@ -3,12 +3,10 @@ package edu.pku.intellimerge.model.node;
 import com.github.javaparser.Range;
 import edu.pku.intellimerge.exception.RangeNullException;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class TerminalNode extends SemanticNode {
@@ -24,22 +22,40 @@ public class TerminalNode extends SemanticNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String body,
       Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations);
     this.body = body;
     this.range = range; // since javaparser stores range in Optional, so directly save it
   }
 
   public TerminalNode(
-          Integer nodeID,
-          Boolean needToMerge,
-          NodeType nodeType,
-          String displayName,
-          String qualifiedName,
-          String originalSignature,
-          Optional<Range> range) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, "", false);
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature,
+      Optional<Range> range) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        "",
+        new ArrayList<>(),
+        false);
     this.range = range; // since javaparser stores range in Optional, so directly save it
   }
 
@@ -53,6 +69,7 @@ public class TerminalNode extends SemanticNode {
         this.getQualifiedName(),
         this.getOriginalSignature(),
         this.getComment(),
+        this.getAnnotations(),
         this.getBody(),
         this.range);
   }
@@ -89,7 +106,7 @@ public class TerminalNode extends SemanticNode {
   }
 
   @Override
-  public String getSignature(){
+  public String getSignature() {
     return getQualifiedName();
   }
 }

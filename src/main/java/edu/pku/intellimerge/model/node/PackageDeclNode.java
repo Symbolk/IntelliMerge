@@ -18,9 +18,10 @@ public class PackageDeclNode extends NonTerminalNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String packageName,
       List<String> packageNameHierachy) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
     this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());

@@ -242,6 +242,11 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 packageDeclaration.getNameAsString(),
                 packageDeclaration.toString().trim(),
                 packageDeclaration.getComment().map(Comment::toString).orElse(""),
+                packageDeclaration
+                    .getAnnotations()
+                    .stream()
+                    .map(AnnotationExpr::toString)
+                    .collect(Collectors.toList()),
                 finalPackageName,
                 Arrays.asList(finalPackageName.split(".")));
         graph.addVertex(cuNode);
@@ -345,6 +350,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 .map(modifier -> modifier.toString())
                 .collect(Collectors.toList());
 
+    List<String> annotations =
+        (List<String>)
+            td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
     String originalSignature = getTypeOriginalSignature(td);
 
     TypeDeclNode tdNode =
@@ -356,6 +364,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             qualifiedName,
             originalSignature,
             td.getComment().map(Comment::toString).orElse(""),
+            annotations,
             access,
             modifiers,
             nodeType.asString(),
@@ -458,6 +467,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     qualifiedName,
                     originalSignature,
                     fd.getComment().map(Comment::toString).orElse(""),
+                    fd.getAnnotations()
+                        .stream()
+                        .map(AnnotationExpr::toString)
+                        .collect(Collectors.toList()),
                     access,
                     modifiers,
                     field.getTypeAsString(),
@@ -505,6 +518,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   qualifiedName,
                   cd.getDeclarationAsString(),
                   cd.getComment().map(Comment::toString).orElse(""),
+                  cd.getAnnotations()
+                      .stream()
+                      .map(AnnotationExpr::toString)
+                      .collect(Collectors.toList()),
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());

@@ -1,13 +1,9 @@
 package edu.pku.intellimerge.model.node;
 
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class NonTerminalNode extends SemanticNode {
 
@@ -18,8 +14,17 @@ public class NonTerminalNode extends SemanticNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
-      String comment) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
+      String comment,
+      List<String> annotations) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations);
   }
 
   @Override
@@ -31,7 +36,8 @@ public class NonTerminalNode extends SemanticNode {
         this.getDisplayName(),
         this.getQualifiedName(),
         this.getOriginalSignature(),
-            this.getComment());
+        this.getComment(),
+        this.getAnnotations());
   }
 
   @Override
@@ -40,7 +46,7 @@ public class NonTerminalNode extends SemanticNode {
   }
 
   @Override
-  public String getSignature(){
+  public String getSignature() {
     return getQualifiedName();
   }
 }

@@ -24,6 +24,8 @@ public abstract class SemanticNode {
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
   private String comment;
+  // annotations can be used before package, class, constructor, method/interface, field, parameter, local variables
+  private List<String> annotations;
   // whether the node is defined inside the graph or not
   private boolean isInternal;
 
@@ -36,7 +38,8 @@ public abstract class SemanticNode {
       String displayName,
       String qualifiedName,
       String originalSignature,
-      String comment) {
+      String comment,
+      List<String> annotations) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -44,6 +47,7 @@ public abstract class SemanticNode {
     this.qualifiedName = qualifiedName;
     this.originalSignature = originalSignature;
     this.comment = comment;
+    this.annotations = annotations;
     this.children = new ArrayList<>();
     this.isInternal = true;
   }
@@ -56,6 +60,7 @@ public abstract class SemanticNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       boolean isInternal) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
@@ -64,6 +69,7 @@ public abstract class SemanticNode {
     this.qualifiedName = qualifiedName;
     this.originalSignature = originalSignature;
     this.comment = comment;
+    this.annotations = annotations;
     this.children = new ArrayList<>();
     this.isInternal = isInternal;
   }
@@ -78,6 +84,10 @@ public abstract class SemanticNode {
 
   public Integer getNodeID() {
     return nodeID;
+  }
+
+  public List<String> getAnnotations() {
+    return annotations;
   }
 
   public NodeType getNodeType() {
@@ -102,6 +112,10 @@ public abstract class SemanticNode {
 
   public String getOriginalSignature() {
     return originalSignature;
+  }
+
+  public void setAnnotations(List<String> annotations) {
+    this.annotations = annotations;
   }
 
   public void setOriginalSignature(String originalSignature) {

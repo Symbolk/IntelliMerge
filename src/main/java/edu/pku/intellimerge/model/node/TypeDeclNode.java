@@ -25,11 +25,12 @@ public class TypeDeclNode extends NonTerminalNode {
       String qualifiedName,
       String originalSignature,
       String comment,
+      List<String> annotations,
       String access,
       List<String> modifiers,
       String type,
       String typeName) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations);
     this.access = access;
     this.modifiers = modifiers;
     this.type = type;

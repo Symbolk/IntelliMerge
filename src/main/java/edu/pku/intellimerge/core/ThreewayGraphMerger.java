@@ -178,11 +178,17 @@ public class ThreewayGraphMerger {
         String mergedComment =
             mergeTextually(
                 oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
+        List<String> mergedAnnotations =
+            mergeByUnion(
+                oursTerminal.getAnnotations(),
+                baseTerminal.getAnnotations(),
+                theirsTerminal.getAnnotations());
         String mergedSignature = mergeComponents(oursTerminal, baseTerminal, theirsTerminal);
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
         mergedTerminal.setComment(mergedComment);
+        mergedTerminal.setAnnotations(mergedAnnotations);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
         return mergedTerminal;
@@ -229,14 +235,6 @@ public class ThreewayGraphMerger {
       MethodDeclNode theirsMD = (MethodDeclNode) theirs;
       //      builder.append(mergeTextually(oursMD.getAccess(), baseMD.getAccess(),
       // theirsMD.getAccess()));
-      builder
-          .append(
-              mergeByUnion(
-                  oursMD.getAnnotations(),
-                  baseMD.getAnnotations(),
-                  theirsMD.getAnnotations(),
-                  "\n"))
-          .append("\n");
       // access is considered to be part of modifiers
       builder
           .append(
@@ -437,5 +435,21 @@ public class ThreewayGraphMerger {
     unionList.addAll(right);
     String unionString = unionList.stream().distinct().collect(Collectors.joining(delimiter));
     return unionString;
+  }
+
+  /**
+   * Merge list of strings by union, when order doesn't matter
+   *
+   * @param left
+   * @param base
+   * @param right
+   * @return
+   */
+  private List<String> mergeByUnion(List<String> left, List<String> base, List<String> right) {
+    Set<String> unionList = new LinkedHashSet<>();
+    unionList.addAll(left);
+    unionList.addAll(base);
+    unionList.addAll(right);
+    return new ArrayList<>(unionList);
   }
 }

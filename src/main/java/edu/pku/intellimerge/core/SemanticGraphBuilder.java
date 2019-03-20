@@ -169,8 +169,7 @@ public class SemanticGraphBuilder {
     edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INITIALIZE, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ, NodeType.FIELD);
     edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE, NodeType.FIELD);
-    edgeCount =
-        buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL, NodeType.METHOD);
+    edgeCount = buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL, NodeType.METHOD);
 
     // now edges are fixed
     // save incoming edges and outgoing edges in corresponding nodes
@@ -257,6 +256,11 @@ public class SemanticGraphBuilder {
                 packageDeclaration.getNameAsString(),
                 packageDeclaration.toString().trim(),
                 packageDeclaration.getComment().map(Comment::toString).orElse(""),
+                packageDeclaration
+                    .getAnnotations()
+                    .stream()
+                    .map(AnnotationExpr::toString)
+                    .collect(Collectors.toList()),
                 finalPackageName,
                 Arrays.asList(finalPackageName.split(".")));
         graph.addVertex(cuNode);
@@ -356,6 +360,10 @@ public class SemanticGraphBuilder {
     // Modifier.getAccessSpecifier(classOrInterfaceDeclaration.getModifiers()).asString();
     String originalSignature = getTypeOriginalSignature(td);
 
+    List<String> annotations =
+        (List<String>)
+            td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
+
     TypeDeclNode tdNode =
         new TypeDeclNode(
             nodeCount,
@@ -365,6 +373,7 @@ public class SemanticGraphBuilder {
             qualifiedName,
             originalSignature,
             td.getComment().map(Comment::toString).orElse(""),
+            annotations,
             access,
             modifiers,
             nodeType.asString(),
@@ -431,6 +440,10 @@ public class SemanticGraphBuilder {
                     qualifiedName,
                     originalSignature,
                     fd.getComment().map(Comment::toString).orElse(""),
+                    fd.getAnnotations()
+                        .stream()
+                        .map(AnnotationExpr::toString)
+                        .collect(Collectors.toList()),
                     access,
                     modifiers,
                     field.getTypeAsString(),
@@ -440,14 +453,13 @@ public class SemanticGraphBuilder {
             graph.addVertex(fdNode);
             // add edge between field and class
             graph.addEdge(
-                tdNode,
-                fdNode,
-                new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
+                tdNode, fdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, fdNode));
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
             //            if (!field.getMatchingType().isClassOrInterfaceType()) {
-            //              ClassOrInterfaceType type = (ClassOrInterfaceType) field.getMatchingType();
+            //              ClassOrInterfaceType type = (ClassOrInterfaceType)
+            // field.getMatchingType();
             //              SymbolReference<ResolvedTypeDeclaration> ref =
             // javaParserFacade.solve();
             //              if (ref.isSolved()) {
@@ -483,14 +495,16 @@ public class SemanticGraphBuilder {
                   qualifiedName,
                   cd.getDeclarationAsString(),
                   cd.getComment().map(Comment::toString).orElse(""),
+                  cd.getAnnotations()
+                      .stream()
+                      .map(AnnotationExpr::toString)
+                      .collect(Collectors.toList()),
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());
           graph.addVertex(cdNode);
           graph.addEdge(
-              tdNode,
-              cdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
+              tdNode, cdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, cdNode));
 
           processMethodOrConstructorBody(cd, cdNode);
         }
@@ -507,8 +521,16 @@ public class SemanticGraphBuilder {
           access = md.getAccessSpecifier().asString();
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
-          List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
-          List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+          List<String> annotations =
+              md.getAnnotations()
+                  .stream()
+                  .map(AnnotationExpr::toString)
+                  .collect(Collectors.toList());
+          List<String> typeParameters =
+              md.getTypeParameters()
+                  .stream()
+                  .map(TypeParameter::asString)
+                  .collect(Collectors.toList());
 
           List<String> parameterTypes =
               md.getParameters()
@@ -548,9 +570,7 @@ public class SemanticGraphBuilder {
                   md.getRange());
           graph.addVertex(mdNode);
           graph.addEdge(
-              tdNode,
-              mdNode,
-              new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
+              tdNode, mdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, mdNode));
 
           processMethodOrConstructorBody(md, mdNode);
         }
@@ -701,7 +721,7 @@ public class SemanticGraphBuilder {
     //    if (typeDeclaration.getComment().isPresent()) {
     //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
     //    }
-//    return removeComment(source.substring(0, source.indexOf("{"))).trim();
+    //    return removeComment(source.substring(0, source.indexOf("{"))).trim();
     return source.trim();
   }
 

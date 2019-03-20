@@ -30,6 +30,7 @@ public class InitializerDeclNode extends TerminalNode {
         qualifiedName,
         originalSignature,
         comment,
+        new ArrayList<>(),
         body,
         range);
     this.isStatic = isStatic;
@@ -41,7 +42,7 @@ public class InitializerDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
-  public boolean isStatic(){
+  public boolean isStatic() {
     return isStatic;
   }
 }
