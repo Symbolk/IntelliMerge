@@ -205,10 +205,9 @@ public class APIClient {
    * @param targetDir
    * @throws Exception
    */
-  public void processDirectory(String targetDir, String resultDir) throws Exception {
+  public void processDirectory(String targetDir, String resultDir, boolean hasMultipleModule) throws Exception {
     String targetDirName = FilesManager.getDirSimpleName(targetDir);
 
-    boolean hasMultipleModule = false;
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
