@@ -245,7 +245,6 @@ public class ThreewayGraphMerger {
               + baseMD.getTypeParameters().size()
               + theirsMD.getTypeParameters().size()
           > 0) {
-
         builder
             .append("<")
             .append(

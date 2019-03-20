@@ -577,6 +577,21 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .stream()
                   .map(ReferenceType::toString)
                   .collect(Collectors.toList());
+
+          // md.getDeclarationAsString() does not include type parameters, so we need to insert type
+          // parameters before the return type
+          if (typeParameters.size() > 0) {
+            String typeParametersAsString =
+                "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
+            originalSignature =
+                md.getDeclarationAsString()
+                    .trim()
+                    .replaceFirst(
+                        md.getTypeAsString(), typeParametersAsString + " " + md.getTypeAsString());
+          } else {
+            originalSignature = md.getDeclarationAsString();
+          }
+
           MethodDeclNode mdNode =
               new MethodDeclNode(
                   nodeCount++,
@@ -584,7 +599,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   NodeType.METHOD,
                   displayName,
                   qualifiedName,
-                  md.getDeclarationAsString(),
+                  originalSignature,
                   md.getComment().map(Comment::toString).orElse(""),
                   annotations,
                   access,
@@ -687,6 +702,16 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     this.methodCallExprs.put(node, methodCallExprs);
   }
 
+  /** Get signature of type in original code */
+  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
+    // remove comment if there is in string representation
+    String source = removeComment(typeDeclaration.toString());
+    //    if (typeDeclaration.getComment().isPresent()) {
+    //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
+    //    }
+    return source.substring(0, source.indexOf("{")).trim();
+  }
+
   /**
    * Get signature of field in original code
    *
@@ -701,17 +726,6 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     return source
         .substring(0, (source.contains("=") ? source.indexOf("=") : source.indexOf(";")))
         .trim();
-  }
-
-  /** Get signature of type in original code */
-  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
-    // remove comment if there is in string representation
-    String source = removeComment(typeDeclaration.toString());
-    //    if (typeDeclaration.getComment().isPresent()) {
-    //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
-    //    }
-    return source.substring(0, source.indexOf("{")).trim();
-    //    return source.trim();
   }
 
   /**
