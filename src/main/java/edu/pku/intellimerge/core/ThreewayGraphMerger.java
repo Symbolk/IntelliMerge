@@ -197,28 +197,39 @@ public class ThreewayGraphMerger {
         return null;
       }
     } else {
-      // nonterminal: iteratively merge its children
-      List<SemanticNode> children = node.getChildren();
-      NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
-      for (SemanticNode child : children) {
-        SemanticNode mergedChild = mergeSingleNode(child);
-        if (mergedChild != null) {
-          mergedNonTerminal.appendChild(mergedChild);
-        }
-      }
-      // consider unmatched nodes as added ones
-      // if parent matched, insert it into the children of parent, between nearest neighbors
-      mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
-      mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
-      // merge the comment and signature in the last
+      // nonterminal
       if (oursNode != null && theirsNode != null) {
+        NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
+
+        // merge the comment and signature
         String mergedComment =
             mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
+        List<String> mergedAnnotations =
+            mergeByUnion(
+                oursNode.getAnnotations(), node.getAnnotations(), theirsNode.getAnnotations());
         String mergedSignature = mergeComponents(oursNode, node, theirsNode);
         mergedNonTerminal.setComment(mergedComment);
+        mergedNonTerminal.setAnnotations(mergedAnnotations);
         mergedNonTerminal.setOriginalSignature(mergedSignature);
+
+        // iteratively merge its children
+        List<SemanticNode> children = node.getChildren();
+        for (SemanticNode child : children) {
+          SemanticNode mergedChild = mergeSingleNode(child);
+          if (mergedChild != null) {
+            mergedNonTerminal.appendChild(mergedChild);
+          }
+        }
+        // consider unmatched nodes as added ones
+        // if parent matched, insert it into the children of parent, between nearest neighbors
+        mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
+        mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
+
+        return mergedNonTerminal;
+      } else {
+        // deleted in one side --> delete
+        return null;
       }
-      return mergedNonTerminal;
     }
   }
 
