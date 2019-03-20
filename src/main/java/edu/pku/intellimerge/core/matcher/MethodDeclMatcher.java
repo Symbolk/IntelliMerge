@@ -48,6 +48,7 @@ public class MethodDeclMatcher {
     }
     // bipartite / to match most likely renamed methods
     // find the maximum /, one method cannot be renamed to two
+//    biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -56,10 +57,14 @@ public class MethodDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
-      matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
-      matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
+      if(confidence >= 0.75){
+        matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
+        matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
+        matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
+      }
     }
+    matching.unmatchedNodes1.get(NodeType.METHOD);
+    matching.unmatchedNodes2.get(NodeType.METHOD);
   }
 
   /**

@@ -2,11 +2,14 @@ package edu.pku.intellimerge.evaluation;
 
 import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.util.FilesManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class responsible to evaluate the result and the performance of IntelliMerge Comparing with
@@ -40,12 +43,19 @@ public class Evaluator {
               MERGE_RESULT_DIR,
               STATISTICS_PATH,
               DOT_DIR);
-//      String targetDir = "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
-            String targetDir = "D:\\github\\test";
-      String mergeResultDir = targetDir + File.separator + Side.INTELLI.asString() + File.separator;
-      String manualMergedDir = targetDir + File.separator + Side.MANUAL.asString() + File.separator;
-      apiClient.processDirectory(targetDir, mergeResultDir);
-      //      FilesManager.formatManualMergedResults(manualMergedDir);
+//      String sourceDir = "D:\\github\\merges\\javaparser\\0ccca235068397ea4b045025034a488e78b83863";
+      String sourceDir = "D:\\github\\test";
+//            String sourceDir = "D:\\github\\test";
+      String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
+      String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
+      apiClient.processDirectory(sourceDir, mergeResultDir);
+
+//      String targetDir = "D:\\github\\test";
+//      List<String> relativePaths = new ArrayList<>();
+//      relativePaths.add("javaparser-core\\src\\main\\java\\com\\github\\javaparser\\ast\\body\\FieldDeclaration.java");
+//      relativePaths.add("javaparser-core\\src\\main\\java\\com\\github\\javaparser\\ast\\type\\ClassOrInterfaceType.java");
+//      //      FilesManager.formatManualMergedResults(manualMergedDir);
+//      FilesManager.copyAllVersions(sourceDir, relativePaths, targetDir);
 
     } catch (Exception e) {
       e.printStackTrace();

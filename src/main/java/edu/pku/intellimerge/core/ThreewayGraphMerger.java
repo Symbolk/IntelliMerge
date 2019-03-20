@@ -229,7 +229,6 @@ public class ThreewayGraphMerger {
       MethodDeclNode theirsMD = (MethodDeclNode) theirs;
       //      builder.append(mergeTextually(oursMD.getAccess(), baseMD.getAccess(),
       // theirsMD.getAccess()));
-      // access is considered to be part of modifiers
       builder
           .append(
               mergeByUnion(
@@ -238,6 +237,7 @@ public class ThreewayGraphMerger {
                   theirsMD.getAnnotations(),
                   "\n"))
           .append("\n");
+      // access is considered to be part of modifiers
       builder
           .append(
               mergeByUnion(
@@ -328,10 +328,10 @@ public class ThreewayGraphMerger {
     SemanticNode matchedNodeOurs = matching.one2oneMatchings.getOrDefault(node, null);
     if (matchedNodeOurs != null) {
       for (Map.Entry<NodeType, List<SemanticNode>> entry : matching.unmatchedNodes2.entrySet()) {
-        for (SemanticNode addedOurs : entry.getValue()) {
-          SemanticNode parent = addedOurs.getParent();
+        for (SemanticNode newlyAdded : entry.getValue()) {
+          SemanticNode parent = newlyAdded.getParent();
           if (parent.equals(matchedNodeOurs)) {
-            insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, addedOurs));
+            insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
           }
         }
       }
@@ -340,28 +340,28 @@ public class ThreewayGraphMerger {
   /**
    * Insert the added node betwen its neighbors
    *
-   * @param node
+   * @param parent
    * @param triple
    */
   private void insertBetweenNeighbors(
-      SemanticNode node, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
+      NonTerminalNode parent, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
     boolean foundNeighor = false;
     if (triple.getLeft() != null) {
-      int position = node.getChildPosition(triple.getLeft());
+      int position = parent.getChildPosition(triple.getLeft());
       if (position != -1) {
-        node.insertChild(triple.getMiddle(), position + 1);
+        parent.insertChild(triple.getMiddle(), position + 1);
         foundNeighor = true;
       }
     }
     if (!foundNeighor && triple.getRight() != null) {
-      int position = node.getChildPosition(triple.getRight());
+      int position = parent.getChildPosition(triple.getRight());
       if (position != -1) {
-        node.insertChild(triple.getMiddle(), position);
+        parent.insertChild(triple.getMiddle(), position);
         foundNeighor = true;
       }
     }
     if (!foundNeighor) {
-      node.appendChild(triple.getMiddle());
+      parent.appendChild(triple.getMiddle());
     }
   }
   /**

@@ -58,7 +58,7 @@ public class Util {
 
       logger.info("Building graph done for {}", targetDir);
 
-      FilesManager.clearResultDir(resultDir);
+      FilesManager.clearDir(resultDir);
       ThreewayGraphMerger merger =
           new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
       merger.threewayMap();

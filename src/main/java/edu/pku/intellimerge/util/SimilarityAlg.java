@@ -35,9 +35,9 @@ public class SimilarityAlg {
     similarity += methodContext(n1.incomingEdges, n2.incomingEdges);
     similarity += methodContext(n1.outgoingEdges, n2.outgoingEdges);
     // navie string similarity of method signature
-    similarity += stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity += methodBody(n1.getBody(), n2.getBody());
-    similarity /= 4;
+    similarity += 5 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
+    similarity += 5 * methodBody(n1.getBody(), n2.getBody());
+    similarity /= 12;
     return similarity;
   }
 

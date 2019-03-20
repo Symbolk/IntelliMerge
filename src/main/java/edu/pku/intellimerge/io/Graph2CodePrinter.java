@@ -95,6 +95,7 @@ public class Graph2CodePrinter {
         builder.append(node.getComment());
         builder.append(node.getOriginalSignature());
         builder.append("{\n");
+
       }
       if (node.getNodeType().equals(NodeType.ENUM)) {
         int childrenSize = node.getChildren().size();
