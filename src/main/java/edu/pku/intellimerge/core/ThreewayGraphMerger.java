@@ -57,19 +57,13 @@ public class ThreewayGraphMerger {
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
 
     try {
-      Stopwatch stopwatch = Stopwatch.createStarted();
-
       ExecutorService executorService = Executors.newFixedThreadPool(2);
       Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
       Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
 
       b2oMatching = task1.get();
-      stopwatch.stop();
-      logger.info("({}ms) Matching base and ours.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-      stopwatch.reset().start();
       b2tMatching = task2.get();
-      stopwatch.stop();
-      logger.info("({}ms) Matching base and theirs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
       executorService.shutdown();
 
       // collect CU mapping that need to merge
