@@ -399,7 +399,7 @@ public class FilesManager {
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.THEIRS);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.MANUAL);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.GIT);
-//      copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
+      //      copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -426,9 +426,9 @@ public class FilesManager {
               targetDir + File.separator + side.asString() + File.separator + sourceFile.getName());
       if (sourceFile.exists()) {
         FileUtils.copyFile(sourceFile, targetFile);
-        logger.info("Copying {}...", sourceFile.getName());
+        logger.info("Done with {} : {}...", side.toString(), sourceFile.getName());
       } else {
-        logger.error("{} not exists", sourceFile.getAbsolutePath());
+        logger.error("{} : {} not exists", side.toString(), sourceFile.getAbsolutePath());
       }
     }
   }

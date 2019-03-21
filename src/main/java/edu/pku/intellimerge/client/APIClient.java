@@ -177,6 +177,7 @@ public class APIClient {
         "Building graph done for {} within {}ms.",
         mergeScenario.mergeCommitID,
         stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    executorService.shutdown();
     //    stopwatch.reset().start();
 
     String mergeResultDir =
@@ -226,6 +227,7 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
 
     stopwatch.stop();
+    executorService.shutdown();
     long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Building graph done for {}.", buildingTime, targetDirName);
 

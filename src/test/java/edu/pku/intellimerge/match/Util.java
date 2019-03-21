@@ -51,6 +51,7 @@ public class Util {
       Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
 
       stopwatch.stop();
+      executorService.shutdown();
       logger.info(
           "Building graph done for {} within {}ms.",
           targetDirName,
@@ -106,6 +107,8 @@ public class Util {
       Graph<SemanticNode, SemanticEdge> graph2 = builder2.get();
 
       stopwatch.stop();
+      executorService.shutdown();
+
       logger.info(
           "Building graph done for {} within {}ms.",
           targetDirName,
