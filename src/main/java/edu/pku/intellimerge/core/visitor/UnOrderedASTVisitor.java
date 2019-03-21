@@ -18,6 +18,7 @@ import edu.pku.intellimerge.model.node.MethodDeclNode;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
@@ -25,11 +26,11 @@ import java.util.stream.Collectors;
 
 /** An AST Visitor that visit nodes in an unspecified order */
 public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, SemanticEdge>> {
-  private static final String FILE_PATH =
-      "D:\\github\\merges\\javaparser\\d9c990a94c725b8d112ba02897988b7400100ce3\\ours\\javaparser-core\\src\\main\\java\\com\\github\\javaparser\\utils\\SourceRoot.java";
-
   public static void main(String[] args) {
     try {
+      File resourcesDirectory = new File("src/test/resources");
+      String FILE_PATH =
+          resourcesDirectory.getAbsolutePath() + "/Extract/ExtractMethod/base/SourceRoot.java";
       CompilationUnit cu = JavaParser.parse(new FileInputStream(FILE_PATH));
       Graph<SemanticNode, SemanticEdge> graph = initGraph();
 
@@ -95,8 +96,10 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
     int edgeCount = graph.edgeSet().size();
     String displayName = md.getSignature().toString();
     String qualifiedName = "" + "." + displayName;
-    List<String> annotations = md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
-    List<String> typeParameters = md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
+    List<String> annotations =
+        md.getAnnotations().stream().map(AnnotationExpr::toString).collect(Collectors.toList());
+    List<String> typeParameters =
+        md.getTypeParameters().stream().map(TypeParameter::asString).collect(Collectors.toList());
 
     String access = md.getAccessSpecifier().asString();
     List<String> modifiers =
