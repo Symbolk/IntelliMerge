@@ -16,7 +16,7 @@ public class TestConflictBlock {
         Utils.getProjectRootDir()
             + "/src/test/resources/Extract/ExtractMethod/gitMerged/SourceRoot.java";
 
-    String code = Utils.readFileContent(new File(path));
+    String code = Utils.readContentFromFile(new File(path));
     List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocks(code);
     assertThat(conflictBlocks.size()).isEqualTo(3);
     assertThat(conflictBlocks.get(0).getBase())

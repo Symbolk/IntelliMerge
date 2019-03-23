@@ -48,7 +48,7 @@ public class Evaluator {
     try {
       MongoClientURI connectionString = new MongoClientURI("mongodb://localhost:27017");
       MongoClient mongoClient = new MongoClient(connectionString);
-      MongoDatabase database = mongoClient.getDatabase("diffresult");
+      MongoDatabase database = mongoClient.getDatabase("CompareWithManual");
       MongoCollection<Document> collection = database.getCollection(REPO_NAME);
 
       APIClient apiClient =
@@ -67,9 +67,9 @@ public class Evaluator {
       String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
       String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
       // 1. merge to get our results
-      apiClient.processDirectory(sourceDir, mergeResultDir, true);
+      //      apiClient.processDirectory(sourceDir, mergeResultDir, true);
       // 2. format the manual results
-      Utils.formatAllJavaFiles(manualMergedDir);
+      //      Utils.formatAllJavaFiles(manualMergedDir);
 
       // 3. compare merge results with manual results
       compareMergeResults(REPO_NAME, mergeCommit, collection, mergeResultDir, manualMergedDir);
@@ -112,9 +112,9 @@ public class Evaluator {
       String relativePath = manualMergedFile.getRelativePath();
       String intelliMergedPath = Utils.formatPathSeparator(mergeResultDir + relativePath);
 
-      int loc = 1; // the number of code lines in the manual merged file
-      int same_loc =
-          1; // the number of code lines same between the manual merged and intelli merged files
+      int loc =
+          Utils.readContentLinesFromPath(manualMergedPath)
+              .size(); // the number of code lines in the manual merged file
       String diffOutput =
           Utils.runSystemCommand(
               REPO_DIR,
@@ -134,7 +134,6 @@ public class Evaluator {
         // keep the true positive hunks
         List<Hunk> visitedHunks = new ArrayList<>();
         for (Hunk hunk : diff.getHunks()) {
-
           // if there are two hunk with the same line count but opposite direction (+/-), compare
           // the lines to counteract possibly moved hunks
           if (!removePossiblyMovedHunks(hunk, visitedHunks)) {
@@ -143,6 +142,7 @@ public class Evaluator {
         }
         // save the true positive hunks into mongodb
         List<Document> hunkDocuments = new ArrayList<>();
+        int diffLoc = 0;
 
         for (Hunk hunk : visitedHunks) {
           int fromStartLine = hunk.getFromFileRange().getLineStart();
@@ -159,19 +159,22 @@ public class Evaluator {
                   .append("from_content", fromContent)
                   .append("to_content", toContent);
           hunkDocuments.add(hunkDocument);
+          diffLoc += fromLOC;
         }
         Document doc =
             new Document("repo_name", repoName)
                 .append("merge_commit", mergeCommit)
                 .append("file_relative_path", relativePath)
-                .append("loc", 1)
-                .append("same_loc", 1)
+                .append("loc", loc)
+                .append("same_loc", loc - diffLoc)
                 .append("diff_hunks", hunkDocuments);
         collection.insertOne(doc);
       }
-      break;
     }
+    logger.info(
+        "Done with {} at {}: #Merged files: {}", repoName, mergeCommit, manualMergedResults.size());
   }
+
   /**
    * Check if one hunk is caused by moving (false positive diff)
    *

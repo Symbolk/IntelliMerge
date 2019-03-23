@@ -27,7 +27,7 @@ public class TestBothAdd {
 
     List<String> mergedFilePaths = Util.mergeGraphsThreeway(targetDir, resultDir);
     for (String path : mergedFilePaths) {
-      String code = Utils.readFileContent(new File(path));
+      String code = Utils.readContentFromFile(new File(path));
       List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocks(code);
       assertThat(conflictBlocks.size()).isEqualTo(0);
     }

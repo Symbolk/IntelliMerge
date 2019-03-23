@@ -52,7 +52,7 @@ public class Utils {
    * @throws FileNotFoundException
    */
   public static boolean isValidFile(File file) throws FileNotFoundException {
-    if (Utils.readFileContent(file).isEmpty()) {
+    if (Utils.readContentFromFile(file).isEmpty()) {
       throw new FileNotFoundException();
     } else if (file != null && (isJavaFile(file))) {
       return true;
@@ -81,16 +81,68 @@ public class Utils {
    * @param file to be read
    * @return string content of the file, or null in case of errors.
    */
-  public static String readFileContent(File file) {
+  public static String readContentFromFile(File file) {
     String content = "";
-    String fileEncoding = FileEncoding.retrieveEncoding(file);
-    try (BufferedReader reader =
-        Files.newBufferedReader(Paths.get(file.getAbsolutePath()), Charset.forName(fileEncoding))) {
-      content = reader.lines().collect(Collectors.joining("\n"));
-    } catch (Exception e) {
-      e.printStackTrace();
+    if (file.exists()) {
+
+      String fileEncoding = FileEncoding.retrieveEncoding(file);
+      try (BufferedReader reader =
+          Files.newBufferedReader(
+              Paths.get(file.getAbsolutePath()), Charset.forName(fileEncoding))) {
+        content = reader.lines().collect(Collectors.joining("\n"));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      logger.error("{} does not exist!", file.getAbsolutePath());
     }
     return content;
+  }
+
+  /**
+   * Read the content of a given file.
+   *
+   * @param path to be read
+   * @return string content of the file, or null in case of errors.
+   */
+  public static String readContentFromPath(String path) {
+    String content = "";
+    File file = new File(path);
+    if (file.exists()) {
+      String fileEncoding = FileEncoding.retrieveEncoding(file);
+      try (BufferedReader reader =
+          Files.newBufferedReader(Paths.get(path), Charset.forName(fileEncoding))) {
+        content = reader.lines().collect(Collectors.joining("\n"));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      logger.error("{} does not exist!", path);
+    }
+    return content;
+  }
+
+  /**
+   * Read the content of a given file.
+   *
+   * @param path to be read
+   * @return string content of the file, or null in case of errors.
+   */
+  public static List<String> readContentLinesFromPath(String path) {
+    List<String> lines = new ArrayList<>();
+    File file = new File(path);
+    if (file.exists()) {
+      String fileEncoding = FileEncoding.retrieveEncoding(file);
+      try (BufferedReader reader =
+          Files.newBufferedReader(Paths.get(path), Charset.forName(fileEncoding))) {
+        lines = reader.lines().collect(Collectors.toList());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      logger.error("{} does not exist!", path);
+    }
+    return lines;
   }
 
   /**
@@ -236,7 +288,7 @@ public class Utils {
   public static boolean clearDir(String dir) {
     File file = new File(dir);
     if (!file.exists()) {
-      System.err.println("The dir are not exists!");
+      logger.error("{} does not exist!", dir);
       return false;
     }
 
@@ -372,7 +424,7 @@ public class Utils {
         if (f.isDirectory()) {
           formatAllJavaFiles(f.getAbsolutePath());
         } else if (f.isFile() && isJavaFile(f)) {
-          String code = readFileContent(f);
+          String code = readContentFromFile(f);
           try {
             // format with google-java-formatter
             String reformattedCode = new Formatter().formatSource(code);
@@ -434,7 +486,7 @@ public class Utils {
         FileUtils.copyFile(sourceFile, targetFile);
         logger.info("Done with {} : {}...", side.toString(), sourceFile.getName());
       } else {
-        logger.error("{} : {} not exists", side.toString(), sourceFile.getAbsolutePath());
+        logger.error("{} : {} does not exist!", side.toString(), sourceFile.getAbsolutePath());
       }
     }
   }
