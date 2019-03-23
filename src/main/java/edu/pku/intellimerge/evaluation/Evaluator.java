@@ -103,10 +103,13 @@ public class Evaluator {
       String manualMergedDir)
       throws Exception {
 
-    // for each file in the manual results, find and diff with the corresponding intelli result
     ArrayList<SourceFile> temp = new ArrayList<>();
     ArrayList<SourceFile> manualMergedResults =
         Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
+    int numberOfMergedFiles = manualMergedResults.size();
+    int numberOfDiffFiles = 0;
+
+    // for each file in the manual results, find and diff with the corresponding intelli result
     for (SourceFile manualMergedFile : manualMergedResults) {
       String manualMergedPath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
@@ -143,6 +146,7 @@ public class Evaluator {
         // save the true positive hunks into mongodb
         List<Document> hunkDocuments = new ArrayList<>();
         int diffLoc = 0;
+        numberOfDiffFiles += visitedHunks.size() > 0 ? 1 : 0;
 
         for (Hunk hunk : visitedHunks) {
           int fromStartLine = hunk.getFromFileRange().getLineStart();
@@ -172,7 +176,11 @@ public class Evaluator {
       }
     }
     logger.info(
-        "Done with {} at {}: #Merged files: {}", repoName, mergeCommit, manualMergedResults.size());
+        "Done with {} at {}: #Merged files: {}, #Identical files: {}",
+        repoName,
+        mergeCommit,
+        numberOfMergedFiles,
+        numberOfMergedFiles - numberOfDiffFiles);
   }
 
   /**
