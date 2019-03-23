@@ -163,6 +163,15 @@ public class Utils {
     }
   }
 
+  /**
+   * Scan all java files under the directory, return a list of SourceFiles
+   *
+   * @param path
+   * @param javaSourceFiles
+   * @param repoPath to get the relative path
+   * @return
+   * @throws Exception
+   */
   public static ArrayList<SourceFile> scanJavaSourceFiles(
       String path, ArrayList<SourceFile> javaSourceFiles, String repoPath) throws Exception {
     File file = new File(path);
@@ -172,8 +181,8 @@ public class Utils {
         if (f.isDirectory()) {
           scanJavaSourceFiles(f.getAbsolutePath(), javaSourceFiles, repoPath);
         } else if (f.isFile() && isJavaFile(f)) {
-          String absoultePath = f.getAbsolutePath();
-          String relativePath = absoultePath.substring(repoPath.length() + 1);
+          String absoultePath = formatPathSeparator(f.getAbsolutePath());
+          String relativePath = absoultePath.substring(repoPath.length());
           String qualifiedName = getQualifiedName(f);
           SourceFile sourceFile =
               new SourceFile(f.getName(), qualifiedName, relativePath, absoultePath);
@@ -202,16 +211,16 @@ public class Utils {
   }
 
   /**
-   * Empty the result folder
+   * Prepare the directory for output
    *
    * @param dir absolute path
    * @return
    */
-  public static void clearDir(String dir) {
+  public static void prepareDir(String dir) {
     // if exist, remove all files under it
     File dirFile = new File(dir);
     if (dirFile.exists() && dirFile.isDirectory()) {
-      emptyFolder(dir);
+      clearDir(dir);
     } else {
       // if not exist, create
       dirFile.mkdirs();
@@ -219,12 +228,12 @@ public class Utils {
   }
 
   /**
-   * Delete all files and subfolders to empty the folder
+   * Delete all files and subfolders to clear the directory
    *
    * @param dir absolute path
    * @return
    */
-  public static boolean emptyFolder(String dir) {
+  public static boolean clearDir(String dir) {
     File file = new File(dir);
     if (!file.exists()) {
       System.err.println("The dir are not exists!");
@@ -235,7 +244,7 @@ public class Utils {
     for (String name : content) {
       File temp = new File(dir, name);
       if (temp.isDirectory()) {
-        emptyFolder(temp.getAbsolutePath());
+        clearDir(temp.getAbsolutePath());
         temp.delete();
       } else {
         if (!temp.delete()) {
@@ -353,18 +362,15 @@ public class Utils {
     return dir.substring(offset + 1);
   }
 
-  /**
-   * (For evaluation) Format source code files with google-java-formatter for comparing with other
-   * results
-   */
-  public static void formatManualMergedResults(String manualMergedDir) {
+  /** Format all java files with google-java-formatter in a directory */
+  public static void formatAllJavaFiles(String dir) {
     // read file content as string
-    File file = new File(manualMergedDir);
+    File file = new File(dir);
     if (file.exists()) {
       File[] files = file.listFiles();
       for (File f : files) {
         if (f.isDirectory()) {
-          formatManualMergedResults(f.getAbsolutePath());
+          formatAllJavaFiles(f.getAbsolutePath());
         } else if (f.isFile() && isJavaFile(f)) {
           String code = readFileContent(f);
           try {
@@ -379,7 +385,7 @@ public class Utils {
         }
       }
     } else {
-      logger.error("{} does not exist!", manualMergedDir);
+      logger.error("{} does not exist!", dir);
     }
   }
 
@@ -417,7 +423,7 @@ public class Utils {
   private static void copyOneVersion(
       String sourceDir, List<String> relativePaths, String targetDir, Side side)
       throws IOException {
-    clearDir(targetDir + File.separator + side.asString());
+    prepareDir(targetDir + File.separator + side.asString());
     for (String relativePath : relativePaths) {
       File sourceFile =
           new File(sourceDir + File.separator + side.asString() + File.separator + relativePath);
@@ -431,5 +437,56 @@ public class Utils {
         logger.error("{} : {} not exists", side.toString(), sourceFile.getAbsolutePath());
       }
     }
+  }
+
+  /**
+   * Run system command and return the output
+   *
+   * @param dir
+   * @param commands
+   * @return
+   */
+  public static String runSystemCommand(String dir, String... commands) {
+    StringBuilder builder = new StringBuilder();
+    try {
+      //            if (verbose) {
+      //                for (String command : commands) {
+      //                    System.out.print(command + " ");
+      //                }
+      //                System.out.println();
+      //            }
+      Runtime rt = Runtime.getRuntime();
+      Process proc = rt.exec(commands, null, new File(dir));
+
+      BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+      BufferedReader stdError = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+
+      String s = null;
+      while ((s = stdInput.readLine()) != null) {
+        builder.append(s);
+        builder.append("\n");
+        //                if (verbose) log(s);
+      }
+
+      while ((s = stdError.readLine()) != null) {
+        builder.append(s);
+        builder.append("\n");
+        //                if (verbose) log(s);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return builder.toString();
+  }
+
+  /**
+   * Returns a single line no spaced representation of a given string.
+   *
+   * @param content
+   * @return
+   */
+  public static String getStringContentOneLine(String content) {
+    return (content.trim().replaceAll("\\r\\n|\\r|\\n", "")).replaceAll("\\s+", "");
   }
 }
