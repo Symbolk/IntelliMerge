@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * @author João Victor
  */
-public class FilesEncoding {
+public class FileEncoding {
 
   private static Map<File, String> encodings = new HashMap<File, String>();
   private static final String DEFAULT_ENCODING = "UTF-8";

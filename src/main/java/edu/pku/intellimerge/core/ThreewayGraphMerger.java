@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.core;
 
-import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -9,7 +8,7 @@ import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.*;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -112,7 +111,7 @@ public class ThreewayGraphMerger {
           // save the merged result to file
           String resultFilePath =
               Graph2CodePrinter.printCU(
-                  mergedCU, mergedPackageAndImports, FilesManager.formatPathSeparator(resultDir));
+                  mergedCU, mergedPackageAndImports, Utils.formatPathSeparator(resultDir));
           mergedFilePaths.add(resultFilePath);
         }
       }

@@ -8,7 +8,7 @@ import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 
 import java.io.File;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ public class Graph2CodePrinter {
    */
   public static String printCU(SemanticNode node, CompilationUnitNode cu, String resultDir) {
     String resultFilePath =
-        FilesManager.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
+        Utils.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getComment()).append("\n");
@@ -34,7 +34,7 @@ public class Graph2CodePrinter {
     // merged content, field-constructor-method, and reformat in google-java-format
     builder.append("\n").append(printNode(node));
     String reformattedCode = reformatCode(builder.toString());
-    FilesManager.writeContent(resultFilePath, reformattedCode);
+    Utils.writeContent(resultFilePath, reformattedCode);
     return resultFilePath;
   }
 

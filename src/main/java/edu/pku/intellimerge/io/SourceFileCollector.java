@@ -7,7 +7,7 @@ import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import edu.pku.intellimerge.util.GitService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -166,7 +166,7 @@ public class SourceFileCollector {
     ArrayList<SourceFile> temp = new ArrayList<>();
     String targetDir = mergeScenario.repoPath + mergeScenario.srcPath;
     ArrayList<SourceFile> javaSourceFiles =
-        FilesManager.scanJavaSourceFiles(targetDir, temp, mergeScenario.repoPath);
+        Utils.scanJavaSourceFiles(targetDir, temp, mergeScenario.repoPath);
     return javaSourceFiles;
   }
 
@@ -225,13 +225,13 @@ public class SourceFileCollector {
           String pathString = treeWalk.getPathString();
           for (String path : filePaths) {
             // to tolerate import file paths, which is relative to source folder instead of repo root
-            if (pathString.endsWith(FilesManager.formatPathSeparator(path))) {
+            if (pathString.endsWith(Utils.formatPathSeparator(path))) {
               ObjectId objectId = treeWalk.getObjectId(0);
               ObjectLoader loader = repository.open(objectId);
               // write content to file
               StringWriter writer = new StringWriter();
               IOUtils.copy(loader.openStream(), writer, Charset.defaultCharset());
-              FilesManager.writeContent(
+              Utils.writeContent(
                   sideCollectedFilePath + File.separator + pathString, writer.toString());
               // collect imported files
               if (copyImportedFiles) {

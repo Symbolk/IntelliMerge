@@ -4,7 +4,7 @@ import edu.pku.intellimerge.model.constant.MatchingType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.MatchingEdge;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ public class TestExtract {
   @Test
   public void testExtractMethod() {
     String targetDir =
-        FilesManager.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
+        Utils.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
     TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
     Set<MatchingEdge> refsOurs =
         matching

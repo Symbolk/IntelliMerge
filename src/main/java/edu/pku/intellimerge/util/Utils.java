@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class FilesManager {
+public class Utils {
 
-  private static final Logger logger = LoggerFactory.getLogger(FilesManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
   /**
    * Change the format of files under a folder
@@ -52,7 +52,7 @@ public class FilesManager {
    * @throws FileNotFoundException
    */
   public static boolean isValidFile(File file) throws FileNotFoundException {
-    if (FilesManager.readFileContent(file).isEmpty()) {
+    if (Utils.readFileContent(file).isEmpty()) {
       throw new FileNotFoundException();
     } else if (file != null && (isJavaFile(file))) {
       return true;
@@ -83,7 +83,7 @@ public class FilesManager {
    */
   public static String readFileContent(File file) {
     String content = "";
-    String fileEncoding = FilesEncoding.retrieveEncoding(file);
+    String fileEncoding = FileEncoding.retrieveEncoding(file);
     try (BufferedReader reader =
         Files.newBufferedReader(Paths.get(file.getAbsolutePath()), Charset.forName(fileEncoding))) {
       content = reader.lines().collect(Collectors.joining("\n"));

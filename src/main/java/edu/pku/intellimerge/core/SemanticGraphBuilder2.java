@@ -25,7 +25,7 @@ import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.*;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.slf4j.Logger;
@@ -184,11 +184,11 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private void processCompilationUnit(CompilationUnit cu) {
     String fileName = cu.getStorage().map(CompilationUnit.Storage::getFileName).orElse("");
     String absolutePath =
-        FilesManager.formatPathSeparator(
+        Utils.formatPathSeparator(
             cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""));
     String relativePath =
         absolutePath.replace(
-            FilesManager.formatPathSeparator(
+            Utils.formatPathSeparator(
                 targetDir + File.separator + side.asString() + File.separator),
             "");
 

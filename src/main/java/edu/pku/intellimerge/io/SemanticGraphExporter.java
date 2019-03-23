@@ -2,7 +2,7 @@ package edu.pku.intellimerge.io;
 
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.jgrapht.Graph;
 import org.jgrapht.io.*;
 
@@ -82,7 +82,7 @@ public class SemanticGraphExporter {
    * @param graph
    */
   public static void saveAsDot(Graph<SemanticNode, SemanticEdge> graph, String filePath) {
-    FilesManager.writeContent(filePath, exportAsDotWithType(graph));
+    Utils.writeContent(filePath, exportAsDotWithType(graph));
   }
 
   public static void printVertexAndEdge(Graph<SemanticNode, SemanticEdge> graph) {

@@ -1,12 +1,10 @@
 package edu.pku.intellimerge.model;
 
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class MergeScenario {
   public String repoName;
@@ -60,7 +58,7 @@ public class MergeScenario {
    */
   public boolean isInChangedFile(Side side, String relativePath) {
     // normalize to linux style separators
-    String path = FilesManager.formatPathSeparator(relativePath);
+    String path = Utils.formatPathSeparator(relativePath);
     switch (side) {
       case OURS:
         return oursDiffEntries

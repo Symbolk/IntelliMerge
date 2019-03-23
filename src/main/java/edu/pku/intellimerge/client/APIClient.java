@@ -9,7 +9,7 @@ import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public class APIClient {
    */
   public List<MergeScenario> generateMergeScenarios() {
     List<MergeScenario> mergeScenarios = new ArrayList<>();
-    for (String[] items : FilesManager.readCSV(STATISTICS_PATH, ";")) {
+    for (String[] items : Utils.readCSV(STATISTICS_PATH, ";")) {
 
       String mergeCommitID = items[0];
       String oursCommitID = items[1];
@@ -187,7 +187,7 @@ public class APIClient {
             + File.separator
             + Side.INTELLI.asString()
             + File.separator;
-    FilesManager.clearDir(mergeResultDir);
+    Utils.clearDir(mergeResultDir);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(mergeResultDir, oursGraph, baseGraph, theirsGraph);
     // 3. Match node and merge the 3-way graphs
@@ -207,7 +207,7 @@ public class APIClient {
    * @throws Exception
    */
   public void processDirectory(String targetDir, String resultDir, boolean hasMultipleModule) throws Exception {
-    String targetDirName = FilesManager.getDirSimpleName(targetDir);
+    String targetDirName = Utils.getDirSimpleName(targetDir);
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
@@ -231,7 +231,7 @@ public class APIClient {
     long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Building graph done for {}.", buildingTime, targetDirName);
 
-    FilesManager.clearDir(resultDir);
+    Utils.clearDir(resultDir);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
     // 3. Match node and merge the 3-way graphs.

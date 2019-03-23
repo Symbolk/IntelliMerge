@@ -8,7 +8,7 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
-import edu.pku.intellimerge.util.FilesManager;
+import edu.pku.intellimerge.util.Utils;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class Util {
    * @throws Exception
    */
   public static ThreewayGraphMerger matchGraphsThreeway(String targetDir, String resultDir) {
-    String targetDirName = FilesManager.getDirSimpleName(targetDir);
+    String targetDirName = Utils.getDirSimpleName(targetDir);
     try {
       Stopwatch stopwatch = Stopwatch.createStarted();
       boolean hasMultipleModule = false;
@@ -59,7 +59,7 @@ public class Util {
 
       logger.info("Building graph done for {}", targetDir);
 
-      FilesManager.clearDir(resultDir);
+      Utils.clearDir(resultDir);
       ThreewayGraphMerger merger =
           new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
       merger.threewayMap();
@@ -90,7 +90,7 @@ public class Util {
    * @return
    */
   public static TwowayMatching matchGraphsTwoway(String targetDir, Side side1, Side side2) {
-    String targetDirName = FilesManager.getDirSimpleName(targetDir);
+    String targetDirName = Utils.getDirSimpleName(targetDir);
 
     try {
       Stopwatch stopwatch = Stopwatch.createStarted();
