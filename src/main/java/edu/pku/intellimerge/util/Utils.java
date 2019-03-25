@@ -2,6 +2,9 @@ package edu.pku.intellimerge.util;
 
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
+import com.univocity.parsers.common.record.Record;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
@@ -146,19 +149,19 @@ public class Utils {
   }
 
   /**
-   * Read csv and return a list of separated items
+   * Read csv file and return a list of separated items as string
    *
    * @param path
-   * @param separator
+   * @param delimiter
    * @return
    */
-  public static List<String[]> readCSV(String path, String separator) {
+  public static List<String[]> readCSVAsString(String path, String delimiter) {
     List<String[]> results = new ArrayList<>();
     try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
       reader.readLine(); // header
       String line = null;
       while ((line = reader.readLine()) != null) {
-        String items[] = line.split(separator);
+        String items[] = line.split(delimiter);
         results.add(items);
       }
     } catch (FileNotFoundException e) {
@@ -169,6 +172,32 @@ public class Utils {
     return results;
   }
 
+  /**
+   * Read csv file and return a list of records
+   *
+   * @param path
+   * @param delimiter
+   * @return
+   */
+  public static List<Record> readCSVAsRecord(String path, String delimiter) {
+    List<Record> records = new ArrayList<>();
+    CsvParserSettings settings = new CsvParserSettings();
+    settings.setHeaderExtractionEnabled(true);
+    settings.getFormat().setLineSeparator(System.getProperty("line.separator"));
+    settings.getFormat().setDelimiter(delimiter);
+    settings.selectFields("merge_commit", "parent1", "parent2", "merge_base");
+
+    CsvParser parser = new CsvParser(settings);
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+      records = parser.parseAllRecords(reader);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return records;
+  }
   /**
    * Writes the given content in the file of the given file path.
    *

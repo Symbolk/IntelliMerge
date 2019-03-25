@@ -88,7 +88,7 @@ public class APIClient {
    */
   public List<MergeScenario> generateMergeScenarios() {
     List<MergeScenario> mergeScenarios = new ArrayList<>();
-    for (String[] items : Utils.readCSV(STATISTICS_PATH, ";")) {
+    for (String[] items : Utils.readCSVAsString(STATISTICS_PATH, ";")) {
 
       String mergeCommitID = items[0];
       String oursCommitID = items[1];
