@@ -204,9 +204,10 @@ public class APIClient {
    * Analyze all java files under the target directory, as if they are collected from merge scenario
    *
    * @param targetDir
+   * @return runtime at each phase in order
    * @throws Exception
    */
-  public void processDirectory(String targetDir, String resultDir, boolean hasMultipleModule) throws Exception {
+  public List<Long> processDirectory(String targetDir, String resultDir, boolean hasMultipleModule) throws Exception {
     String targetDirName = Utils.getDirSimpleName(targetDir);
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -249,5 +250,11 @@ public class APIClient {
     logger.info("({}ms) Merging done for {}.", matchingTime, targetDirName);
 
     logger.info("Overall time cost: {}ms.", buildingTime + matchingTime + mergingTime);
+
+    List<Long> runtimes = new ArrayList<>();
+    runtimes.add(buildingTime);
+    runtimes.add(matchingTime);
+    runtimes.add(mergingTime);
+    return runtimes;
   }
 }

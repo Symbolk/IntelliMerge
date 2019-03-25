@@ -86,9 +86,10 @@ public class Evaluator {
           String manualMergedDir =
               sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
           // 1. merge to get our results
-          apiClient.processDirectory(sourceDir, mergeResultDir, true);
+          // runtime for each phase (need to run multiple times and get average)
+          List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, true);
           // 2. format the manual results
-          //      Utils.formatAllJavaFiles(manualMergedDir);
+          Utils.formatAllJavaFiles(manualMergedDir);
 
           Document scenarioDoc =
               new Document("repo_name", REPO_NAME)
@@ -96,6 +97,12 @@ public class Evaluator {
                   .append("parent_1", parent1)
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit);
+          if (runtimes.size() == 3) {
+            scenarioDoc
+                .append("time_graph_building", runtimes.get(0))
+                .append("time_graph_matching", runtimes.get(1))
+                .append("time_graph_merging", runtimes.get(2));
+          }
 
           // 3. compare merge results with manual results
           scenarioDoc.append(
@@ -138,14 +145,15 @@ public class Evaluator {
 
     // for each file in the manual results, find and diff with the corresponding intelli result
     for (SourceFile manualMergedFile : manualMergedResults) {
-      String manualMergedPath = manualMergedFile.getAbsolutePath();
+      String fromFilePath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
-      String intelliMergedPath = Utils.formatPathSeparator(mergeResultDir + relativePath);
+      String toFilePath = Utils.formatPathSeparator(mergeResultDir + relativePath);
 
       int loc =
-          Utils.readContentLinesFromPath(manualMergedPath)
+          Utils.readContentLinesFromPath(fromFilePath)
               .size(); // the number of code lines in the manual merged file
-      int diffLoc = 0;
+      int fromDiffLoc = 0;
+      int toDiffLoc = 0;
       List<Document> hunkDocuments = new ArrayList<>();
 
       String diffOutput =
@@ -158,8 +166,8 @@ public class Evaluator {
               "--ignore-blank-lines",
               "--no-index",
               "-U0",
-              manualMergedPath,
-              intelliMergedPath);
+              fromFilePath,
+              toFilePath);
       // 4. parse diff output and save in the mongodb
       DiffParser parser = new UnifiedDiffParser();
       List<Diff> diffs = parser.parse(new ByteArrayInputStream(diffOutput.getBytes()));
@@ -191,15 +199,17 @@ public class Evaluator {
                   .append("from_content", fromContent)
                   .append("to_content", toContent);
           hunkDocuments.add(hunkDocument);
-          diffLoc += fromLOC;
+          fromDiffLoc += fromLOC;
+          toDiffLoc += toLOC;
         }
       }
       if (hunkDocuments.size() > 0) {
 
         Document fileDocument =
             new Document("file_relative_path", relativePath)
-                .append("loc", loc)
-                .append("same_loc", loc - diffLoc)
+                .append("manual_loc", loc)
+                .append("from_diff_loc", fromDiffLoc)
+                .append("to_diff_loc", toDiffLoc)
                 .append("diff_hunks", hunkDocuments);
         fileDocs.add(fileDocument);
       }
