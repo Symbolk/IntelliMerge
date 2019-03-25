@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.univocity.parsers.common.record.Record;
 import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
@@ -21,7 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -61,25 +64,52 @@ public class Evaluator {
               MERGE_RESULT_DIR,
               STATISTICS_PATH,
               DOT_DIR);
-      String mergeCommit = "7fd7c83851fb87d727c220043bac0e4e81632182";
-      String sourceDir = "D:\\github\\merges\\javaparser\\" + mergeCommit;
-      //      String sourceDir = "D:\\github\\test";
-      String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
-      String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
-      // 1. merge to get our results
-      //      apiClient.processDirectory(sourceDir, mergeResultDir, true);
-      // 2. format the manual results
-      //      Utils.formatAllJavaFiles(manualMergedDir);
 
-      // 3. compare merge results with manual results
-      compareMergeResults(REPO_NAME, mergeCommit, collection, mergeResultDir, manualMergedDir);
+      // read merge scenario info from csv, merge and record runtime data in the database
+      String csvFilePath =
+          "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_2.csv";
+      List<Record> records = Utils.readCSVAsRecord(csvFilePath, ";");
+      Set<String> processedMergeCommits = new HashSet<>();
 
-      //      String targetDir = "D:\\github\\test";
-      //      List<String> relativePaths = new ArrayList<>();
-      //
-      // relativePaths.add("javaparser-core\\src\\main\\java\\com\\github\\javaparser\\ast\\Modifier.java");
-      //      Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
+      for (Record record : records) {
+        String mergeCommit = record.getString("merge_commit");
+        String parent1 = record.getString("parent1");
+        String parent2 = record.getString("parent2");
+        String baseCommit = record.getString("merge_base");
+        if (!processedMergeCommits.contains(mergeCommit)) {
+          processedMergeCommits.add(mergeCommit);
+          //      String mergeCommit = "7fd7c83851fb87d727c220043bac0e4e81632182";
+          String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
+          //      String sourceDir = "D:\\github\\test";
+          String mergeResultDir =
+              sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
+          String manualMergedDir =
+              sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
+          // 1. merge to get our results
+          apiClient.processDirectory(sourceDir, mergeResultDir, true);
+          // 2. format the manual results
+          //      Utils.formatAllJavaFiles(manualMergedDir);
 
+          Document scenarioDoc =
+              new Document("repo_name", REPO_NAME)
+                  .append("merge_commit", mergeCommit)
+                  .append("parent_1", parent1)
+                  .append("parent_2", parent2)
+                  .append("base_commit", baseCommit);
+
+          // 3. compare merge results with manual results
+          scenarioDoc.append(
+              "conflict_files",
+              compareMergeResults(REPO_NAME, mergeCommit, mergeResultDir, manualMergedDir));
+          collection.insertOne(scenarioDoc);
+
+          //      String targetDir = "D:\\github\\test";
+          //      List<String> relativePaths = new ArrayList<>();
+          //
+          // relativePaths.add("javaparser-core\\src\\main\\java\\com\\github\\javaparser\\ast\\Modifier.java");
+          //      Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
+        }
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -90,17 +120,12 @@ public class Evaluator {
    *
    * @param repoName
    * @param mergeCommit
-   * @param collection
    * @param mergeResultDir
    * @param manualMergedDir
    * @throws Exception
    */
-  private static void compareMergeResults(
-      String repoName,
-      String mergeCommit,
-      MongoCollection<Document> collection,
-      String mergeResultDir,
-      String manualMergedDir)
+  private static List<Document> compareMergeResults(
+      String repoName, String mergeCommit, String mergeResultDir, String manualMergedDir)
       throws Exception {
 
     ArrayList<SourceFile> temp = new ArrayList<>();
@@ -108,6 +133,8 @@ public class Evaluator {
         Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
     int numberOfMergedFiles = manualMergedResults.size();
     int numberOfDiffFiles = 0;
+
+    List<Document> fileDocs = new ArrayList<>();
 
     // for each file in the manual results, find and diff with the corresponding intelli result
     for (SourceFile manualMergedFile : manualMergedResults) {
@@ -118,6 +145,9 @@ public class Evaluator {
       int loc =
           Utils.readContentLinesFromPath(manualMergedPath)
               .size(); // the number of code lines in the manual merged file
+      int diffLoc = 0;
+      List<Document> hunkDocuments = new ArrayList<>();
+
       String diffOutput =
           Utils.runSystemCommand(
               REPO_DIR,
@@ -144,8 +174,6 @@ public class Evaluator {
           }
         }
         // save the true positive hunks into mongodb
-        List<Document> hunkDocuments = new ArrayList<>();
-        int diffLoc = 0;
         numberOfDiffFiles += visitedHunks.size() > 0 ? 1 : 0;
 
         for (Hunk hunk : visitedHunks) {
@@ -165,14 +193,15 @@ public class Evaluator {
           hunkDocuments.add(hunkDocument);
           diffLoc += fromLOC;
         }
-        Document doc =
-            new Document("repo_name", repoName)
-                .append("merge_commit", mergeCommit)
-                .append("file_relative_path", relativePath)
+      }
+      if (hunkDocuments.size() > 0) {
+
+        Document fileDocument =
+            new Document("file_relative_path", relativePath)
                 .append("loc", loc)
                 .append("same_loc", loc - diffLoc)
                 .append("diff_hunks", hunkDocuments);
-        collection.insertOne(doc);
+        fileDocs.add(fileDocument);
       }
     }
     logger.info(
@@ -181,6 +210,7 @@ public class Evaluator {
         mergeCommit,
         numberOfMergedFiles,
         numberOfMergedFiles - numberOfDiffFiles);
+    return fileDocs;
   }
 
   /**
