@@ -229,7 +229,8 @@ public class ThreewayGraphMerger {
         }
         // consider unmatched nodes as added ones
         // if parent matched, insert it into the children of parent, between nearest neighbors
-        // TODO deduplicate added nodes
+        // handle possible duplicate added nodes to avoid semantic conflicts
+        handleDuplicateAddedNodes(b2oMatching, b2tMatching);
         mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
         mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
 
@@ -239,6 +240,21 @@ public class ThreewayGraphMerger {
         return null;
       }
     }
+  }
+
+  /**
+   * Handle duplicate added nodes to avoid semantic conflicts, rare but still possible
+   *
+   * @param b2oMatching
+   * @param b2tMatching
+   */
+  private void handleDuplicateAddedNodes(TwowayMatching b2oMatching, TwowayMatching b2tMatching) {
+    // TODO deduplicate added nodes
+    // if signature is duplicate
+
+    // if body is the same, remove one of them (default theirs)
+
+    // if body is different, try to merge theirs into ours
   }
 
   /**
@@ -325,7 +341,7 @@ public class ThreewayGraphMerger {
   /**
    * Merge unmatched nodes (added) from ours and theirs
    *
-   * @param node
+   * @param node parent node to add into
    * @param mergedNonTerminal
    * @param matching
    */

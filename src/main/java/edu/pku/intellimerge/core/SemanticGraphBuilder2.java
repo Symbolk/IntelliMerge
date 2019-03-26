@@ -453,11 +453,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           access = fd.getAccessSpecifier().asString();
           modifiers =
               fd.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
-
           for (VariableDeclarator field : fd.getVariables()) {
             displayName = field.toString();
             qualifiedName = qualifiedTypeName + "." + displayName;
-            originalSignature = getFieldOriginalSignature(fd);
+            originalSignature = field.getTypeAsString() + " " + field.getNameAsString();
             body =
                 field.getInitializer().isPresent()
                     ? "=" + field.getInitializer().get().toString() + ";"
