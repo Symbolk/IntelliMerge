@@ -1,5 +1,8 @@
 package edu.pku.intellimerge.util;
 
+import com.commentremover.app.CommentProcessor;
+import com.commentremover.app.CommentRemover;
+import com.commentremover.exception.CommentRemoverException;
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import com.univocity.parsers.common.record.Record;
@@ -486,7 +489,7 @@ public class Utils {
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.THEIRS);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.MANUAL);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.GIT);
-      //      copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -569,5 +572,25 @@ public class Utils {
    */
   public static String getStringContentOneLine(String content) {
     return (content.trim().replaceAll("\\r\\n|\\r|\\n", "")).replaceAll("\\s+", "");
+  }
+
+  /** Remove all comments in Java */
+  public static void removeAllComments(String targetDir) {
+    try {
+      CommentRemover commentRemover =
+          new CommentRemover.CommentRemoverBuilder()
+              .removeJava(true)
+              .removeTodos(true) // Remove todos
+              .removeSingleLines(true) // Do not remove single line type comments
+              .removeMultiLines(true) // Remove multiple type comments
+              .preserveJavaClassHeaders(false) // Preserves class header comment
+              .preserveCopyRightHeaders(false) // Preserves copyright comment
+              .startExternalPath(targetDir) // Give it full path for external dir
+              .build();
+      CommentProcessor commentProcessor = new CommentProcessor(commentRemover);
+      commentProcessor.start();
+    } catch (CommentRemoverException e) {
+      e.printStackTrace();
+    }
   }
 }
