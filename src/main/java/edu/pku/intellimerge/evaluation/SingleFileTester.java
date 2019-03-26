@@ -24,7 +24,7 @@ public class SingleFileTester {
   public static void main(String[] args) throws Exception {
     PropertyConfigurator.configure("log4j.properties");
 
-    //    String mergeCommit = "90415702d623180f30e52e3d9426d3ef10b98276";
+    //    String mergeCommit = "caf5b8cb738de9f6b48857fd91f18be0617e18fc";
     //    String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
     //
     //    String targetDir = "D:\\github\\test2";
@@ -32,9 +32,9 @@ public class SingleFileTester {
     //
     //    relativePaths.add(
     //
-    // "javaparser-core/src/main/java/com/github/javaparser/ast/body/MethodDeclaration.java");
+    // "javaparser-core/src/main/java/com/github/javaparser/printer/PrettyPrinterConfiguration.java");
     //    Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
-
+    //
     APIClient apiClient =
         new APIClient(
             REPO_NAME,
@@ -47,7 +47,9 @@ public class SingleFileTester {
             DOT_DIR);
     String sourceDir = "D:\\github\\test2";
     String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
+    String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
     List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, false);
     Utils.removeAllComments(mergeResultDir);
+    Utils.formatAllJavaFiles(manualMergedDir);
   }
 }

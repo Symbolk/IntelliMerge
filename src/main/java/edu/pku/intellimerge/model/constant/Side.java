@@ -6,7 +6,8 @@ public enum Side {
   THEIRS(2, "theirs"),
   MANUAL(3, "manualMerged"),
   GIT(4, "gitMerged"),
-  INTELLI(5, "intelliMerged");
+  INTELLI(5, "intelliMerged"),
+  JFST(6, "jfstMerged");
 
   private int index;
   private String label;

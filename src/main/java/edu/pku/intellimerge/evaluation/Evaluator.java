@@ -51,8 +51,12 @@ public class Evaluator {
     try {
       MongoClientURI connectionString = new MongoClientURI("mongodb://localhost:27017");
       MongoClient mongoClient = new MongoClient(connectionString);
-      MongoDatabase database = mongoClient.getDatabase("CompareWithManual");
-      MongoCollection<Document> collection = database.getCollection(REPO_NAME);
+      MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
+      MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
+      MongoDatabase jfstDB = mongoClient.getDatabase("jFSTVSManual");
+      MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
+      MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
+      MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
 
       APIClient apiClient =
           new APIClient(
@@ -78,17 +82,23 @@ public class Evaluator {
         String baseCommit = record.getString("merge_base");
         if (!processedMergeCommits.contains(mergeCommit)) {
           processedMergeCommits.add(mergeCommit);
+          // source files to be merged
           String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
-          String mergeResultDir =
+
+          // merged files by 3 tools
+          String intelliMergedDir =
               sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
+          String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
+          String gitMergedDir = sourceDir + File.separator + Side.GIT.asString() + File.separator;
           String manualMergedDir =
               sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
-          // 1. merge to get our results
+          // 1. merge with IntelliMerge and jFSTMerge
           // runtime for each phase (need to run multiple times and get average)
-          List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, true);
+          List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir, true);
 
           // 2. remove all comments and format the manual results
-          Utils.removeAllComments(mergeResultDir);
+          Utils.removeAllComments(intelliMergedDir);
+          Utils.removeAllComments(gitMergedDir);
           Utils.removeAllComments(manualMergedDir);
           Utils.formatAllJavaFiles(manualMergedDir);
 
@@ -113,8 +123,20 @@ public class Evaluator {
           }
           scenarioDoc.append(
               "diff_results",
-              compareMergeResults(REPO_NAME, mergeCommit, mergeResultDir, manualMergedResults));
-          collection.insertOne(scenarioDoc);
+              compareMergeResults(REPO_NAME, mergeCommit, intelliMergedDir, manualMergedResults));
+          intelliDBCollection.insertOne(scenarioDoc);
+
+          scenarioDoc =
+              new Document("repo_name", REPO_NAME)
+                  .append("merge_commit", mergeCommit)
+                  .append("parent_1", parent1)
+                  .append("parent_2", parent2)
+                  .append("base_commit", baseCommit)
+                  .append("num_of_conflict_files", manualMergedResults.size());
+          scenarioDoc.append(
+              "diff_results",
+              compareMergeResults(REPO_NAME, mergeCommit, gitMergedDir, manualMergedResults));
+          gitDBCollection.insertOne(scenarioDoc);
         }
       }
     } catch (Exception e) {
@@ -162,6 +184,7 @@ public class Evaluator {
               "--ignore-cr-at-eol",
               "--ignore-all-space",
               "--ignore-blank-lines",
+              "--ignore-space-change",
               "--no-index",
               "-U0",
               fromFilePath,
