@@ -249,12 +249,14 @@ public class APIClient {
     long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Merging done for {}.", matchingTime, targetDirName);
 
-    logger.info("Overall time cost: {}ms.", buildingTime + matchingTime + mergingTime);
+    long overall = buildingTime + matchingTime + mergingTime;
+    logger.info("Overall time cost: {}ms.", overall);
 
     List<Long> runtimes = new ArrayList<>();
     runtimes.add(buildingTime);
     runtimes.add(matchingTime);
     runtimes.add(mergingTime);
+    runtimes.add(overall);
     return runtimes;
   }
 }

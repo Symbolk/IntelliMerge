@@ -67,7 +67,7 @@ public class Evaluator {
 
       // read merge scenario info from csv, merge and record runtime data in the database
       String csvFilePath =
-          "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_2.csv";
+          "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_173.csv";
       List<Record> records = Utils.readCSVAsRecord(csvFilePath, ";");
       Set<String> processedMergeCommits = new HashSet<>();
 
@@ -78,9 +78,7 @@ public class Evaluator {
         String baseCommit = record.getString("merge_base");
         if (!processedMergeCommits.contains(mergeCommit)) {
           processedMergeCommits.add(mergeCommit);
-          //      String mergeCommit = "7fd7c83851fb87d727c220043bac0e4e81632182";
           String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
-          //      String sourceDir = "D:\\github\\test";
           String mergeResultDir =
               sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
           String manualMergedDir =
@@ -88,33 +86,35 @@ public class Evaluator {
           // 1. merge to get our results
           // runtime for each phase (need to run multiple times and get average)
           List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, true);
-          // 2. format the manual results
+
+          // 2. remove all comments and format the manual results
+          Utils.removeAllComments(mergeResultDir);
+          Utils.removeAllComments(manualMergedDir);
           Utils.formatAllJavaFiles(manualMergedDir);
+
+          // 3. compare merge results with manual results
+          ArrayList<SourceFile> temp = new ArrayList<>();
+          ArrayList<SourceFile> manualMergedResults =
+              Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
 
           Document scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
                   .append("parent_1", parent1)
                   .append("parent_2", parent2)
-                  .append("base_commit", baseCommit);
-          if (runtimes.size() == 3) {
+                  .append("base_commit", baseCommit)
+                  .append("num_of_conflict_files", manualMergedResults.size());
+          if (runtimes.size() == 4) {
             scenarioDoc
                 .append("time_graph_building", runtimes.get(0))
                 .append("time_graph_matching", runtimes.get(1))
-                .append("time_graph_merging", runtimes.get(2));
+                .append("time_graph_merging", runtimes.get(2))
+                .append("time_overall", runtimes.get(3));
           }
-
-          // 3. compare merge results with manual results
           scenarioDoc.append(
-              "conflict_files",
-              compareMergeResults(REPO_NAME, mergeCommit, mergeResultDir, manualMergedDir));
+              "diff_results",
+              compareMergeResults(REPO_NAME, mergeCommit, mergeResultDir, manualMergedResults));
           collection.insertOne(scenarioDoc);
-
-          //      String targetDir = "D:\\github\\test";
-          //      List<String> relativePaths = new ArrayList<>();
-          //
-          // relativePaths.add("javaparser-core\\src\\main\\java\\com\\github\\javaparser\\ast\\Modifier.java");
-          //      Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
         }
       }
     } catch (Exception e) {
@@ -128,16 +128,14 @@ public class Evaluator {
    * @param repoName
    * @param mergeCommit
    * @param mergeResultDir
-   * @param manualMergedDir
    * @throws Exception
    */
   private static List<Document> compareMergeResults(
-      String repoName, String mergeCommit, String mergeResultDir, String manualMergedDir)
-      throws Exception {
+      String repoName,
+      String mergeCommit,
+      String mergeResultDir,
+      ArrayList<SourceFile> manualMergedResults) {
 
-    ArrayList<SourceFile> temp = new ArrayList<>();
-    ArrayList<SourceFile> manualMergedResults =
-        Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
     int numberOfMergedFiles = manualMergedResults.size();
     int numberOfDiffFiles = 0;
 
@@ -204,7 +202,6 @@ public class Evaluator {
         }
       }
       if (hunkDocuments.size() > 0) {
-
         Document fileDocument =
             new Document("file_relative_path", relativePath)
                 .append("manual_loc", loc)
