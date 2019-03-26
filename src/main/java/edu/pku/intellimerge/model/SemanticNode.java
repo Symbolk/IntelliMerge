@@ -24,8 +24,10 @@ public abstract class SemanticNode {
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
   private String comment;
-  // annotations can be used before package, class, constructor, method/interface, field, parameter, local variables
+  // annotations can be used before package, class, constructor, method/interface, field, parameter,
+  // local variables
   private List<String> annotations;
+  private List<String> modifiers;
   // whether the node is defined inside the graph or not
   private boolean isInternal;
 
@@ -39,7 +41,8 @@ public abstract class SemanticNode {
       String qualifiedName,
       String originalSignature,
       String comment,
-      List<String> annotations) {
+      List<String> annotations,
+      List<String> modifiers) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -48,6 +51,7 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
     this.comment = comment;
     this.annotations = annotations;
+    this.modifiers = modifiers;
     this.children = new ArrayList<>();
     this.isInternal = true;
   }
@@ -61,6 +65,7 @@ public abstract class SemanticNode {
       String originalSignature,
       String comment,
       List<String> annotations,
+      List<String> modifiers,
       boolean isInternal) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
@@ -70,6 +75,7 @@ public abstract class SemanticNode {
     this.originalSignature = originalSignature;
     this.comment = comment;
     this.annotations = annotations;
+    this.modifiers = modifiers;
     this.children = new ArrayList<>();
     this.isInternal = isInternal;
   }
@@ -88,6 +94,10 @@ public abstract class SemanticNode {
 
   public List<String> getAnnotations() {
     return annotations;
+  }
+
+  public void setAnnotations(List<String> annotations) {
+    this.annotations = annotations;
   }
 
   public NodeType getNodeType() {
@@ -114,12 +124,16 @@ public abstract class SemanticNode {
     return originalSignature;
   }
 
-  public void setAnnotations(List<String> annotations) {
-    this.annotations = annotations;
-  }
-
   public void setOriginalSignature(String originalSignature) {
     this.originalSignature = originalSignature;
+  }
+
+  public List<String> getModifiers() {
+    return modifiers;
+  }
+
+  public void setModifiers(List<String> modifiers) {
+    this.modifiers = modifiers;
   }
 
   /** The unique identifier of the node in this project */

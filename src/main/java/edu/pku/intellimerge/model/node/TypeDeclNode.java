@@ -11,7 +11,6 @@ import java.util.List;
  */
 public class TypeDeclNode extends NonTerminalNode {
   private String access; // can be empty for most inner class
-  private List<String> modifiers; // abstract
   private String type; // annotation/class/interface/enum
   private String typeName;
   private String extendType; // java only allows single extending
@@ -30,9 +29,8 @@ public class TypeDeclNode extends NonTerminalNode {
       List<String> modifiers,
       String type,
       String typeName) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations);
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations, modifiers);
     this.access = access;
-    this.modifiers = modifiers;
     this.type = type;
     this.typeName = typeName;
 

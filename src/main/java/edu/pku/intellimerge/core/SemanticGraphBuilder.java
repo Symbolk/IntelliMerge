@@ -484,6 +484,9 @@ public class SemanticGraphBuilder {
         // 5. constructor
         if (child instanceof ConstructorDeclaration) {
           ConstructorDeclaration cd = (ConstructorDeclaration) child;
+          modifiers =
+              cd.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
+
           displayName = cd.getSignature().toString();
           qualifiedName = qualifiedTypeName + "." + displayName;
           ConstructorDeclNode cdNode =
@@ -499,6 +502,7 @@ public class SemanticGraphBuilder {
                       .stream()
                       .map(AnnotationExpr::toString)
                       .collect(Collectors.toList()),
+                  modifiers,
                   displayName,
                   cd.getBody().toString(),
                   cd.getRange());

@@ -265,6 +265,6 @@ public class Evaluator {
             .map(Line::getContent)
             .collect(Collectors.joining("\n"));
 
-    return ignoreEmptyChars ? Utils.getStringContentOneLine(content) : content;
+    return ignoreEmptyChars ? Utils.getStringContentOneLine(content).trim() : content.trim();
   }
 }

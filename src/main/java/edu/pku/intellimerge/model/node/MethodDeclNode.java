@@ -10,7 +10,6 @@ import java.util.Optional;
 
 public class MethodDeclNode extends TerminalNode {
   private String access;
-  private List<String> modifiers;
   private List<String> typeParameters;
   private String returnType;
   private String methodName;
@@ -48,10 +47,10 @@ public class MethodDeclNode extends TerminalNode {
         originalSignature,
         comment,
         annotations,
+        modifiers,
         body,
         range); // block or ""(abstract method or interface)
     this.access = access;
-    this.modifiers = modifiers;
     this.typeParameters = typeParameters;
     this.returnType = returnType;
     this.methodName = methodName;
@@ -93,10 +92,6 @@ public class MethodDeclNode extends TerminalNode {
 
   public String getAccess() {
     return access;
-  }
-
-  public List<String> getModifiers() {
-    return modifiers;
   }
 
   public String getReturnType() {

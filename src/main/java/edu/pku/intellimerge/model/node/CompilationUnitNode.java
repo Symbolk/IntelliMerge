@@ -28,7 +28,7 @@ public class CompilationUnitNode extends NonTerminalNode {
       String absolutePath,
       String packageStatement,
       Set<String> importStatements) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, new ArrayList<>());
+    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment);
     this.fileName = fileName;
     this.relativePath = relativePath;
     this.absolutePath = absolutePath;

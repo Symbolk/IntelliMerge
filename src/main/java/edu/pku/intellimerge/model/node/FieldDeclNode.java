@@ -10,7 +10,6 @@ import java.util.Optional;
 
 public class FieldDeclNode extends TerminalNode {
   private String access;
-  private List<String> modifiers;
   private String fieldType;
   private String fieldName;
   // initializer as the body of field
@@ -39,10 +38,10 @@ public class FieldDeclNode extends TerminalNode {
         originalSignature,
         comment,
         annotations,
+        modifiers,
         body,
         range); // body initializer or ""
     this.access = access;
-    this.modifiers = modifiers;
     this.fieldType = fieldType;
     this.fieldName = fieldName;
 
@@ -55,10 +54,6 @@ public class FieldDeclNode extends TerminalNode {
 
   public String getAccess() {
     return access;
-  }
-
-  public List<String> getModifiers() {
-    return modifiers;
   }
 
   public String getFieldType() {

@@ -23,7 +23,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
@@ -178,12 +181,18 @@ public class ThreewayGraphMerger {
                 oursTerminal.getAnnotations(),
                 baseTerminal.getAnnotations(),
                 theirsTerminal.getAnnotations());
+        List<String> mergedModifiers =
+            mergeByUnion(
+                oursTerminal.getModifiers(),
+                baseTerminal.getModifiers(),
+                theirsTerminal.getModifiers());
         String mergedSignature = mergeComponents(oursTerminal, baseTerminal, theirsTerminal);
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
         mergedTerminal.setComment(mergedComment);
         mergedTerminal.setAnnotations(mergedAnnotations);
+        mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
         return mergedTerminal;
@@ -202,9 +211,12 @@ public class ThreewayGraphMerger {
         List<String> mergedAnnotations =
             mergeByUnion(
                 oursNode.getAnnotations(), node.getAnnotations(), theirsNode.getAnnotations());
+        List<String> mergedModifiers =
+            mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
         String mergedSignature = mergeComponents(oursNode, node, theirsNode);
         mergedNonTerminal.setComment(mergedComment);
         mergedNonTerminal.setAnnotations(mergedAnnotations);
+        mergedNonTerminal.setModifiers(mergedModifiers);
         mergedNonTerminal.setOriginalSignature(mergedSignature);
 
         // iteratively merge its children
@@ -217,6 +229,7 @@ public class ThreewayGraphMerger {
         }
         // consider unmatched nodes as added ones
         // if parent matched, insert it into the children of parent, between nearest neighbors
+        // TODO deduplicate added nodes
         mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
         mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
 
@@ -241,14 +254,7 @@ public class ThreewayGraphMerger {
       MethodDeclNode oursMD = (MethodDeclNode) ours;
       MethodDeclNode baseMD = (MethodDeclNode) base;
       MethodDeclNode theirsMD = (MethodDeclNode) theirs;
-      //      builder.append(mergeTextually(oursMD.getAccess(), baseMD.getAccess(),
-      // theirsMD.getAccess()));
-      // access is considered to be part of modifiers
-      builder
-          .append(
-              mergeByUnion(
-                  oursMD.getModifiers(), baseMD.getModifiers(), theirsMD.getModifiers(), " "))
-          .append(" ");
+
       if (oursMD.getTypeParameters().size()
               + baseMD.getTypeParameters().size()
               + theirsMD.getTypeParameters().size()
@@ -256,7 +262,7 @@ public class ThreewayGraphMerger {
         builder
             .append("<")
             .append(
-                mergeByUnion(
+                mergeByUnionToString(
                     oursMD.getTypeParameters(),
                     baseMD.getTypeParameters(),
                     theirsMD.getTypeParameters(),
@@ -288,7 +294,7 @@ public class ThreewayGraphMerger {
         builder
             .append(" throws ")
             .append(
-                mergeByUnion(
+                mergeByUnionToString(
                     oursMD.getThrowExceptions(),
                     baseMD.getThrowExceptions(),
                     theirsMD.getThrowExceptions(),
@@ -298,11 +304,6 @@ public class ThreewayGraphMerger {
       FieldDeclNode oursFD = (FieldDeclNode) ours;
       FieldDeclNode baseFD = (FieldDeclNode) base;
       FieldDeclNode theirsFD = (FieldDeclNode) theirs;
-      builder
-          .append(
-              mergeByUnion(
-                  oursFD.getModifiers(), baseFD.getModifiers(), theirsFD.getModifiers(), " "))
-          .append(" ");
       builder
           .append(
               mergeTextually(oursFD.getFieldType(), baseFD.getFieldType(), theirsFD.getFieldType()))
@@ -434,7 +435,7 @@ public class ThreewayGraphMerger {
    * @param right
    * @return
    */
-  private String mergeByUnion(
+  private String mergeByUnionToString(
       List<String> left, List<String> base, List<String> right, String delimiter) {
     List<String> unionList = new ArrayList<>();
     unionList.addAll(left);

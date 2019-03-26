@@ -21,6 +21,7 @@ public class ConstructorDeclNode extends TerminalNode {
       String originalSignature,
       String comment,
       List<String> annotations,
+      List<String> modifiers,
       String constructorName,
       String body,
       Optional<Range> range) {
@@ -32,7 +33,7 @@ public class ConstructorDeclNode extends TerminalNode {
         qualifiedName,
         originalSignature,
         comment,
-        annotations,
+        annotations,modifiers,
         body,
         range);
     this.constructorName = constructorName;

@@ -31,6 +31,7 @@ public class InitializerDeclNode extends TerminalNode {
         originalSignature,
         comment,
         new ArrayList<>(),
+        new ArrayList<>(),
         body,
         range);
     this.isStatic = isStatic;

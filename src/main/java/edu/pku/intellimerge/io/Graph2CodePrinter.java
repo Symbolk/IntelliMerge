@@ -85,6 +85,7 @@ public class Graph2CodePrinter {
     if (node instanceof TerminalNode) {
       builder.append(node.getComment());
       builder.append(node.getAnnotations().stream().collect(Collectors.joining("\n"))).append("\n");
+      builder.append(node.getModifiers().stream().collect(Collectors.joining(" "))).append(" ");
       if (node.getNodeType().equals(NodeType.INITIALIZER_BLOCK)) {
         builder.append(node.getOriginalSignature().contains("static") ? "static" : "");
       } else {

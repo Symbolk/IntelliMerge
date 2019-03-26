@@ -23,6 +23,7 @@ public class TerminalNode extends SemanticNode {
       String originalSignature,
       String comment,
       List<String> annotations,
+      List<String> modifiers,
       String body,
       Optional<Range> range) {
     super(
@@ -33,7 +34,8 @@ public class TerminalNode extends SemanticNode {
         qualifiedName,
         originalSignature,
         comment,
-        annotations);
+        annotations,
+        modifiers);
     this.body = body;
     this.range = range; // since javaparser stores range in Optional, so directly save it
   }
@@ -55,6 +57,7 @@ public class TerminalNode extends SemanticNode {
         originalSignature,
         "",
         new ArrayList<>(),
+        new ArrayList<>(),
         false);
     this.range = range; // since javaparser stores range in Optional, so directly save it
   }
@@ -70,6 +73,7 @@ public class TerminalNode extends SemanticNode {
         this.getOriginalSignature(),
         this.getComment(),
         this.getAnnotations(),
+        this.getModifiers(),
         this.getBody(),
         this.range);
   }
