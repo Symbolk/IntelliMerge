@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.univocity.parsers.common.record.Record;
 import edu.pku.intellimerge.client.APIClient;
+import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.Utils;
@@ -82,7 +83,6 @@ public class Evaluator {
         String parent2 = record.getString("parent2");
         String baseCommit = record.getString("merge_base");
         if (!processedMergeCommits.contains(mergeCommit)) {
-          processedMergeCommits.add(mergeCommit);
           // source files to be merged
           String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
 
@@ -122,8 +122,9 @@ public class Evaluator {
                 .append("time_graph_merging", runtimes.get(2))
                 .append("time_overall", runtimes.get(3));
           }
+          scenarioDoc.append("merge_conflicts", extractMergeConflicts(intelliMergedDir, false));
           Pair<Double, List<Document>> intelliVSmanual =
-              compareMergeResults(REPO_NAME, mergeCommit, intelliMergedDir, manualMergedResults);
+              compareAutoMerged(intelliMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merged_precision", intelliVSmanual.getLeft());
           scenarioDoc.append("auto_merged", intelliVSmanual.getRight());
           intelliDBCollection.insertOne(scenarioDoc);
@@ -135,11 +136,15 @@ public class Evaluator {
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit)
                   .append("num_of_conflict_files", manualMergedResults.size());
+          scenarioDoc.append("merge_conflicts", extractMergeConflicts(gitMergedDir, true));
           Pair<Double, List<Document>> gitVSmanual =
-              compareMergeResults(REPO_NAME, mergeCommit, gitMergedDir, manualMergedResults);
+              compareAutoMerged(gitMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merged_precision", gitVSmanual.getLeft());
           scenarioDoc.append("auto_merged", gitVSmanual.getRight());
           gitDBCollection.insertOne(scenarioDoc);
+
+          logger.info("Done with {}:{}", REPO_NAME, mergeCommit);
+          processedMergeCommits.add(mergeCommit);
         }
       }
     } catch (Exception e) {
@@ -148,23 +153,59 @@ public class Evaluator {
   }
 
   /**
-   * Compare results merged by the tool with results merged manually
+   * Extract all merge conflicts from merged results
    *
-   * @param repoName
-   * @param mergeCommit
+   * @param mergeResultDir
+   * @param diff3Style
+   * @return
+   */
+  private static List<Document> extractMergeConflicts(String mergeResultDir, boolean diff3Style)
+      throws Exception {
+    ArrayList<SourceFile> temp = new ArrayList<>();
+    ArrayList<SourceFile> mergedResults =
+        Utils.scanJavaSourceFiles(mergeResultDir, temp, mergeResultDir);
+    List<Document> fileDocs = new ArrayList<>();
+
+    for (SourceFile sourceFile : mergedResults) {
+      int conflictLOC = 0;
+      List<Document> conflictDocs = new ArrayList<>();
+      List<ConflictBlock> conflictBlocks =
+          Utils.extractConflictBlocks(sourceFile.getAbsolutePath(), diff3Style, true);
+      for (ConflictBlock conflictBlock : conflictBlocks) {
+        Document conflictDoc =
+            new Document("start_line", conflictBlock.getStartLine())
+                .append("end_line", conflictBlock.getEndLine())
+                .append("left", conflictBlock.getLeft())
+                .append("base", conflictBlock.getBase())
+                .append("right", conflictBlock.getRight());
+        conflictLOC += (conflictBlock.getEndLine() - conflictBlock.getStartLine());
+        conflictDocs.add(conflictDoc);
+      }
+      if (conflictDocs.size() > 0) {
+        Document fileDoc =
+            new Document("file_path", sourceFile.getRelativePath())
+                .append("conflicts_num", conflictBlocks.size())
+                .append("conflicts_loc", conflictLOC)
+                .append("conflict_blocks", conflictDocs);
+        fileDocs.add(fileDoc);
+      }
+    }
+    return fileDocs;
+  }
+
+  /**
+   * Compare results auto-merged by the tool with results merged manually
+   *
    * @param mergeResultDir
    * @throws Exception
    */
-  private static Pair<Double, List<Document>> compareMergeResults(
-      String repoName,
-      String mergeCommit,
-      String mergeResultDir,
-      ArrayList<SourceFile> manualMergedResults) {
+  private static Pair<Double, List<Document>> compareAutoMerged(
+      String mergeResultDir, ArrayList<SourceFile> manualMergedResults) {
 
     int numberOfMergedFiles = manualMergedResults.size();
     int numberOfDiffFiles = 0;
     Double scenarioPrecision =
-        1.0; // if auto_merged part is identical with manual, precision is 1.0
+        0.0; // if auto_merged part is identical with manual, precision is 1.0
 
     List<Document> fileDocs = new ArrayList<>();
 
@@ -173,7 +214,7 @@ public class Evaluator {
       String fromFilePath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
       String toFilePath = Utils.formatPathSeparator(mergeResultDir + relativePath);
-      Double filePrecision = 1.0; // if auto_merged part is identical with manual, precision is 1.0
+      Double filePrecision = 0.0;
 
       int manualLOC =
           Utils.readFileToLines(fromFilePath)
@@ -250,13 +291,14 @@ public class Evaluator {
       }
     }
     logger.info(
-        "Done with {} at {}: #Merged files: {}, #Identical files: {}",
-        repoName,
-        mergeCommit,
+        "#Merged files: {}, #Identical files: {}",
         numberOfMergedFiles,
         numberOfMergedFiles - numberOfDiffFiles);
     if (numberOfDiffFiles > 0) {
       scenarioPrecision /= (double) numberOfDiffFiles;
+    } else {
+      // if auto_merged part is identical with manual, precision is 1.0
+      scenarioPrecision = 1.0;
     }
     return Pair.of(scenarioPrecision, fileDocs);
   }

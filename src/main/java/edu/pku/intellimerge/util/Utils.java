@@ -670,7 +670,10 @@ public class Utils {
     return (content.trim().replaceAll("\\r\\n|\\r|\\n", "")).replaceAll("\\s+", "");
   }
 
-  /** Remove all comments in Java */
+  /**
+   * Remove all comments in Java files
+   * @param targetDir
+   */
   public static void removeAllComments(String targetDir) {
     try {
       CommentRemover commentRemover =
