@@ -14,6 +14,7 @@ import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.PropertyConfigurator;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -121,9 +122,10 @@ public class Evaluator {
                 .append("time_graph_merging", runtimes.get(2))
                 .append("time_overall", runtimes.get(3));
           }
-          scenarioDoc.append(
-              "diff_results",
-              compareMergeResults(REPO_NAME, mergeCommit, intelliMergedDir, manualMergedResults));
+          Pair<Double, List<Document>> intelliVSmanual =
+              compareMergeResults(REPO_NAME, mergeCommit, intelliMergedDir, manualMergedResults);
+          scenarioDoc.append("auto_merged_precision", intelliVSmanual.getLeft());
+          scenarioDoc.append("auto_merged", intelliVSmanual.getRight());
           intelliDBCollection.insertOne(scenarioDoc);
 
           scenarioDoc =
@@ -133,9 +135,10 @@ public class Evaluator {
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit)
                   .append("num_of_conflict_files", manualMergedResults.size());
-          scenarioDoc.append(
-              "diff_results",
-              compareMergeResults(REPO_NAME, mergeCommit, gitMergedDir, manualMergedResults));
+          Pair<Double, List<Document>> gitVSmanual =
+              compareMergeResults(REPO_NAME, mergeCommit, gitMergedDir, manualMergedResults);
+          scenarioDoc.append("auto_merged_precision", gitVSmanual.getLeft());
+          scenarioDoc.append("auto_merged", gitVSmanual.getRight());
           gitDBCollection.insertOne(scenarioDoc);
         }
       }
@@ -152,7 +155,7 @@ public class Evaluator {
    * @param mergeResultDir
    * @throws Exception
    */
-  private static List<Document> compareMergeResults(
+  private static Pair<Double, List<Document>> compareMergeResults(
       String repoName,
       String mergeCommit,
       String mergeResultDir,
@@ -160,6 +163,8 @@ public class Evaluator {
 
     int numberOfMergedFiles = manualMergedResults.size();
     int numberOfDiffFiles = 0;
+    Double scenarioPrecision =
+        1.0; // if auto_merged part is identical with manual, precision is 1.0
 
     List<Document> fileDocs = new ArrayList<>();
 
@@ -168,10 +173,12 @@ public class Evaluator {
       String fromFilePath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
       String toFilePath = Utils.formatPathSeparator(mergeResultDir + relativePath);
+      Double filePrecision = 1.0; // if auto_merged part is identical with manual, precision is 1.0
 
-      int loc =
-          Utils.readContentLinesFromPath(fromFilePath)
+      int manualLOC =
+          Utils.readFileToLines(fromFilePath)
               .size(); // the number of code lines in the manual merged file
+      int autoMergedLOC = Utils.readFileToLines(toFilePath).size();
       int fromDiffLoc = 0;
       int toDiffLoc = 0;
       List<Document> hunkDocuments = new ArrayList<>();
@@ -225,9 +232,17 @@ public class Evaluator {
         }
       }
       if (hunkDocuments.size() > 0) {
+        int sameLOC = autoMergedLOC - toDiffLoc;
+        if (autoMergedLOC > 0) {
+          filePrecision = sameLOC / (double) autoMergedLOC;
+          scenarioPrecision += filePrecision;
+        }
         Document fileDocument =
             new Document("file_relative_path", relativePath)
-                .append("manual_loc", loc)
+                .append("manual_loc", manualLOC)
+                .append("auto_merged_loc", autoMergedLOC)
+                .append("same_with_manual_loc", sameLOC)
+                .append("auto_merged_precision", filePrecision)
                 .append("from_diff_loc", fromDiffLoc)
                 .append("to_diff_loc", toDiffLoc)
                 .append("diff_hunks", hunkDocuments);
@@ -240,7 +255,10 @@ public class Evaluator {
         mergeCommit,
         numberOfMergedFiles,
         numberOfMergedFiles - numberOfDiffFiles);
-    return fileDocs;
+    if (numberOfDiffFiles > 0) {
+      scenarioPrecision /= (double) numberOfDiffFiles;
+    }
+    return Pair.of(scenarioPrecision, fileDocs);
   }
 
   /**
