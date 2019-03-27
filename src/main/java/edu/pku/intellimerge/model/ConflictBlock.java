@@ -1,39 +1,47 @@
 package edu.pku.intellimerge.model;
 
 public class ConflictBlock {
-    private String left;
-    private String base;
-    private String right;
+  private String left;
+  private String base;
+  private String right;
 
-    // line ranges in the merged code
-    private int startLine;
-    private int endLine;
+  // line ranges in the merged code
+  private int startLine;
+  private int endLine;
 
-    public ConflictBlock(String left, String base, String right, int startLine, int endLine) {
-        this.left = left;
-        this.base = base;
-        this.right = right;
-        this.startLine = startLine;
-        this.endLine = endLine;
-    }
+  public ConflictBlock(String left, String right, int startLine, int endLine) {
+    this.left = left;
+    this.base = "";
+    this.right = right;
+    this.startLine = startLine;
+    this.endLine = endLine;
+  }
 
-    public String getLeft() {
-        return left;
-    }
+  public ConflictBlock(String left, String base, String right, int startLine, int endLine) {
+    this.left = left;
+    this.base = base;
+    this.right = right;
+    this.startLine = startLine;
+    this.endLine = endLine;
+  }
 
-    public String getBase() {
-        return base;
-    }
+  public String getLeft() {
+    return left;
+  }
 
-    public String getRight() {
-        return right;
-    }
+  public String getBase() {
+    return base;
+  }
 
-    public int getStartLine() {
-        return startLine;
-    }
+  public String getRight() {
+    return right;
+  }
 
-    public int getEndLine() {
-        return endLine;
-    }
+  public int getStartLine() {
+    return startLine;
+  }
+
+  public int getEndLine() {
+    return endLine;
+  }
 }

@@ -4,24 +4,38 @@ import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.util.Utils;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestConflictBlock {
+public class TestConflictBlockExtraction {
   @Test
-  public void testExtractConflictBlocks() {
+  public void testExtractConflictBlocksDiff3() {
+    String path =
+        Utils.getProjectRootDir()
+            + "/src/test/resources/Rename/RenameMethod/BothSides/gitMerged/SourceRoot.java";
+
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff3(path, false);
+    assertThat(conflictBlocks.size()).isOne();
+    assertThat(conflictBlocks.get(0).getBase())
+        .contains("Map<Path, ParseResult<CompilationUnit>> tryToParse(JavaParser parser)");
+    assertThat(conflictBlocks.get(0).getRight())
+        .contains("Map<Path, ParseResult<CompilationUnit>> tryToParse(JavaParser parser)");
+    assertThat(conflictBlocks.get(0).getStartLine()).isEqualTo(60);
+  }
+
+  @Test
+  public void testExtractConflictBlocksDiff2() {
     String path =
         Utils.getProjectRootDir()
             + "/src/test/resources/Extract/ExtractMethod/gitMerged/SourceRoot.java";
 
-    String code = Utils.readFileToString(path);
-    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocks(code);
-    assertThat(conflictBlocks.size()).isEqualTo(3);
-    assertThat(conflictBlocks.get(0).getBase())
-        .contains("import static com.github.javaparser.utils.CodeGenerationUtils.*;");
-    assertThat(conflictBlocks.get(1).getBase().length()).isZero();
-    assertThat(conflictBlocks.get(2).getStartLine()).isEqualTo(210);
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff2(path, false);
+    assertThat(conflictBlocks.size()).isEqualTo(4);
+    assertThat(conflictBlocks.get(0).getBase().length()).isZero();
+    assertThat(conflictBlocks.get(1).getRight())
+        .contains("private JavaParser javaParser = new JavaParser();");
+    assertThat(conflictBlocks.get(2).getStartLine()).isEqualTo(127);
+    assertThat(conflictBlocks.get(3).getEndLine()).isEqualTo(229);
   }
 }
