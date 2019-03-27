@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.io;
 
+import com.google.googlejavaformat.FormatterDiagnostic;
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -11,6 +12,8 @@ import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.Utils;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Graph2CodePrinter {
@@ -68,7 +71,17 @@ public class Graph2CodePrinter {
                   "/\\* >>>>>>> " + Side.THEIRS.asString() + " \\*/",
                   ">>>>>>> " + Side.THEIRS.asString());
     } catch (FormatterException e) {
-      System.err.println(reformattedCode);
+      // print +/- 5 lines as the context around the line that causes the exception
+      // to avoid output disaster
+      for (FormatterDiagnostic diagnostic : e.diagnostics()) {
+        List<String> lines = Arrays.asList(reformattedCode.split("\\r?\\n"));
+        int lineNumber = diagnostic.line();
+        int contextStart = lineNumber >= 5 ? lineNumber - 5 : 0;
+        int contextEnd = lineNumber + 5 < lines.size() ? lineNumber + 5 : lines.size();
+        for (int i = contextStart; i < contextEnd; ++i) {
+          System.err.println(lines.get(i));
+        }
+      }
       e.printStackTrace();
     }
     return reformattedCode;
