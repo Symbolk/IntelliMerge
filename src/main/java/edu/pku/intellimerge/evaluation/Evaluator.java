@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.evaluation;
 
+import br.ufpe.cin.app.JFSTMerge;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -96,10 +97,17 @@ public class Evaluator {
           // 1. merge with IntelliMerge and jFSTMerge
           // runtime for each phase (need to run multiple times and get average)
           List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir, true);
+          JFSTMerge jfstMerge = new JFSTMerge();
+          jfstMerge.mergeDirectories(
+              sourceDir + File.separator + Side.OURS.asString(),
+              sourceDir + File.separator + Side.BASE.asString(),
+              sourceDir + File.separator + Side.THEIRS.asString(),
+              jfstMergedDir);
 
           // 2. remove all comments and format the manual results
           Utils.removeAllComments(intelliMergedDir);
           Utils.removeAllComments(gitMergedDir);
+          Utils.removeAllComments(jfstMergedDir);
           Utils.removeAllComments(manualMergedDir);
           Utils.formatAllJavaFiles(manualMergedDir);
 
@@ -108,13 +116,14 @@ public class Evaluator {
           ArrayList<SourceFile> manualMergedResults =
               Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
 
+          // 1. Compare IntelliMerge with Manual
           Document scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
                   .append("parent_1", parent1)
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit)
-                  .append("num_of_conflict_files", manualMergedResults.size());
+                  .append("conflict_files_num", manualMergedResults.size());
           if (runtimes.size() == 4) {
             scenarioDoc
                 .append("time_graph_building", runtimes.get(0))
@@ -122,26 +131,51 @@ public class Evaluator {
                 .append("time_graph_merging", runtimes.get(2))
                 .append("time_overall", runtimes.get(3));
           }
-          scenarioDoc.append("merge_conflicts", extractMergeConflicts(intelliMergedDir, false));
+          Pair<Integer, List<Document>> intelliMergeConflicts =
+              extractMergeConflicts(intelliMergedDir, false);
+          scenarioDoc.append("conflicts_num", intelliMergeConflicts.getLeft());
+          scenarioDoc.append("merge_conflicts", intelliMergeConflicts.getRight());
           Pair<Double, List<Document>> intelliVSmanual =
               compareAutoMerged(intelliMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merged_precision", intelliVSmanual.getLeft());
           scenarioDoc.append("auto_merged", intelliVSmanual.getRight());
           intelliDBCollection.insertOne(scenarioDoc);
 
+          // 2. Compare GitMerge with Manual
           scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
                   .append("parent_1", parent1)
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit)
-                  .append("num_of_conflict_files", manualMergedResults.size());
-          scenarioDoc.append("merge_conflicts", extractMergeConflicts(gitMergedDir, true));
+                  .append("conflict_files_num", manualMergedResults.size());
+          Pair<Integer, List<Document>> gitMergeConflicts =
+              extractMergeConflicts(gitMergedDir, true);
+          scenarioDoc.append("conflicts_num", gitMergeConflicts.getLeft());
+          scenarioDoc.append("merge_conflicts", gitMergeConflicts.getRight());
           Pair<Double, List<Document>> gitVSmanual =
               compareAutoMerged(gitMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merged_precision", gitVSmanual.getLeft());
           scenarioDoc.append("auto_merged", gitVSmanual.getRight());
           gitDBCollection.insertOne(scenarioDoc);
+
+          // 3. Compare JFSTMerge with Manual
+          scenarioDoc =
+              new Document("repo_name", REPO_NAME)
+                  .append("merge_commit", mergeCommit)
+                  .append("parent_1", parent1)
+                  .append("parent_2", parent2)
+                  .append("base_commit", baseCommit)
+                  .append("conflict_files_num", manualMergedResults.size());
+          Pair<Integer, List<Document>> jfstMergeConflicts =
+              extractMergeConflicts(jfstMergedDir, false);
+          scenarioDoc.append("conflicts_num", jfstMergeConflicts.getLeft());
+          scenarioDoc.append("merge_conflicts", jfstMergeConflicts.getRight());
+          Pair<Double, List<Document>> jfstVSmanual =
+              compareAutoMerged(jfstMergedDir, manualMergedResults);
+          scenarioDoc.append("auto_merged_precision", jfstVSmanual.getLeft());
+          scenarioDoc.append("auto_merged", jfstVSmanual.getRight());
+          jfstDBCollection.insertOne(scenarioDoc);
 
           logger.info("Done with {}:{}", REPO_NAME, mergeCommit);
           processedMergeCommits.add(mergeCommit);
@@ -159,18 +193,20 @@ public class Evaluator {
    * @param diff3Style
    * @return
    */
-  private static List<Document> extractMergeConflicts(String mergeResultDir, boolean diff3Style)
-      throws Exception {
+  private static Pair<Integer, List<Document>> extractMergeConflicts(
+      String mergeResultDir, boolean diff3Style) throws Exception {
     ArrayList<SourceFile> temp = new ArrayList<>();
     ArrayList<SourceFile> mergedResults =
         Utils.scanJavaSourceFiles(mergeResultDir, temp, mergeResultDir);
     List<Document> fileDocs = new ArrayList<>();
+    Integer conflictNum = 0;
 
     for (SourceFile sourceFile : mergedResults) {
       int conflictLOC = 0;
       List<Document> conflictDocs = new ArrayList<>();
       List<ConflictBlock> conflictBlocks =
           Utils.extractConflictBlocks(sourceFile.getAbsolutePath(), diff3Style, true);
+      conflictNum += conflictBlocks.size();
       for (ConflictBlock conflictBlock : conflictBlocks) {
         Document conflictDoc =
             new Document("start_line", conflictBlock.getStartLine())
@@ -190,7 +226,7 @@ public class Evaluator {
         fileDocs.add(fileDoc);
       }
     }
-    return fileDocs;
+    return Pair.of(conflictNum, fileDocs);
   }
 
   /**
@@ -214,6 +250,11 @@ public class Evaluator {
       String fromFilePath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
       String toFilePath = Utils.formatPathSeparator(mergeResultDir + relativePath);
+      // TODO modify jFSTMerge to save as the relative path
+      String fileName = manualMergedFile.getFileName();
+      if (mergeResultDir.contains(Side.JFST.asString())) {
+        toFilePath = Utils.formatPathSeparator(mergeResultDir + File.separator + fileName);
+      }
       Double filePrecision = 0.0;
 
       int manualLOC =

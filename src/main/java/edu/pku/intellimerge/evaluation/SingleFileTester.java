@@ -1,11 +1,15 @@
 package edu.pku.intellimerge.evaluation;
 
+import br.ufpe.cin.app.JFSTMerge;
+import com.github.javaparser.JavaParser;
 import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /** Class responsbile to collect and debug with a single file */
@@ -48,8 +52,16 @@ public class SingleFileTester {
     String sourceDir = "D:\\github\\test2";
     String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
     String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
-    List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, false);
-    Utils.removeAllComments(mergeResultDir);
-    Utils.formatAllJavaFiles(manualMergedDir);
+//    List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, false);
+//    Utils.removeAllComments(mergeResultDir);
+//    Utils.formatAllJavaFiles(manualMergedDir);
+    String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
+    JFSTMerge jfstMerge = new JFSTMerge();
+    jfstMerge.mergeDirectories(
+            sourceDir + File.separator + Side.OURS.asString(),
+            sourceDir + File.separator + Side.BASE.asString(),
+            sourceDir + File.separator + Side.THEIRS.asString(),
+            jfstMergedDir);
+
   }
 }
