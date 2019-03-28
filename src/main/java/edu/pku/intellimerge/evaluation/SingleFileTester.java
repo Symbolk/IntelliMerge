@@ -1,16 +1,11 @@
 package edu.pku.intellimerge.evaluation;
 
 import br.ufpe.cin.app.JFSTMerge;
-import com.github.javaparser.JavaParser;
 import edu.pku.intellimerge.client.APIClient;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /** Class responsbile to collect and debug with a single file */
 public class SingleFileTester {
@@ -22,8 +17,6 @@ public class SingleFileTester {
   //  private static final String PROJECT_PATH = "src/main/java/edu/pku/intellimerge/samples";
   private static final String DIFF_DIR = "D:\\github\\diffs\\" + REPO_NAME;
   private static final String MERGE_RESULT_DIR = "D:\\github\\merges\\" + REPO_NAME;
-  private static final String STATISTICS_PATH = "D:\\github\\merges\\javaparser\\statistics.csv";
-  private static final String DOT_DIR = "C:\\Users\\Name\\Desktop\\GraphData\\";
 
   public static void main(String[] args) throws Exception {
     PropertyConfigurator.configure("log4j.properties");
@@ -40,28 +33,19 @@ public class SingleFileTester {
     //    Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
     //
     APIClient apiClient =
-        new APIClient(
-            REPO_NAME,
-            REPO_DIR,
-            GIT_URL,
-            SRC_DIR,
-            DIFF_DIR,
-            MERGE_RESULT_DIR,
-            STATISTICS_PATH,
-            DOT_DIR);
+        new APIClient(REPO_NAME, REPO_DIR, GIT_URL, SRC_DIR, DIFF_DIR, MERGE_RESULT_DIR, false);
     String sourceDir = "D:\\github\\test2";
     String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
     String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
-//    List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir, false);
-//    Utils.removeAllComments(mergeResultDir);
-//    Utils.formatAllJavaFiles(manualMergedDir);
+    //    List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir);
+    //    Utils.removeAllComments(mergeResultDir);
+    //    Utils.formatAllJavaFiles(manualMergedDir);
     String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
     JFSTMerge jfstMerge = new JFSTMerge();
     jfstMerge.mergeDirectories(
-            sourceDir + File.separator + Side.OURS.asString(),
-            sourceDir + File.separator + Side.BASE.asString(),
-            sourceDir + File.separator + Side.THEIRS.asString(),
-            jfstMergedDir);
-
+        sourceDir + File.separator + Side.OURS.asString(),
+        sourceDir + File.separator + Side.BASE.asString(),
+        sourceDir + File.separator + Side.THEIRS.asString(),
+        jfstMergedDir);
   }
 }
