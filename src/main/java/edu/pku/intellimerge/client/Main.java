@@ -33,15 +33,7 @@ public class Main {
       //              processMergeScenario(mergeScenario, repository);
       //            }
       APIClient apiClient =
-          new APIClient(
-              REPO_NAME,
-                  REPO_DIR,
-              GIT_URL,
-                  SRC_DIR,
-                  DIFF_DIR,
-                  MERGE_RESULT_DIR,
-              STATISTICS_PATH,
-                  DOT_DIR);
+          new APIClient(REPO_NAME, REPO_DIR, GIT_URL, SRC_DIR, DIFF_DIR, MERGE_RESULT_DIR, true);
       MergeScenario mergeScenario = apiClient.generateSingleMergeSenario();
       apiClient.processMergeScenario(mergeScenario, repository);
 

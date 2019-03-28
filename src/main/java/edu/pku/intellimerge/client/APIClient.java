@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+/** Class responsible for processing one repo */
 public class APIClient {
 
   private Logger logger = LoggerFactory.getLogger(APIClient.class);
@@ -33,11 +34,23 @@ public class APIClient {
   private String SRC_DIR;
   private String DIFF_DIR;
   private String RESULT_DIR;
-  private String STATISTICS_PATH;
-  // to export graph as dot file
-  private String DOT_DIR;
+  private boolean hasMultipleModules;
 
-  public APIClient() {}
+  public APIClient(
+      String REPO_NAME,
+      String REPO_DIR,
+      String GIT_URL,
+      String DIFF_DIR,
+      String RESULT_DIR,
+      boolean hasMultipleModules) {
+    this.REPO_NAME = REPO_NAME;
+    this.REPO_DIR = REPO_DIR;
+    this.GIT_URL = GIT_URL;
+    this.SRC_DIR = "";
+    this.DIFF_DIR = DIFF_DIR;
+    this.RESULT_DIR = RESULT_DIR;
+    this.hasMultipleModules = hasMultipleModules;
+  }
 
   public APIClient(
       String REPO_NAME,
@@ -46,16 +59,14 @@ public class APIClient {
       String SRC_DIR,
       String DIFF_DIR,
       String RESULT_DIR,
-      String STATISTICS_PATH,
-      String DOT_DIR) {
+      boolean hasMultipleModules) {
     this.REPO_NAME = REPO_NAME;
     this.REPO_DIR = REPO_DIR;
     this.GIT_URL = GIT_URL;
     this.SRC_DIR = SRC_DIR;
     this.DIFF_DIR = DIFF_DIR;
     this.RESULT_DIR = RESULT_DIR;
-    this.STATISTICS_PATH = STATISTICS_PATH;
-    this.DOT_DIR = DOT_DIR;
+    this.hasMultipleModules = hasMultipleModules;
   }
 
   /**
@@ -82,13 +93,14 @@ public class APIClient {
   }
 
   /**
-   * Read merge commits from csv file, and create merge scenarios
+   * Read merge commits from csv file and create merge scenarios
    *
+   * @param statisticsFilePath csv file that contains four commits to form merge scenarios
    * @return
    */
-  public List<MergeScenario> generateMergeScenarios() {
+  public List<MergeScenario> generateMergeScenarios(String statisticsFilePath) {
     List<MergeScenario> mergeScenarios = new ArrayList<>();
-    for (String[] items : Utils.readCSVAsString(STATISTICS_PATH, ";")) {
+    for (String[] items : Utils.readCSVAsString(statisticsFilePath, ";")) {
 
       String mergeCommitID = items[0];
       String oursCommitID = items[1];
@@ -117,10 +129,13 @@ public class APIClient {
    * @param side
    */
   private void saveDotToFile(
-      MergeScenario mergeScenario, Graph<SemanticNode, SemanticEdge> graph, Side side) {
+      MergeScenario mergeScenario,
+      Graph<SemanticNode, SemanticEdge> graph,
+      Side side,
+      String dotDir) {
     SemanticGraphExporter.saveAsDot(
         graph,
-        DOT_DIR
+        dotDir
             + File.separator
             + side
             + File.separator
@@ -207,20 +222,20 @@ public class APIClient {
    * @return runtime at each phase in order
    * @throws Exception
    */
-  public List<Long> processDirectory(String targetDir, String resultDir, boolean hasMultipleModule) throws Exception {
+  public List<Long> processDirectory(String targetDir, String resultDir) throws Exception {
     String targetDirName = Utils.getDirSimpleName(targetDir);
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(null, Side.OURS, targetDir, hasMultipleModule));
+            new SemanticGraphBuilder2(null, Side.OURS, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(null, Side.BASE, targetDir, hasMultipleModule));
+            new SemanticGraphBuilder2(null, Side.BASE, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModule));
+            new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModules));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();

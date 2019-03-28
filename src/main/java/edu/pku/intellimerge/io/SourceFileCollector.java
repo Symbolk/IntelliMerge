@@ -7,8 +7,8 @@ import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SimpleDiffEntry;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.util.Utils;
 import edu.pku.intellimerge.util.GitService;
+import edu.pku.intellimerge.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -159,12 +159,11 @@ public class SourceFileCollector {
    * @param commitID
    * @return
    * @throws Exception
-   * @deprecated
+   * @deprecated the checkout way is replaced by ObjectLoader
    */
-  public ArrayList<SourceFile> scanJavaFiles(String commitID) throws Exception {
+  public ArrayList<SourceFile> scanJavaFiles(String targetDir, String commitID) throws Exception {
     GitService.checkout(repository, commitID);
     ArrayList<SourceFile> temp = new ArrayList<>();
-    String targetDir = mergeScenario.repoPath + mergeScenario.srcPath;
     ArrayList<SourceFile> javaSourceFiles =
         Utils.scanJavaSourceFiles(targetDir, temp, mergeScenario.repoPath);
     return javaSourceFiles;
@@ -224,7 +223,8 @@ public class SourceFileCollector {
         while (treeWalk.next()) {
           String pathString = treeWalk.getPathString();
           for (String path : filePaths) {
-            // to tolerate import file paths, which is relative to source folder instead of repo root
+            // to tolerate import file paths, which is relative to source folder instead of repo
+            // root
             if (pathString.endsWith(Utils.formatPathSeparator(path))) {
               ObjectId objectId = treeWalk.getObjectId(0);
               ObjectLoader loader = repository.open(objectId);

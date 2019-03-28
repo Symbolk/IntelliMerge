@@ -9,7 +9,7 @@ import java.util.List;
 public class MergeScenario {
   public String repoName;
   public String repoPath;
-  public String srcPath;
+  public String srcPath; // only needed in SemanticGraphBuilderV1 for symbolsolving
   public String mergeCommitID;
   public String oursCommitID;
   public String baseCommitID;
@@ -52,6 +52,7 @@ public class MergeScenario {
 
   /**
    * Whether the file is changed in this side, if yes, it needs to be merged
+   *
    * @param side
    * @param relativePath
    * @return
