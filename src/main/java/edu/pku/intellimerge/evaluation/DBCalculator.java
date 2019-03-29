@@ -24,7 +24,7 @@ public class DBCalculator {
     MongoClient mongoClient = new MongoClient(connectionString);
     MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
     MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
-    MongoDatabase jfstDB = mongoClient.getDatabase("jFSTVSManual");
+    MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
     MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
     MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
     MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
@@ -47,7 +47,7 @@ public class DBCalculator {
     System.out.println(
         String.format(
             "%-20s %-40s %s",
-            "JFSTMergeg",
+            "JFSTMerge",
             "Precision: " + pAndR.getLeft() + "%",
             "Recall: " + pAndR.getRight() + "%"));
   }

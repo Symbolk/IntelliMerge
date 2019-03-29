@@ -41,9 +41,9 @@ public class Evaluator {
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
   private static final String DIFF_DIR =
-      "D:\\github\\diffs\\" + REPO_NAME; // the directory to temporarily save the diff files
+      "D:\\github\\merges\\" + REPO_NAME; // the directory to temporarily save the diff files
   private static final String MERGE_RESULT_DIR =
-      "D:\\github\\merges\\" + REPO_NAME; // the directory to eventually save the merge results
+      "D:\\github\\merges\\" + REPO_NAME + File.separator + Side.INTELLI.asString(); // the directory to eventually save the merge results
   private static final String STATISTICS_FILE_PATH =
       "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_173.csv";
 
@@ -55,7 +55,7 @@ public class Evaluator {
       MongoClient mongoClient = new MongoClient(connectionString);
       MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
       MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
-      MongoDatabase jfstDB = mongoClient.getDatabase("jFSTVSManual");
+      MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
       MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
       MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
       MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
@@ -74,7 +74,7 @@ public class Evaluator {
         String baseCommit = record.getString("merge_base");
         if (!processedMergeCommits.contains(mergeCommit)) {
           // source files to be merged
-          String sourceDir = "D:\\github\\merges\\" + REPO_NAME + File.separator + mergeCommit;
+          String sourceDir = DIFF_DIR + File.separator + mergeCommit;
 
           // merged files by 3 tools
           String intelliMergedDir =
@@ -296,10 +296,11 @@ public class Evaluator {
         for (Hunk hunk : diff.getHunks()) {
           // if there are two hunk with the same line count but opposite direction (+/-), compare
           // the lines to counteract possibly moved hunks
-          if (!removePossiblyMovedHunks(hunk, visitedHunks)) {
+          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
             visitedHunks.add(hunk);
           }
         }
+        removeFormatCausedHunks(visitedHunks);
         // save the true positive hunks into mongodb
         numberOfDiffFiles += visitedHunks.size() > 0 ? 1 : 0;
 
@@ -322,9 +323,10 @@ public class Evaluator {
           toDiffLoc += toLOC;
         }
       }
-      // if there exists differences, create one document to save the diffs
+      // if there exists differences, create  one document to save the diffs
       if (diffHunkDocs.size() > 0) {
-        int sameLOC = autoMergedLOC - toDiffLoc;
+//        int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
+        int sameLOC = manualLOC - fromDiffLoc;
         totalSameLOC += sameLOC;
         if (autoMergedLOC > 0) {
           filePrecision = sameLOC / (double) autoMergedLOC;
@@ -375,7 +377,7 @@ public class Evaluator {
    * @param visitedHunks
    * @return true: the hunk if casued by moving, remove it as well as the other one caused by moving
    */
-  private static boolean removePossiblyMovedHunks(Hunk hunk, List<Hunk> visitedHunks) {
+  private static boolean removeMovingCausedHunks(Hunk hunk, List<Hunk> visitedHunks) {
     for (Hunk visitedHunk : visitedHunks) {
       // check if line counts are opposite, e.g. @@ -130,47 +132,0 @@ and @@ -330,0 +287,47 @@
       if (visitedHunk.getFromFileRange().getLineCount() == hunk.getToFileRange().getLineCount()
@@ -394,6 +396,20 @@ public class Evaluator {
       }
     }
     return false;
+  }
+
+  /**
+   * Remove diff hunks that have the identical content ignoring empty chars
+   * @param hunks
+   */
+  private static void removeFormatCausedHunks(List<Hunk> hunks){
+    for(Hunk hunk : hunks){
+      String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
+      String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
+      if(hunkFromContent.equals(hunkToContent)){
+        hunks.remove(hunk);
+      }
+    }
   }
 
   /**
