@@ -95,7 +95,7 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
     if (!unmatchedFields1.isEmpty() && !unmatchedFields2.isEmpty()) {
       fieldDeclMatcher.matchFields(matching, unmatchedFields1, unmatchedFields2);
     }
-    matching.getRefactoredOne2OneMatching();
+//    matching.getOne2OneRefactoring();
   }
 
   /**

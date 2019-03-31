@@ -1,9 +1,9 @@
 package edu.pku.intellimerge.match;
 
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
-import edu.pku.intellimerge.model.constant.MatchingType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.model.mapping.MatchingEdge;
+import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
@@ -29,21 +29,13 @@ public class TestMove {
         Utils.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/InsideFile/";
     String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
     ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
-    Set<MatchingEdge> refsOurs =
-        merger
-            .b2oMatching
-            .biPartite
-            .edgeSet()
-            .stream()
-            .filter(edge -> edge.getMatchingType().equals(MatchingType.MATCHED_METHOD))
+    Set<Refactoring> refsOurs =
+        merger.b2oMatching.refactorings.stream()
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_METHOD_SIGNATURE))
             .collect(Collectors.toSet());
-    Set<MatchingEdge> refsTheirs =
-        merger
-            .b2oMatching
-            .biPartite
-            .edgeSet()
-            .stream()
-            .filter(edge -> edge.getMatchingType().equals(MatchingType.MATCHED_METHOD))
+    Set<Refactoring> refsTheirs =
+        merger.b2oMatching.refactorings.stream()
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_METHOD_SIGNATURE))
             .collect(Collectors.toSet());
 
     assertThat(refsOurs.size()).isOne();
@@ -55,29 +47,21 @@ public class TestMove {
     String targetDir =
         Utils.getProjectRootDir() + "/src/test/resources/Move/MoveMethod/AcrossFiles/";
     TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
-    Set<MatchingEdge> refsOurs =
-        matching
-            .biPartite
-            .edgeSet()
-            .stream()
-            .filter(edge -> edge.getMatchingType().equals(MatchingType.MATCHED_METHOD))
+    Set<Refactoring> refsOurs =
+        matching.refactorings.stream()
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_METHOD_SIGNATURE))
             .collect(Collectors.toSet());
     assertThat(refsOurs.size()).isEqualTo(48);
   }
 
   @Test
   public void testMoveFieldInsideFile() throws Exception {
-    String targetDir =
-            Utils.getProjectRootDir() + "/src/test/resources/Move/MoveField/InsideFile/";
+    String targetDir = Utils.getProjectRootDir() + "/src/test/resources/Move/MoveField/InsideFile/";
     TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
-    Set<MatchingEdge> refsOurs =
-            matching
-                    .biPartite
-                    .edgeSet()
-                    .stream()
-                    .filter(edge -> edge.getMatchingType().equals(MatchingType.MATCHED_FIELD))
-                    .collect(Collectors.toSet());
+    Set<Refactoring> refsOurs =
+        matching.refactorings.stream()
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_FIELD_SIGNATURE))
+            .collect(Collectors.toSet());
     assertThat(refsOurs.size()).isEqualTo(4);
   }
-
 }

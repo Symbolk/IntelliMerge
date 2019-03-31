@@ -457,9 +457,9 @@ public class SemanticGraphBuilder {
             // 4.1 object creation in field declaration
             List<String> declClassNames = new ArrayList<>();
             List<String> initClassNames = new ArrayList<>();
-            //            if (!field.getMatchingType().isClassOrInterfaceType()) {
+            //            if (!field.getRefactoringType().isClassOrInterfaceType()) {
             //              ClassOrInterfaceType type = (ClassOrInterfaceType)
-            // field.getMatchingType();
+            // field.getRefactoringType();
             //              SymbolReference<ResolvedTypeDeclaration> ref =
             // javaParserFacade.solve();
             //              if (ref.isSolved()) {

@@ -58,15 +58,21 @@ public class ThreewayGraphMerger {
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
 
-    try {
-      ExecutorService executorService = Executors.newFixedThreadPool(2);
-      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
-      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
+//    try {
+//      ExecutorService executorService = Executors.newFixedThreadPool(2);
+//      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
+//      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
 
-      b2oMatching = task1.get();
-      b2tMatching = task2.get();
+//      b2oMatching = task1.get();
+//      b2tMatching = task2.get();
 
-      executorService.shutdown();
+//      executorService.shutdown();
+      b2oMatcher.topDownMatch();
+      b2oMatcher.bottomUpMatch();
+      b2tMatcher.topDownMatch();
+      b2tMatcher.bottomUpMatch();
+      b2oMatching = b2oMatcher.matching;
+      b2tMatching = b2tMatcher.matching;
 
       // collect CU mapping that need to merge
       Set<SemanticNode> internalAndNeedToMergeNodes =
@@ -80,6 +86,7 @@ public class ThreewayGraphMerger {
         if (node instanceof CompilationUnitNode) {
           CompilationUnitNode cu = (CompilationUnitNode) node;
           if (cu.needToMerge() == true) {
+            // temporarily keep the mapping of cus
             ThreewayMapping mapping =
                 new ThreewayMapping(
                     Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
@@ -89,11 +96,11 @@ public class ThreewayGraphMerger {
           }
         }
       }
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    }
+//    } catch (InterruptedException e) {
+//      e.printStackTrace();
+//    } catch (ExecutionException e) {
+//      e.printStackTrace();
+//    }
   }
 
   /**
@@ -418,6 +425,7 @@ public class ThreewayGraphMerger {
   private String mergeTextually(String leftContent, String baseContent, String rightContent) {
     String textualMergeResult = null;
     try {
+      // TODO merge with git-merge for diff3 conflict style
       RawTextComparator textComparator = RawTextComparator.WS_IGNORE_ALL; //  ignoreWhiteSpaces
       @SuppressWarnings("rawtypes")
       MergeResult mergeResult =

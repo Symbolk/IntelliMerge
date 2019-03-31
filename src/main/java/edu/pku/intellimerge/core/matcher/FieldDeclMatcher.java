@@ -1,7 +1,7 @@
 package edu.pku.intellimerge.core.matcher;
 
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.MatchingType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.FieldDeclNode;
 import edu.pku.intellimerge.util.SimilarityAlg;
@@ -56,7 +56,7 @@ public class FieldDeclMatcher {
       double confidence = biPartite.getEdgeWeight(edge);
       unmatchedFields1.remove(sourceNode);
       unmatchedFields2.remove(targetNode);
-      matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_FIELD, confidence);
+      matching.markRefactoring(sourceNode, targetNode, RefactoringType.CHANGE_FIELD_SIGNATURE, confidence);
     }
   }
 }

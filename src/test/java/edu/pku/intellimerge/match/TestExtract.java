@@ -1,8 +1,8 @@
 package edu.pku.intellimerge.match;
 
-import edu.pku.intellimerge.model.constant.MatchingType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.Side;
-import edu.pku.intellimerge.model.mapping.MatchingEdge;
+import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
@@ -25,12 +25,11 @@ public class TestExtract {
     String targetDir =
         Utils.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
     TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
-    Set<MatchingEdge> refsOurs =
+    Set<Refactoring> refsOurs =
         matching
-            .biPartite
-            .edgeSet()
+            .refactorings
             .stream()
-            .filter(edge -> edge.getMatchingType().equals(MatchingType.EXTRACT_TO_METHOD))
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.EXTRACT_TO_METHOD))
             .collect(Collectors.toSet());
     assertThat(refsOurs.size()).isOne();
   }

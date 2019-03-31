@@ -3,7 +3,7 @@ package edu.pku.intellimerge.core.matcher;
 import com.google.common.collect.BiMap;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
-import edu.pku.intellimerge.model.constant.MatchingType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
@@ -60,7 +60,7 @@ public class MethodDeclMatcher {
       if(confidence >= 0.75){
         matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
         matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
-        matching.addMatchingEdge(sourceNode, targetNode, MatchingType.MATCHED_METHOD, confidence);
+        matching.markRefactoring(sourceNode, targetNode, RefactoringType.CHANGE_METHOD_SIGNATURE, confidence);
       }
     }
     matching.unmatchedNodes1.get(NodeType.METHOD);
@@ -127,12 +127,11 @@ public class MethodDeclMatcher {
             SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
                 + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
 
-        // TODO another way to save and consume the matched nodes
-        if (similarityAfter >= similarityBefore) {
-          matching.addMatchingEdge(
-              callerBase, caller, MatchingType.EXTRACT_FROM_METHOD, similarityAfter);
-          matching.addMatchingEdge(
-              callerBase, callee, MatchingType.EXTRACT_TO_METHOD, similarityAfter);
+        if (similarityAfter > similarityBefore) {
+          matching.markRefactoring(
+              callerBase, caller, RefactoringType.EXTRACT_FROM_METHOD, similarityAfter);
+          matching.markRefactoring(
+              callerBase, callee, RefactoringType.EXTRACT_TO_METHOD, similarityAfter);
           matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
         }
       }
