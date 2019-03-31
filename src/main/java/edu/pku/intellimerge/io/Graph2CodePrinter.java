@@ -84,7 +84,7 @@ public class Graph2CodePrinter {
       }
       e.printStackTrace();
     }
-    return reformattedCode;
+      return reformattedCode;
   }
 
   /**

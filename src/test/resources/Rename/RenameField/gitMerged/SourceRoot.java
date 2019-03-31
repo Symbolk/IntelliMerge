@@ -3,7 +3,6 @@ package com.github.javaparser.utils;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.ParseResult;
-import com.github.javaparser.Problem;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.printer.PrettyPrinter;
 
@@ -29,25 +28,31 @@ import static com.github.javaparser.utils.CodeGenerationUtils.*;
  * Files can be parsed and written back one by one or all together.
  */
 public class SourceRoot {
+<<<<<<< ours
+    private final Path rootPath;
+||||||| F:\workspace\dev\IntelliMerge\src\test\resources\Rename\RenameField\base\SourceRoot.java
     private final Path pathRoot;
+=======
+    private final Path root;
+>>>>>>> theirs
     private final Map<Path, ParseResult<CompilationUnit>> content = new HashMap<>();
 
-    public SourceRoot(Path root) {
-        this.root = root.normalize();
-        Log.info("New source root at \"%s\"", this.root);
+    public SourceRoot(Path rootPath) {
+        this.rootPath = rootPath.normalize();
+        Log.info("New source rootPath at \"%s\"", this.rootPath);
     }
 
     /**
      * Parses all .java files in a package recursively.
      */
-    public Map<Path, ParseResult<CompilationUnit>> tryToParse(String startPackage, JavaParser parser) throws IOException {
+    public Map<Path, ParseResult<CompilationUnit>> tryToParsePackage(String startPackage, JavaParser parser) throws IOException {
         Log.info("Parsing package \"%s\"", startPackage);
-        final Path path = packageAbsolutePath(root, startPackage);
+        final Path path = packageAbsolutePath(rootPath, startPackage);
         Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (!attrs.isDirectory() && file.toString().endsWith(".java")) {
-                    tryToParse(startPackage, file.getFileName().toString(), parser);
+                    tryToParsePackage(startPackage, file.getFileName().toString(), parser);
                 }
                 return FileVisitResult.CONTINUE;
             }
@@ -56,17 +61,25 @@ public class SourceRoot {
     }
 
     /**
-     * Parse every .java file in this source root.
+     * Parse every .java file in this source rootPath.
      */
+<<<<<<< ours
+    public Map<Path, ParseResult<CompilationUnit>> tryToParsePackage(JavaParser parser) throws IOException {
+        return tryToParsePackage("", parser);
+||||||| F:\workspace\dev\IntelliMerge\src\test\resources\Rename\RenameField\base\SourceRoot.java
     public Map<Path, ParseResult<CompilationUnit>> tryToParse(JavaParser parser) throws IOException {
         return tryToParse("", parser);
+=======
+    public Map<Path, ParseResult<CompilationUnit>> tryToParse(JavaParser parser) throws IOException {
+        return tryToParsePackage("", parser);
+>>>>>>> theirs
     }
 
     /**
      * Save all files back to where they were found.
      */
     public void saveAll() throws FileNotFoundException, UnsupportedEncodingException {
-        saveAll(root);
+        saveAll(rootPath);
     }
 
     /**
@@ -87,7 +100,7 @@ public class SourceRoot {
     }
 
     /**
-     * The Java files that have been parsed by this source root object,
+     * The Java files that have been parsed by this source rootPath object,
      * or have been added manually.
      */
     public Map<Path, ParseResult<CompilationUnit>> getContent() {
@@ -95,7 +108,7 @@ public class SourceRoot {
     }
 
     /**
-     * The CompilationUnits of the Java files that have been parsed succesfully by this source root object,
+     * The CompilationUnits of the Java files that have been parsed succesfully by this source rootPath object,
      * or have been added manually.
      */
     public List<CompilationUnit> getCompilationUnits() {
@@ -108,13 +121,13 @@ public class SourceRoot {
     /**
      * Try to parse a single Java file and return the result of parsing.
      */
-    public ParseResult<CompilationUnit> tryToParse(String packag, String filename, JavaParser javaParser) throws IOException {
+    public ParseResult<CompilationUnit> tryToParsePackage(String packag, String filename, JavaParser javaParser) throws IOException {
         final Path relativePath = fileInPackageRelativePath(packag, filename);
         if (content.containsKey(relativePath)) {
             Log.trace("Retrieving cached %s", relativePath);
             return content.get(relativePath);
         }
-        final Path path = root.resolve(relativePath);
+        final Path path = rootPath.resolve(relativePath);
         Log.trace("Parsing %s", path);
         final ParseResult<CompilationUnit> result = javaParser.parse(COMPILATION_UNIT, provider(path));
         content.put(relativePath, result);
@@ -127,7 +140,7 @@ public class SourceRoot {
      */
     public CompilationUnit parse(String packag, String filename, JavaParser javaParser) {
         try {
-            ParseResult<CompilationUnit> result = tryToParse(packag, filename, javaParser);
+            ParseResult<CompilationUnit> result = tryToParsePackage(packag, filename, javaParser);
             if (result.isSuccessful()) {
                 return result.getResult().get();
             }
@@ -138,7 +151,7 @@ public class SourceRoot {
     }
 
     /**
-     * Add a newly created Java file to this source root. It will be saved when saveAll is called.
+     * Add a newly created Java file to this source rootPath. It will be saved when saveAll is called.
      */
     public void add(String pkg, String filename, CompilationUnit compilationUnit) {
         Log.trace("Adding new file %s.%s", pkg, filename);

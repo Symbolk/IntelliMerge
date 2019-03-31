@@ -57,7 +57,7 @@ public class ThreewayGraphMerger {
     // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-
+    // temporarily disable multithread, considering the debug effort with the performance improvement
 //    try {
 //      ExecutorService executorService = Executors.newFixedThreadPool(2);
 //      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);

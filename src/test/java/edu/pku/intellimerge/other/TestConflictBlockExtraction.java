@@ -1,4 +1,4 @@
-package edu.pku.intellimerge.merge;
+package edu.pku.intellimerge.other;
 
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.util.Utils;
