@@ -157,6 +157,19 @@ public class Utils {
   }
 
   /**
+   * Read the content of a given file.
+   *
+   * @param path to be read
+   * @return string content of the file, or null in case of errors.
+   */
+  public static List<String> writeLinesToFile(String path, List<String> lines) {
+    String content =
+        lines.stream().filter(line -> line.length() > 0).collect(Collectors.joining("\n"));
+    writeContent(path, content);
+    return lines;
+  }
+
+  /**
    * Read csv file and return a list of separated items as string
    *
    * @param path
@@ -440,6 +453,9 @@ public class Utils {
         }
       }
     }
+    if (removeConflicts) {
+      writeLinesToFile(path, lines);
+    }
     return mergeConflicts;
   }
 
@@ -522,6 +538,9 @@ public class Utils {
           }
         }
       }
+    }
+    if (removeConflicts) {
+      writeLinesToFile(path, lines);
     }
     return mergeConflicts;
   }
