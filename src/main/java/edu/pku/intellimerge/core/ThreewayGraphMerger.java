@@ -9,6 +9,7 @@ import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.*;
 import edu.pku.intellimerge.util.Utils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -23,10 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
@@ -57,50 +54,49 @@ public class ThreewayGraphMerger {
     // two way matching to get three way mapping
     TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
     TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
-    // temporarily disable multithread, considering the debug effort with the performance improvement
-//    try {
-//      ExecutorService executorService = Executors.newFixedThreadPool(2);
-//      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
-//      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
+    // temporarily disable multithread, considering the debug effort with the performance
+    // improvement
+    //    try {
+    //      ExecutorService executorService = Executors.newFixedThreadPool(2);
+    //      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
+    //      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
 
-//      b2oMatching = task1.get();
-//      b2tMatching = task2.get();
+    //      b2oMatching = task1.get();
+    //      b2tMatching = task2.get();
 
-//      executorService.shutdown();
-      b2oMatcher.topDownMatch();
-      b2oMatcher.bottomUpMatch();
-      b2tMatcher.topDownMatch();
-      b2tMatcher.bottomUpMatch();
-      b2oMatching = b2oMatcher.matching;
-      b2tMatching = b2tMatcher.matching;
+    //      executorService.shutdown();
+    b2oMatcher.topDownMatch();
+    b2oMatcher.bottomUpMatch();
+    b2tMatcher.topDownMatch();
+    b2tMatcher.bottomUpMatch();
+    b2oMatching = b2oMatcher.matching;
+    b2tMatching = b2tMatcher.matching;
 
-      // collect CU mapping that need to merge
-      Set<SemanticNode> internalAndNeedToMergeNodes =
-          baseGraph
-              .vertexSet()
-              .stream()
-              .filter(SemanticNode::isInternal)
-              .filter(SemanticNode::needToMerge)
-              .collect(Collectors.toSet());
-      for (SemanticNode node : internalAndNeedToMergeNodes) {
-        if (node instanceof CompilationUnitNode) {
-          CompilationUnitNode cu = (CompilationUnitNode) node;
-          if (cu.needToMerge() == true) {
-            // temporarily keep the mapping of cus
-            ThreewayMapping mapping =
-                new ThreewayMapping(
-                    Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
-                    Optional.of(node),
-                    Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
-            this.mapping.add(mapping);
-          }
+    // collect CU mapping that need to merge
+    Set<SemanticNode> internalAndNeedToMergeNodes =
+        baseGraph.vertexSet().stream()
+            .filter(SemanticNode::isInternal)
+            .filter(SemanticNode::needToMerge)
+            .collect(Collectors.toSet());
+    for (SemanticNode node : internalAndNeedToMergeNodes) {
+      if (node instanceof CompilationUnitNode) {
+        CompilationUnitNode cu = (CompilationUnitNode) node;
+        if (cu.needToMerge() == true) {
+          // temporarily keep the mapping of cus
+          ThreewayMapping mapping =
+              new ThreewayMapping(
+                  Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
+                  Optional.of(node),
+                  Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
+          this.mapping.add(mapping);
         }
       }
-//    } catch (InterruptedException e) {
-//      e.printStackTrace();
-//    } catch (ExecutionException e) {
-//      e.printStackTrace();
-//    }
+    }
+    //    } catch (InterruptedException e) {
+    //      e.printStackTrace();
+    //    } catch (ExecutionException e) {
+    //      e.printStackTrace();
+    //    }
   }
 
   /**
@@ -237,9 +233,12 @@ public class ThreewayGraphMerger {
         // consider unmatched nodes as added ones
         // if parent matched, insert it into the children of parent, between nearest neighbors
         // handle possible duplicate added nodes to avoid semantic conflicts
-        handleDuplicateAddedNodes(b2oMatching, b2tMatching);
-        mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching);
-        mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching);
+        Map<NodeType, List<SemanticNode>> addedOurs = b2oMatching.unmatchedNodes2;
+        Map<NodeType, List<SemanticNode>> addedTheirs = b2tMatching.unmatchedNodes2;
+        Pair<List<SemanticNode>, List<SemanticNode>> pair =
+            removeDuplicateAddedNodes(addedOurs, addedTheirs);
+        mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching, pair.getLeft());
+        mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching, pair.getRight());
 
         return mergedNonTerminal;
       } else {
@@ -252,16 +251,30 @@ public class ThreewayGraphMerger {
   /**
    * Handle duplicate added nodes to avoid semantic conflicts, rare but still possible
    *
-   * @param b2oMatching
-   * @param b2tMatching
+   * @param addedOurs
+   * @param addedTheirs
    */
-  private void handleDuplicateAddedNodes(TwowayMatching b2oMatching, TwowayMatching b2tMatching) {
-    // TODO deduplicate added nodes
-    // if signature is duplicate
-
-    // if body is the same, remove one of them (default theirs)
-
-    // if body is different, try to merge theirs into ours
+  private Pair<List<SemanticNode>, List<SemanticNode>> removeDuplicateAddedNodes(
+      Map<NodeType, List<SemanticNode>> addedOurs, Map<NodeType, List<SemanticNode>> addedTheirs) {
+    // for each type of newly added nodes
+    List<SemanticNode> nodes1 = new ArrayList<>();
+    List<SemanticNode> nodes2 = new ArrayList<>();
+    for (Map.Entry<NodeType, List<SemanticNode>> entry : addedOurs.entrySet()) {
+      nodes1.addAll(entry.getValue());
+    }
+    for (Map.Entry<NodeType, List<SemanticNode>> entry : addedTheirs.entrySet()) {
+      nodes2.addAll(entry.getValue());
+    }
+    List<SemanticNode> nodes2Copy = new ArrayList<>(nodes2);
+    for (SemanticNode n1 : nodes1) {
+      for (SemanticNode n2 : nodes2Copy) {
+        if (n1.getOriginalSignature().equals(n2.getOriginalSignature())) {
+          // if the signature is duplicate, remove one of them
+          nodes2.remove(n2);
+        }
+      }
+    }
+    return Pair.of(nodes1, nodes2);
   }
 
   /**
@@ -350,18 +363,18 @@ public class ThreewayGraphMerger {
    *
    * @param node parent node to add into
    * @param mergedNonTerminal
-   * @param matching
    */
   private void mergeUnmatchedNodes(
-      SemanticNode node, NonTerminalNode mergedNonTerminal, TwowayMatching matching) {
-    SemanticNode matchedNodeOurs = matching.one2oneMatchings.getOrDefault(node, null);
-    if (matchedNodeOurs != null) {
-      for (Map.Entry<NodeType, List<SemanticNode>> entry : matching.unmatchedNodes2.entrySet()) {
-        for (SemanticNode newlyAdded : entry.getValue()) {
-          SemanticNode parent = newlyAdded.getParent();
-          if (parent.equals(matchedNodeOurs)) {
-            insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
-          }
+      SemanticNode node,
+      NonTerminalNode mergedNonTerminal,
+      TwowayMatching matching,
+      List<SemanticNode> addedNodes) {
+    SemanticNode matchedParentNode = matching.one2oneMatchings.getOrDefault(node, null);
+    if (matchedParentNode != null) {
+      for (SemanticNode newlyAdded : addedNodes) {
+        SemanticNode parent = newlyAdded.getParent();
+        if (parent.equals(matchedParentNode)) {
+          insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
         }
       }
     }
