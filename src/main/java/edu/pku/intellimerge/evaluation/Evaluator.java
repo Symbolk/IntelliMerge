@@ -1,6 +1,7 @@
 package edu.pku.intellimerge.evaluation;
 
 import br.ufpe.cin.app.JFSTMerge;
+import com.google.common.base.Stopwatch;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -43,7 +45,10 @@ public class Evaluator {
   private static final String DIFF_DIR =
       "D:\\github\\merges\\" + REPO_NAME; // the directory to temporarily save the diff files
   private static final String MERGE_RESULT_DIR =
-      "D:\\github\\merges\\" + REPO_NAME + File.separator + Side.INTELLI.asString(); // the directory to eventually save the merge results
+      "D:\\github\\merges\\"
+          + REPO_NAME
+          + File.separator
+          + Side.INTELLI.asString(); // the directory to eventually save the merge results
   private static final String STATISTICS_FILE_PATH =
       "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_173.csv";
 
@@ -86,19 +91,24 @@ public class Evaluator {
           // 1. merge with IntelliMerge and jFSTMerge
           // runtime for each phase (need to run multiple times and get average)
           List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir);
+
+          Stopwatch stopwatch = Stopwatch.createStarted();
           JFSTMerge jfstMerge = new JFSTMerge();
           jfstMerge.mergeDirectories(
               sourceDir + File.separator + Side.OURS.asString(),
               sourceDir + File.separator + Side.BASE.asString(),
               sourceDir + File.separator + Side.THEIRS.asString(),
               jfstMergedDir);
+          stopwatch.stop();
+          long jfstRuntime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+          logger.info("JFSTMerge done in {}ms.", jfstRuntime);
 
           // 2. remove all comments and format the manual results
           Utils.removeAllComments(intelliMergedDir);
           Utils.removeAllComments(gitMergedDir);
           Utils.removeAllComments(jfstMergedDir);
           Utils.removeAllComments(manualMergedDir);
-          Utils.formatAllJavaFiles(manualMergedDir);
+          //          Utils.formatAllJavaFiles(manualMergedDir);
 
           // 3. compare merge results with manual results
           ArrayList<SourceFile> temp = new ArrayList<>();
@@ -164,6 +174,7 @@ public class Evaluator {
                   .append("parent_1", parent1)
                   .append("parent_2", parent2)
                   .append("base_commit", baseCommit)
+                  .append("time_overall", jfstRuntime)
                   .append("conflict_files_num", manualMergedResults.size());
           Pair<Integer, List<Document>> jfstMergeConflicts =
               extractMergeConflicts(jfstMergedDir, false);
@@ -261,12 +272,12 @@ public class Evaluator {
       if (mergeResultDir.contains(Side.JFST.asString())) {
         toFilePath = Utils.formatPathSeparator(mergeResultDir + File.separator + fileName);
       }
-      Double filePrecision = 0.0;
+      double filePrecision = 0.0;
+      double fileRecall = 0.0;
 
       int manualLOC =
-          Utils.readFileToLines(fromFilePath)
-              .size(); // the number of code lines in the manual merged file
-      int autoMergedLOC = Utils.readFileToLines(toFilePath).size();
+          Utils.computeFileLOC(fromFilePath); // the number of code lines in the manual merged file
+      int autoMergedLOC = Utils.computeFileLOC(toFilePath);
       totalManualMergedLOC += manualLOC;
       totalAutoMergedLOC += autoMergedLOC;
 
@@ -325,13 +336,18 @@ public class Evaluator {
       }
       // if there exists differences, create  one document to save the diffs
       if (diffHunkDocs.size() > 0) {
-//        int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
-        int sameLOC = manualLOC - fromDiffLoc;
+        int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
+        //        int sameLOC = manualLOC - fromDiffLoc;
         totalSameLOC += sameLOC;
         if (autoMergedLOC > 0) {
           filePrecision = sameLOC / (double) autoMergedLOC;
         } else {
           filePrecision = 1.0;
+        }
+        if (manualLOC > 0) {
+          fileRecall = sameLOC / (double) manualLOC;
+        } else {
+          fileRecall = 1.0;
         }
         Document fileDocument =
             new Document("file_relative_path", relativePath)
@@ -339,6 +355,7 @@ public class Evaluator {
                 .append("auto_merge_loc", autoMergedLOC)
                 .append("same_with_manual_loc", sameLOC)
                 .append("auto_merge_precision", filePrecision)
+                .append("auto_merge_recall", fileRecall)
                 .append("from_diff_loc", fromDiffLoc)
                 .append("to_diff_loc", toDiffLoc)
                 .append("diff_hunks", diffHunkDocs);
@@ -400,13 +417,15 @@ public class Evaluator {
 
   /**
    * Remove diff hunks that have the identical content ignoring empty chars
+   *
    * @param hunks
    */
-  private static void removeFormatCausedHunks(List<Hunk> hunks){
-    for(Hunk hunk : hunks){
+  private static void removeFormatCausedHunks(List<Hunk> hunks) {
+    List<Hunk> hunksCopy = new ArrayList<>(hunks);
+    for (Hunk hunk : hunksCopy) {
       String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
       String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
-      if(hunkFromContent.equals(hunkToContent)){
+      if (hunkFromContent.equals(hunkToContent)) {
         hunks.remove(hunk);
       }
     }
@@ -423,8 +442,7 @@ public class Evaluator {
   private static String getHunkContent(
       Hunk hunk, Line.LineType lineType, boolean ignoreEmptyChars) {
     String content =
-        hunk.getLines()
-            .stream()
+        hunk.getLines().stream()
             .filter(line -> line.getLineType().equals(lineType))
             .map(Line::getContent)
             .collect(Collectors.joining("\n"));

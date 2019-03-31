@@ -25,29 +25,35 @@ public class DBCalculator {
     MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
     MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
     MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
+
+    // one collection stands for one examined repo
     MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
     MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
     MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
     // calculate average precision for the three tools
-    Pair<Double, Double> pAndR = calculateForRepo(intelliDBCollection);
+    Pair<Double, Double> pAndR = calculatePAndRForRepo(intelliDBCollection);
+    Double runtime = calculateRuntimeForRepo(intelliDBCollection);
     System.out.println(
         String.format(
-            "%-20s %-40s %s",
+            "%-20s %-40s %-40s %s",
             "IntelliMerge",
             "Precision: " + pAndR.getLeft() + "%",
-            "Recall: " + pAndR.getRight() + "%"));
-    pAndR = calculateForRepo(gitDBCollection);
+            "Recall: " + pAndR.getRight() + "%",
+            "Runtime: " + runtime));
+    pAndR = calculatePAndRForRepo(jfstDBCollection);
+    runtime = calculateRuntimeForRepo(intelliDBCollection);
+    System.out.println(
+        String.format(
+            "%-20s %-40s %-40s %s",
+            "JFSTMerge",
+            "Precision: " + pAndR.getLeft() + "%",
+            "Recall: " + pAndR.getRight() + "%",
+            "Runtime: " + runtime));
+    pAndR = calculatePAndRForRepo(gitDBCollection);
     System.out.println(
         String.format(
             "%-20s %-40s %s",
             "GitMerge",
-            "Precision: " + pAndR.getLeft() + "%",
-            "Recall: " + pAndR.getRight() + "%"));
-    pAndR = calculateForRepo(jfstDBCollection);
-    System.out.println(
-        String.format(
-            "%-20s %-40s %s",
-            "JFSTMerge",
             "Precision: " + pAndR.getLeft() + "%",
             "Recall: " + pAndR.getRight() + "%"));
   }
@@ -58,7 +64,7 @@ public class DBCalculator {
    * @param collection
    * @return
    */
-  private static Pair<Double, Double> calculateForRepo(MongoCollection<Document> collection) {
+  private static Pair<Double, Double> calculatePAndRForRepo(MongoCollection<Document> collection) {
     MongoCursor<Document> cursor = collection.find().iterator();
 
     Double repoPrecision = 0.0;
@@ -87,5 +93,27 @@ public class DBCalculator {
       repoRecall = 1.0;
     }
     return Pair.of(repoPrecision * 100, repoRecall * 100);
+  }
+
+  /**
+   * Calculate the mean runtime for all merge scenarios in the repo
+   *
+   * @param collection
+   * @return
+   */
+  private static Double calculateRuntimeForRepo(MongoCollection<Document> collection) {
+    MongoCursor<Document> cursor = collection.find().iterator();
+    Double runtime = 0.0;
+    int count = 0;
+    try {
+      while (cursor.hasNext()) {
+        Document doc = cursor.next();
+        runtime += (Double) doc.get("time_overall");
+        count++;
+      }
+    } finally {
+      cursor.close();
+    }
+    return runtime / count;
   }
 }

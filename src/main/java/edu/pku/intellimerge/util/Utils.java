@@ -534,12 +534,15 @@ public class Utils {
    * @return
    */
   public static String resolveConflictsSimply(String code, boolean diff3Style) {
+    // <<<<<<< ours
     String leftPattern = CONFLICT_LEFT_BEGIN + " " + Side.OURS.asString();
+    // |||||||((?!<<<<<<<)(?s:.))+>>>>>>> theirs
     String baseAndRightPattern =
         "\\|\\|\\|\\|\\|\\|\\|((?!<<<<<<<)(?s:.))+"
             + CONFLICT_RIGHT_END
             + " "
             + Side.THEIRS.asString();
+    // =======((?!<<<<<<<)(?s:.))+>>>>>>> theirs
     String rightPattern =
         CONFLICT_RIGHT_BEGIN
             + "((?!"
@@ -562,7 +565,7 @@ public class Utils {
     matcher = pattern.matcher(code);
     while (matcher.find()) {
       String content = matcher.group();
-//      System.out.println(content);
+      //      System.out.println(content);
       // TODO code smell here: need to be redesigned
       code = code.replaceAll(Pattern.quote(content), "/* " + content + " */");
     }
@@ -737,5 +740,19 @@ public class Utils {
     } catch (CommentRemoverException e) {
       e.printStackTrace();
     }
+  }
+
+  /**
+   * Compute the lines of code in a file, without comments or blanck lines
+   *
+   * @param path
+   * @return
+   */
+  public static int computeFileLOC(String path) {
+    List<String> lines =
+        readFileToLines(path).stream()
+            .filter(line -> line.length() > 0)
+            .collect(Collectors.toList());
+    return lines.size();
   }
 }
