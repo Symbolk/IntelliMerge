@@ -32,4 +32,24 @@ public class Refactoring {
   public Refactoring(RefactoringType refactoringType) {
     this.refactoringType = refactoringType;
   }
+
+  public NodeType getNodeType() {
+    return nodeType;
+  }
+
+  public double getConfidence() {
+    return confidence;
+  }
+
+  public SemanticNode getSource() {
+    return source;
+  }
+
+  public SemanticNode getTarget() {
+    return target;
+  }
+
+  public boolean isOneToOne(){
+    return refactoringType.isOneToOne();
+  }
 }

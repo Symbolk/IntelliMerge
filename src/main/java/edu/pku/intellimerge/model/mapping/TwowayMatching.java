@@ -3,8 +3,8 @@ package edu.pku.intellimerge.model.mapping;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Stores matching relationships between two graphs */
 public class TwowayMatching {
@@ -40,24 +41,20 @@ public class TwowayMatching {
    * @param confidence
    */
   public void markRefactoring(
-          SemanticNode node1, SemanticNode node2, RefactoringType refactoringType, double confidence) {
+      SemanticNode node1, SemanticNode node2, RefactoringType refactoringType, double confidence) {
     Refactoring refactoring =
         new Refactoring(refactoringType, node1.getNodeType(), confidence, node1, node2);
     refactorings.add(refactoring);
   }
 
-//  /** Collect one2one matchings from the detect refactorings, which can be merged later */
-//  public void getOne2OneRefactoring() {
-//    for (SemanticNode node1 : partition1) {
-//      if (biPartite.edgesOf(node1).size() == 1) {
-//        for (Refactoring edge : biPartite.edgesOf(node1)) {
-//          if (!one2oneMatchings.containsKey(node1)) {
-//            one2oneMatchings.put(biPartite.getEdgeSource(edge), biPartite.getEdgeTarget(edge));
-//          }
-//        }
-//      }
-//    }
-//  }
+  /** Collect one2one matchings from the detect refactorings, which can be merged later */
+  public void getOne2OneRefactoring() {
+    List<Refactoring> oneToOneRefactorings =
+        refactorings.stream().filter(Refactoring::isOneToOne).collect(Collectors.toList());
+    for (Refactoring refactoring : oneToOneRefactorings) {
+      one2oneMatchings.put(refactoring.getSource(), refactoring.getTarget());
+    }
+  }
 
   /**
    * Add the given node to unmatched nodes list according to type

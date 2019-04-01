@@ -179,11 +179,11 @@ public class ThreewayGraphMerger {
         String mergedComment =
             mergeTextually(
                 oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
-        List<String> mergedAnnotations =
-            mergeByUnion(
-                oursTerminal.getAnnotations(),
-                baseTerminal.getAnnotations(),
-                theirsTerminal.getAnnotations());
+        String mergedAnnotations =
+            mergeTextually(
+                oursNode.getAnnotationsAsString(),
+                node.getAnnotationsAsString(),
+                theirsNode.getAnnotationsAsString());
         List<String> mergedModifiers =
             mergeByUnion(
                 oursTerminal.getModifiers(),
@@ -194,7 +194,7 @@ public class ThreewayGraphMerger {
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
         mergedTerminal.setComment(mergedComment);
-        mergedTerminal.setAnnotations(mergedAnnotations);
+        mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
@@ -211,14 +211,16 @@ public class ThreewayGraphMerger {
         // merge the comment and signature
         String mergedComment =
             mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
-        List<String> mergedAnnotations =
-            mergeByUnion(
-                oursNode.getAnnotations(), node.getAnnotations(), theirsNode.getAnnotations());
+        String mergedAnnotations =
+            mergeTextually(
+                oursNode.getAnnotationsAsString(),
+                node.getAnnotationsAsString(),
+                theirsNode.getAnnotationsAsString());
         List<String> mergedModifiers =
             mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
         String mergedSignature = mergeComponents(oursNode, node, theirsNode);
         mergedNonTerminal.setComment(mergedComment);
-        mergedNonTerminal.setAnnotations(mergedAnnotations);
+        mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedNonTerminal.setModifiers(mergedModifiers);
         mergedNonTerminal.setOriginalSignature(mergedSignature);
 

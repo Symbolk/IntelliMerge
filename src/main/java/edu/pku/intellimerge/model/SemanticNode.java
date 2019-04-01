@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class SemanticNode {
   public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
@@ -98,6 +99,10 @@ public abstract class SemanticNode {
 
   public void setAnnotations(List<String> annotations) {
     this.annotations = annotations;
+  }
+
+  public String getAnnotationsAsString() {
+    return annotations.stream().collect(Collectors.joining("\n"));
   }
 
   public NodeType getNodeType() {
