@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Class responsible to calculate statistics from the database */
-public class DBCalculator {
-  private static final Logger logger = LoggerFactory.getLogger(DBCalculator.class);
+public class Statistics {
+  private static final Logger logger = LoggerFactory.getLogger(Statistics.class);
 
   private static final String REPO_NAME = "javaparser";
 
@@ -32,30 +32,36 @@ public class DBCalculator {
     MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
     // calculate average precision for the three tools
     Pair<Double, Double> pAndR = calculatePAndRForRepo(intelliDBCollection);
-    Double runtime = calculateRuntimeForRepo(intelliDBCollection);
+    Long runtime = calculateRuntimeForRepo(intelliDBCollection);
+    Integer numConflicts = calculateNumConflictsForRepo(intelliDBCollection);
     System.out.println(
         String.format(
-            "%-20s %-40s %-40s %s",
+            "%-20s %-40s %-40s %-40s %s",
             "IntelliMerge",
             "Precision: " + pAndR.getLeft() + "%",
             "Recall: " + pAndR.getRight() + "%",
-            "Runtime: " + runtime));
+            "Conflicts Num: " + numConflicts,
+            "Runtime: " + runtime + "ms"));
     pAndR = calculatePAndRForRepo(jfstDBCollection);
-    runtime = calculateRuntimeForRepo(intelliDBCollection);
+    runtime = calculateRuntimeForRepo(jfstDBCollection);
+    numConflicts = calculateNumConflictsForRepo(jfstDBCollection);
     System.out.println(
         String.format(
-            "%-20s %-40s %-40s %s",
+            "%-20s %-40s %-40s %-40s %s",
             "JFSTMerge",
             "Precision: " + pAndR.getLeft() + "%",
             "Recall: " + pAndR.getRight() + "%",
-            "Runtime: " + runtime));
+            "Conflicts Num: " + numConflicts,
+            "Runtime: " + runtime + "ms"));
     pAndR = calculatePAndRForRepo(gitDBCollection);
+    numConflicts = calculateNumConflictsForRepo(gitDBCollection);
     System.out.println(
         String.format(
-            "%-20s %-40s %s",
+            "%-20s %-40s %-40s %s",
             "GitMerge",
             "Precision: " + pAndR.getLeft() + "%",
-            "Recall: " + pAndR.getRight() + "%"));
+            "Recall: " + pAndR.getRight() + "%",
+            "Conflicts Num: " + numConflicts));
   }
 
   /**
@@ -101,19 +107,39 @@ public class DBCalculator {
    * @param collection
    * @return
    */
-  private static Double calculateRuntimeForRepo(MongoCollection<Document> collection) {
+  private static Long calculateRuntimeForRepo(MongoCollection<Document> collection) {
     MongoCursor<Document> cursor = collection.find().iterator();
-    Double runtime = 0.0;
+    Long runtime = 0L;
     int count = 0;
     try {
       while (cursor.hasNext()) {
         Document doc = cursor.next();
-        runtime += (Double) doc.get("time_overall");
+        runtime += (Long) doc.get("time_overall");
         count++;
       }
     } finally {
       cursor.close();
     }
     return runtime / count;
+  }
+
+  /**
+   * Calculate the sum number of conflicts for all merge scenarios in the repo
+   *
+   * @param collection
+   * @return
+   */
+  private static Integer calculateNumConflictsForRepo(MongoCollection<Document> collection) {
+    MongoCursor<Document> cursor = collection.find().iterator();
+    Integer sum = 0;
+    try {
+      while (cursor.hasNext()) {
+        Document doc = cursor.next();
+        sum += (Integer) doc.get("conflicts_num");
+      }
+    } finally {
+      cursor.close();
+    }
+    return sum;
   }
 }

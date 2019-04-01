@@ -43,14 +43,14 @@ public class Evaluator {
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
   private static final String DIFF_DIR =
-      "D:\\github\\merges\\" + REPO_NAME; // the directory to temporarily save the diff files
+      "D:\\github\\ref_conflicts\\" + REPO_NAME; // the directory to temporarily save the diff files
   private static final String MERGE_RESULT_DIR =
       "D:\\github\\merges\\"
           + REPO_NAME
           + File.separator
           + Side.INTELLI.asString(); // the directory to eventually save the merge results
   private static final String STATISTICS_FILE_PATH =
-      "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_173.csv";
+      "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_javaparser.csv";
 
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
@@ -88,6 +88,19 @@ public class Evaluator {
           String gitMergedDir = sourceDir + File.separator + Side.GIT.asString() + File.separator;
           String manualMergedDir =
               sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
+
+          // jump some cases where no base files collected, or no manual files collected
+          String baseDir = sourceDir + File.separator + Side.BASE.asString() + File.separator;
+          File baseDirFile = new File(baseDir);
+          if (!baseDirFile.exists()) {
+            continue;
+          }
+          File manualDirFile = new File(manualMergedDir);
+          if (!manualDirFile.exists()) {
+            continue;
+          }
+
+
           // 1. merge with IntelliMerge and jFSTMerge
           // runtime for each phase (need to run multiple times and get average)
           List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir);
@@ -104,11 +117,11 @@ public class Evaluator {
           logger.info("JFSTMerge done in {}ms.", jfstRuntime);
 
           // 2. remove all comments and format the manual results
-          Utils.removeAllComments(intelliMergedDir);
-          Utils.removeAllComments(gitMergedDir);
-          Utils.removeAllComments(jfstMergedDir);
-          Utils.removeAllComments(manualMergedDir);
-          //          Utils.formatAllJavaFiles(manualMergedDir);
+//          Utils.removeAllComments(intelliMergedDir);
+//          Utils.removeAllComments(gitMergedDir);
+//          Utils.removeAllComments(jfstMergedDir);
+//          Utils.removeAllComments(manualMergedDir);
+//          Utils.formatAllJavaFiles(manualMergedDir);
 
           // 3. compare merge results with manual results
           ArrayList<SourceFile> temp = new ArrayList<>();
@@ -318,10 +331,10 @@ public class Evaluator {
         for (Hunk hunk : visitedHunks) {
           int fromStartLine = hunk.getFromFileRange().getLineStart();
           int toStartLine = hunk.getToFileRange().getLineStart();
-          int fromLOC = hunk.getFromFileRange().getLineCount();
-          int toLOC = hunk.getToFileRange().getLineCount();
           String fromContent = getHunkContent(hunk, Line.LineType.FROM, false);
           String toContent = getHunkContent(hunk, Line.LineType.TO, false);
+          int fromLOC = fromContent.length() >  0 ? hunk.getFromFileRange().getLineCount() : 0;
+          int toLOC = toContent.length() >  0 ? hunk.getToFileRange().getLineCount() : 0;
           Document diffHunkDoc =
               new Document("from_start_line", fromStartLine)
                   .append("from_loc", fromLOC)
@@ -336,8 +349,8 @@ public class Evaluator {
       }
       // if there exists differences, create  one document to save the diffs
       if (diffHunkDocs.size() > 0) {
-        int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
-        //        int sameLOC = manualLOC - fromDiffLoc;
+          int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
+//        int sameLOC = manualLOC - fromDiffLoc;
         totalSameLOC += sameLOC;
         if (autoMergedLOC > 0) {
           filePrecision = sameLOC / (double) autoMergedLOC;
@@ -396,21 +409,24 @@ public class Evaluator {
    */
   private static boolean removeMovingCausedHunks(Hunk hunk, List<Hunk> visitedHunks) {
     for (Hunk visitedHunk : visitedHunks) {
-      // check if line counts are opposite, e.g. @@ -130,47 +132,0 @@ and @@ -330,0 +287,47 @@
-      if (visitedHunk.getFromFileRange().getLineCount() == hunk.getToFileRange().getLineCount()
-          && visitedHunk.getToFileRange().getLineCount()
-              == hunk.getFromFileRange().getLineCount()) {
-        // check if line contents are the same
-        String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
-        String visitedHunkFromContent = getHunkContent(visitedHunk, Line.LineType.FROM, true);
-        String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
-        String visitedHunkToContent = getHunkContent(visitedHunk, Line.LineType.TO, true);
-        if (hunkFromContent.equals(visitedHunkToContent)
-            && hunkToContent.equals(visitedHunkFromContent)) {
-          visitedHunks.remove(visitedHunk);
-          return true;
-        }
+      // P.S. since actually \n brings deviation to line ranges, so here we directly compare hunk
+      // contents
+      // check if line ranges are opposite, e.g. @@ -130,47 +132,0 @@ and @@ -330,0 +287,47 @@
+      //      if (visitedHunk.getFromFileRange().getLineCount() ==
+      // hunk.getToFileRange().getLineCount()
+      //          && visitedHunk.getToFileRange().getLineCount()
+      //              == hunk.getFromFileRange().getLineCount()) {
+      // check if hunk contents are the same
+      String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
+      String visitedHunkFromContent = getHunkContent(visitedHunk, Line.LineType.FROM, true);
+      String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
+      String visitedHunkToContent = getHunkContent(visitedHunk, Line.LineType.TO, true);
+      if (hunkFromContent.equals(visitedHunkToContent)
+          && hunkToContent.equals(visitedHunkFromContent)) {
+        visitedHunks.remove(visitedHunk);
+        return true;
       }
+      //      }
     }
     return false;
   }

@@ -235,7 +235,7 @@ public abstract class AbstractTree implements ITree {
 
     @Override
     public String toString() {
-        System.err.println("This method should currently not be used (please use toShortString())");
+        System.err.println("This terminalNodeSimilarity should currently not be used (please use toShortString())");
         return toShortString();
     }
 
@@ -267,7 +267,7 @@ public abstract class AbstractTree implements ITree {
         }
 
         private RuntimeException unsupportedOperation() {
-            return new UnsupportedOperationException("This method should not be called on a fake tree");
+            return new UnsupportedOperationException("This terminalNodeSimilarity should not be called on a fake tree");
         }
 
         @Override

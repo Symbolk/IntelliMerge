@@ -9,6 +9,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.node.FieldDeclNode;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
+import edu.pku.intellimerge.model.node.TerminalNode;
 import info.debatty.java.stringsimilarity.Cosine;
 import org.eclipse.jdt.core.dom.ASTParser;
 
@@ -22,27 +23,27 @@ import java.util.stream.Collectors;
 public class SimilarityAlg {
 
   /**
-   * Compute the similarity between two method declarations, considering signature as well as
+   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature as well as
    * context
    *
    * @param n1
    * @param n2
    * @return
    */
-  public static double method(MethodDeclNode n1, MethodDeclNode n2) {
+  public static double terminalNodeSimilarity(TerminalNode n1, TerminalNode n2) {
     double similarity = 0.0;
     // naive average in all dimensions of context(incoming and outgoing edges)
-    similarity += methodContext(n1.incomingEdges, n2.incomingEdges);
-    similarity += methodContext(n1.outgoingEdges, n2.outgoingEdges);
-    // navie string similarity of method signature
+    similarity += contextSimilarity(n1.incomingEdges, n2.incomingEdges);
+    similarity += contextSimilarity(n1.outgoingEdges, n2.outgoingEdges);
+    // navie string similarity of terminalNodeSimilarity signature
     similarity += 5 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity += 5 * methodBody(n1.getBody(), n2.getBody());
+    similarity += 5 * bodyASTSimilarity(n1.getBody(), n2.getBody());
     similarity /= 12;
     return similarity;
   }
 
   /**
-   * Signature textual similarity, but method name and parameter types should be the most important
+   * Signature textual similarity, but terminalNodeSimilarity name and parameter types should be the most important
    *
    * @param s1
    * @param s2
@@ -53,7 +54,7 @@ public class SimilarityAlg {
     return cosine.similarity(s1, s2);
   }
 
-  public static double methodContext(
+  public static double contextSimilarity(
       Map<EdgeType, List<SemanticNode>> edges1, Map<EdgeType, List<SemanticNode>> edges2) {
     double similarity = 0.0;
     int count = 0;
@@ -81,13 +82,13 @@ public class SimilarityAlg {
   }
 
   /**
-   * Compute method body subtree similarity based on gumtree
+   * Compute terminalNodeSimilarity body subtree similarity based on gumtree
    *
    * @param body1
    * @param body2
    * @return
    */
-  public static double methodBody(String body1, String body2) {
+  public static double bodyASTSimilarity(String body1, String body2) {
     double similarity = 0D;
     try {
       JdtTreeGenerator generator = new JdtTreeGenerator();

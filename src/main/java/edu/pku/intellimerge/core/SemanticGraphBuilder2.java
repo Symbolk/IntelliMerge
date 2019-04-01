@@ -373,7 +373,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Process members (child nodes that are field, constructor or method) of type declaration
+   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type declaration
    *
    * @param td
    * @param tdNode
@@ -415,7 +415,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           processMemebers(childTD, childTDNode, qualifiedTypeName, isInChangedFile);
         }
       } else {
-        // for other members (constructor, field, method), create the node
+        // for other members (constructor, field, terminalNodeSimilarity), create the node
         // add the edge from the parent td to the member
         if (child instanceof EnumConstantDeclaration) {
           EnumConstantDeclaration ecd = (EnumConstantDeclaration) child;
@@ -546,12 +546,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
 
           processBodyContent(cd, cdNode);
         }
-        // 6. method
+        // 6. terminalNodeSimilarity
         if (child instanceof MethodDeclaration) {
           MethodDeclaration md = (MethodDeclaration) child;
           if (md.getAnnotations().size() > 0) {
             if (md.isAnnotationPresent("Override")) {
-              // search the method signature in its superclass or interface
+              // search the terminalNodeSimilarity signature in its superclass or interface
             }
           }
           comment = md.getComment().map(Comment::toString).orElse("");
@@ -593,7 +593,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .collect(Collectors.toList());
 
           // md.getDeclarationAsString() does not include type parameters, so we need to insert type
-          // [<type parameters>] [return type] [method name] [parameter type]
+          // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
           if (typeParameters.size() > 0) {
             String typeParametersAsString =
                 "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
@@ -669,7 +669,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. method or constructor)
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity or constructor)
    * body
    *
    * @param cd
@@ -712,7 +712,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     if (writeFieldExprs.size() > 0) {
       writeFieldEdges.put(node, writeFieldExprs);
     }
-    // 3 method call
+    // 3 terminalNodeSimilarity call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
     this.methodCallExprs.put(node, methodCallExprs);
   }
@@ -754,7 +754,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Fuzzy match methods, by method name and argument numbers (to be refined)
+   * Fuzzy match methods, by terminalNodeSimilarity name and argument numbers (to be refined)
    *
    * @param edgeCount
    * @param methodCallExprs
@@ -762,7 +762,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    */
   private int buildEdgesForMethodCall(
       int edgeCount, Map<SemanticNode, List<MethodCallExpr>> methodCallExprs) {
-    // for every method call, find its declaration by method name and paramater num
+    // for every terminalNodeSimilarity call, find its declaration by terminalNodeSimilarity name and paramater num
     for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : methodCallExprs.entrySet()) {
       SemanticNode caller = entry.getKey();
       List<MethodCallExpr> exprs = entry.getValue();
@@ -947,7 +947,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
               fieldAccessString.lastIndexOf("."), fieldAccessString.length());
     }
     String displayName = fieldAccessString;
-    // for method, match by method name and paramater num
+    // for terminalNodeSimilarity, match by terminalNodeSimilarity name and paramater num
     Optional<SemanticNode> targetNodeOpt = Optional.empty();
     if (targetNodeType.equals(NodeType.FIELD)) {
 

@@ -25,7 +25,7 @@ public abstract class SemanticNode {
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
   private String comment;
-  // annotations can be used before package, class, constructor, method/interface, field, parameter,
+  // annotations can be used before package, class, constructor, terminalNodeSimilarity/interface, field, parameter,
   // local variables
   private List<String> annotations;
   private List<String> modifiers;

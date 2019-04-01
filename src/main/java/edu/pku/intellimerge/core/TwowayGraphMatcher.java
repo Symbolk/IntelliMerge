@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.core;
 
+import edu.pku.intellimerge.core.matcher.ConstructorDeclMatcher;
 import edu.pku.intellimerge.core.matcher.FieldDeclMatcher;
 import edu.pku.intellimerge.core.matcher.MethodDeclMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -35,8 +36,7 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
     Set<SemanticNode> nodeSet1 = graph1.vertexSet();
     Set<SemanticNode> nodeSet2 = graph2.vertexSet();
     Map<Integer, SemanticNode> map1 =
-        nodeSet1
-            .stream()
+        nodeSet1.stream()
             .filter(SemanticNode::needToMerge)
             .collect(
                 Collectors.toMap(
@@ -45,8 +45,7 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
                     (o, n) -> o,
                     HashMap::new));
     Map<Integer, SemanticNode> map2 =
-        nodeSet2
-            .stream()
+        nodeSet2.stream()
             .filter(SemanticNode::needToMerge)
             .collect(
                 Collectors.toMap(
@@ -77,7 +76,7 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
         matching.unmatchedNodes1.getOrDefault(NodeType.METHOD, new ArrayList<>());
     List<SemanticNode> unmatchedMethods2 =
         matching.unmatchedNodes2.getOrDefault(NodeType.METHOD, new ArrayList<>());
-    // TODO avoid sujection
+    // TODO avoid subjection
     if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }
@@ -95,6 +94,18 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
     if (!unmatchedFields1.isEmpty() && !unmatchedFields2.isEmpty()) {
       fieldDeclMatcher.matchFields(matching, unmatchedFields1, unmatchedFields2);
     }
+
+    // 3. Constructors
+    ConstructorDeclMatcher constructorDeclMatcher = new ConstructorDeclMatcher();
+    List<SemanticNode> unmatchedConstructors1 =
+        matching.unmatchedNodes1.getOrDefault(NodeType.CONSTRUCTOR, new ArrayList<>());
+    List<SemanticNode> unmatchedConstructors2 =
+        matching.unmatchedNodes2.getOrDefault(NodeType.CONSTRUCTOR, new ArrayList<>());
+    if (!unmatchedConstructors1.isEmpty() && !unmatchedConstructors2.isEmpty()) {
+      constructorDeclMatcher.matchConstructors(
+          matching, unmatchedConstructors1, unmatchedConstructors2);
+    }
+
     matching.getOne2OneRefactoring();
   }
 
@@ -107,8 +118,7 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
   private ArrayList<SemanticNode> sortUnmatchedNodes(List<SemanticNode> unmatchedNodes) {
     ArrayList<SemanticNode> unMatchedNodesSorted =
         new ArrayList(
-            unmatchedNodes
-                .stream()
+            unmatchedNodes.stream()
                 .sorted(Comparator.comparing(SemanticNode::getLevel).reversed())
                 .collect(Collectors.toList()));
     return unMatchedNodesSorted;

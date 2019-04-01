@@ -7,14 +7,14 @@ public enum EdgeType {
   EXTEND(2, false, "extends"),
   IMPLEMENT(3, false, "implements"),
   /** inside-file edges * */
-  // define field/method/constructor/inner type/constant
+  // define field/terminalNodeSimilarity/constructor/inner type/constant
   DEFINE(4, true, "defines"),
   /** across-node edges * */
-  // inter-field/method edges
+  // inter-field/terminalNodeSimilarity edges
   READ(5, false, "reads field"),
   WRITE(6, false, "writes field"),
-  // call method/constructor
-  CALL(7, false, "calls method"),
+  // call terminalNodeSimilarity/constructor
+  CALL(7, false, "calls terminalNodeSimilarity"),
   // declare/initialize object
   DECLARE(8, false, "declares object"),
   INITIALIZE(9, false, "initializes object");

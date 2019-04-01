@@ -42,12 +42,12 @@ public class MethodDeclMatcher {
         biPartite.addVertex(node2);
         partition2.add(node2);
         biPartite.addEdge(node1, node2);
-        double similarity = SimilarityAlg.method((MethodDeclNode) node1, (MethodDeclNode) node2);
+        double similarity = SimilarityAlg.terminalNodeSimilarity((MethodDeclNode) node1, (MethodDeclNode) node2);
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
     // bipartite / to match most likely renamed methods
-    // find the maximum /, one method cannot be renamed to two
+    // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
 //    biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
@@ -77,7 +77,7 @@ public class MethodDeclMatcher {
     BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();
     // Rule: one of callers in the / && original caller's parent==current parent&&union
     // context confidence > confidence before
-    // The added method is called by an existing method in the same class
+    // The added terminalNodeSimilarity is called by an existing terminalNodeSimilarity in the same class
     Map<MethodDeclNode, List<MethodDeclNode>> candidates = new HashMap<>();
     for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
       List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL);
@@ -93,7 +93,7 @@ public class MethodDeclMatcher {
         candidates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
       }
     }
-    // try to inline the new method to the caller
+    // try to inline the new terminalNodeSimilarity to the caller
     // if the similarity improves, consider it as extracted from the caller
     for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : candidates.entrySet()) {
       MethodDeclNode callee = alternate.getKey();
@@ -101,8 +101,8 @@ public class MethodDeclMatcher {
       for (MethodDeclNode caller : callers) {
         MethodDeclNode callerBase = (MethodDeclNode) reversedMatching.get(caller);
         double similarityBefore =
-            SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
-                + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
+            SimilarityAlg.contextSimilarity(caller.incomingEdges, callerBase.incomingEdges)
+                + SimilarityAlg.contextSimilarity(caller.outgoingEdges, callerBase.outgoingEdges);
 
         // TODO detect inline methods
         // combine the context edges
@@ -124,8 +124,8 @@ public class MethodDeclMatcher {
         caller.outgoingEdges = outUnion;
         // combine the body
         double similarityAfter =
-            SimilarityAlg.methodContext(caller.incomingEdges, callerBase.incomingEdges)
-                + SimilarityAlg.methodContext(caller.outgoingEdges, callerBase.outgoingEdges);
+            SimilarityAlg.contextSimilarity(caller.incomingEdges, callerBase.incomingEdges)
+                + SimilarityAlg.contextSimilarity(caller.outgoingEdges, callerBase.outgoingEdges);
 
         if (similarityAfter > similarityBefore) {
           matching.markRefactoring(

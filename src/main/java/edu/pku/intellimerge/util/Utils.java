@@ -653,6 +653,7 @@ public class Utils {
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.MANUAL);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.GIT);
       copyOneVersion(sourceDir, relativePaths, targetDir, Side.INTELLI);
+      copyOneVersion(sourceDir, relativePaths, targetDir, Side.JFST);
     } catch (IOException e) {
       e.printStackTrace();
     }

@@ -382,7 +382,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Process members (child nodes that are field, constructor or method) of type declaration
+   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type declaration
    *
    * @param td
    * @param tdNode
@@ -411,7 +411,7 @@ public class SemanticGraphBuilder {
           processMemebers(childTD, childTDNode, packageName, isInChangedFile);
         }
       } else {
-        // for other members (constructor, field, method), create the node
+        // for other members (constructor, field, terminalNodeSimilarity), create the node
         // add the edge from the parent td to the member
         // 4. field
         if (child instanceof FieldDeclaration) {
@@ -512,12 +512,12 @@ public class SemanticGraphBuilder {
 
           processMethodOrConstructorBody(cd, cdNode);
         }
-        // 6. method
+        // 6. terminalNodeSimilarity
         if (child instanceof MethodDeclaration) {
           MethodDeclaration md = (MethodDeclaration) child;
           if (md.getAnnotations().size() > 0) {
             if (md.isAnnotationPresent("Override")) {
-              // search the method signature in its superclass or interface
+              // search the terminalNodeSimilarity signature in its superclass or interface
             }
           }
           displayName = md.getSignature().toString();
@@ -583,7 +583,7 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. method or constructor)
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity or constructor)
    * body
    *
    * @param cd
@@ -669,7 +669,7 @@ public class SemanticGraphBuilder {
     if (writeFieldNames.size() > 0) {
       writeFieldEdges.put(node, writeFieldNames);
     }
-    // 3 method call
+    // 3 terminalNodeSimilarity call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
     List<String> methodCalledNames = new ArrayList<>();
     for (MethodCallExpr methodCallExpr : methodCallExprs) {

@@ -49,7 +49,7 @@ public class MethodDeclNode extends TerminalNode {
         annotations,
         modifiers,
         body,
-        range); // block or ""(abstract method or interface)
+        range); // block or ""(abstract terminalNodeSimilarity or interface)
     this.access = access;
     this.typeParameters = typeParameters;
     this.returnType = returnType;
@@ -67,7 +67,7 @@ public class MethodDeclNode extends TerminalNode {
     this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
-  // fake method constructor, only invocation but no definition
+  // fake terminalNodeSimilarity constructor, only invocation but no definition
   public MethodDeclNode(
       Integer nodeID,
       Boolean needToMerge,
