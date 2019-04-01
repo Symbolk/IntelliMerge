@@ -37,7 +37,7 @@ public class Graph2CodePrinter {
     // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
     builder.append("\n").append(printNode(node));
     String reformattedCode = reformatCode(builder.toString());
-    Utils.writeContent(resultFilePath, reformattedCode);
+    Utils.writeContent(resultFilePath, reformattedCode, false);
     return resultFilePath;
   }
 

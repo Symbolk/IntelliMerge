@@ -82,7 +82,7 @@ public class SemanticGraphExporter {
    * @param graph
    */
   public static void saveAsDot(Graph<SemanticNode, SemanticEdge> graph, String filePath) {
-    Utils.writeContent(filePath, exportAsDotWithType(graph));
+    Utils.writeContent(filePath, exportAsDotWithType(graph), false);
   }
 
   public static void printVertexAndEdge(Graph<SemanticNode, SemanticEdge> graph) {

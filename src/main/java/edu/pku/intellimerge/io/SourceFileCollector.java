@@ -232,7 +232,7 @@ public class SourceFileCollector {
               StringWriter writer = new StringWriter();
               IOUtils.copy(loader.openStream(), writer, Charset.defaultCharset());
               Utils.writeContent(
-                  sideCollectedFilePath + File.separator + pathString, writer.toString());
+                  sideCollectedFilePath + File.separator + pathString, writer.toString(), false);
               // collect imported files
               if (copyImportedFiles) {
                 String[] lines = writer.toString().split("\n");

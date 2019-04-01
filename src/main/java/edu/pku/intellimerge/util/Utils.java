@@ -165,7 +165,7 @@ public class Utils {
   public static List<String> writeLinesToFile(String path, List<String> lines) {
     String content =
         lines.stream().filter(line -> line.length() > 0).collect(Collectors.joining("\n"));
-    writeContent(path, content);
+    writeContent(path, content, false);
     return lines;
   }
 
@@ -221,31 +221,31 @@ public class Utils {
   }
 
   /**
-   * Writes the given content in the file of the given file path.
+   * Writes the given content in the file of the given file path, overwrite
    *
    * @param filePath
    * @param content
    * @return boolean indicating the success of the write operation.
    */
-  public static boolean writeContent(String filePath, String content) {
-    if (!content.isEmpty()) {
-      try {
-        File file = new File(filePath);
-        if (!file.exists()) {
-          file.getParentFile().mkdirs();
-          file.createNewFile();
-        }
-        BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath));
-        writer.write(content);
-        writer.flush();
-        writer.close();
-      } catch (NullPointerException ne) {
-        ne.printStackTrace();
-        // empty, necessary for integration with git version control system
-      } catch (Exception e) {
-        e.printStackTrace();
-        return false;
+  public static boolean writeContent(String filePath, String content, boolean append) {
+    try {
+      File file = new File(filePath);
+      if (file.exists()) {
+        file.delete();
+        file.getParentFile().mkdirs();
+        file.createNewFile();
       }
+      FileWriter fileWritter = new FileWriter(file.getName(), append);
+      BufferedWriter writer = new BufferedWriter(fileWritter);
+      writer.write(content);
+      writer.flush();
+      writer.close();
+    } catch (NullPointerException ne) {
+      ne.printStackTrace();
+      // empty, necessary for integration with git version control system
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
     }
     return true;
   }
@@ -256,7 +256,7 @@ public class Utils {
    * @param filePath
    * @param content
    */
-  private static void appendContent(String filePath, String content) {
+  public static void appendContent(String filePath, String content) {
     Path path = Paths.get(filePath);
     byte[] contentBytes = (content + System.lineSeparator()).getBytes();
     try {
@@ -309,8 +309,12 @@ public class Utils {
     BufferedReader reader = new BufferedReader(new FileReader(file));
     String firstLine = reader.readLine();
     reader.close();
-    return firstLine.replace("package ", "").replace(";", ".")
-        + file.getName().replace(".java", "");
+    if(firstLine!=null){
+      return firstLine.replace("package ", "").replace(";", ".")
+              + file.getName().replace(".java", "");
+    }else{
+      return "";
+    }
   }
 
   /**
@@ -624,7 +628,7 @@ public class Utils {
             // format with google-java-formatter
             String reformattedCode = new Formatter().formatSource(code);
             // write string back into the original file
-            boolean isSuccessful = writeContent(f.getAbsolutePath(), reformattedCode);
+            boolean isSuccessful = writeContent(f.getAbsolutePath(), reformattedCode, false);
             logger.info("Formatting {} : {}", f.getAbsolutePath(), isSuccessful);
           } catch (FormatterException e) {
             e.printStackTrace();
