@@ -57,7 +57,7 @@ public class ConstructorDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      if (confidence >= 0.75) {
+      if (confidence >= 0.618) {
         matching.unmatchedNodes1.get(NodeType.CONSTRUCTOR).remove(sourceNode);
         matching.unmatchedNodes2.get(NodeType.CONSTRUCTOR).remove(targetNode);
         matching.markRefactoring(

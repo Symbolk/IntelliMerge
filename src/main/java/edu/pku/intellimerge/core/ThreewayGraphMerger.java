@@ -375,7 +375,7 @@ public class ThreewayGraphMerger {
     if (matchedParentNode != null) {
       for (SemanticNode newlyAdded : addedNodes) {
         SemanticNode parent = newlyAdded.getParent();
-        if (parent.equals(matchedParentNode)) {
+        if (parent!=null && parent.equals(matchedParentNode)) {
           insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
         }
       }

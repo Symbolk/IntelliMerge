@@ -54,9 +54,12 @@ public class FieldDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      unmatchedFields1.remove(sourceNode);
-      unmatchedFields2.remove(targetNode);
-      matching.markRefactoring(sourceNode, targetNode, RefactoringType.CHANGE_FIELD_SIGNATURE, confidence);
+      if (confidence >= 0.618) {
+        unmatchedFields1.remove(sourceNode);
+        unmatchedFields2.remove(targetNode);
+        matching.markRefactoring(
+            sourceNode, targetNode, RefactoringType.CHANGE_FIELD_SIGNATURE, confidence);
+      }
     }
   }
 }

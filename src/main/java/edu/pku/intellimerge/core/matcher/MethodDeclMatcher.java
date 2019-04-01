@@ -57,7 +57,7 @@ public class MethodDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      if(confidence >= 0.75){
+      if(confidence >= 0.618){
         matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
         matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
         matching.markRefactoring(sourceNode, targetNode, RefactoringType.CHANGE_METHOD_SIGNATURE, confidence);
@@ -132,7 +132,8 @@ public class MethodDeclMatcher {
               callerBase, caller, RefactoringType.EXTRACT_FROM_METHOD, similarityAfter);
           matching.markRefactoring(
               callerBase, callee, RefactoringType.EXTRACT_TO_METHOD, similarityAfter);
-          matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
+          // also need to be added
+//          matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
         }
       }
     }

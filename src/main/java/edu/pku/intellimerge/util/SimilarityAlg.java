@@ -36,9 +36,9 @@ public class SimilarityAlg {
     similarity += contextSimilarity(n1.incomingEdges, n2.incomingEdges);
     similarity += contextSimilarity(n1.outgoingEdges, n2.outgoingEdges);
     // navie string similarity of terminalNodeSimilarity signature
-    similarity += 5 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
+    similarity += 10 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
     similarity += 5 * bodyASTSimilarity(n1.getBody(), n2.getBody());
-    similarity /= 12;
+    similarity /= 17;
     return similarity;
   }
 
