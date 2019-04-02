@@ -3,6 +3,7 @@ package edu.pku.intellimerge.core;
 import edu.pku.intellimerge.core.matcher.ConstructorDeclMatcher;
 import edu.pku.intellimerge.core.matcher.FieldDeclMatcher;
 import edu.pku.intellimerge.core.matcher.MethodDeclMatcher;
+import edu.pku.intellimerge.core.matcher.TypeDeclMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
@@ -69,6 +70,17 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
   /** Bottom-up match unmatched nodes in the last step, considering some kinds of refactorings */
   public void bottomUpMatch() {
     // divide and conquer: match each type of nodes separately
+
+    // 4. Types
+    TypeDeclMatcher typeDeclMatcher = new TypeDeclMatcher();
+    List<SemanticNode> unmatchedTypes1 =
+        matching.unmatchedNodes1.getOrDefault(NodeType.CLASS, new ArrayList<>());
+    List<SemanticNode> unmatchedTypes2 =
+        matching.unmatchedNodes2.getOrDefault(NodeType.CLASS, new ArrayList<>());
+    if (!unmatchedTypes1.isEmpty() && !unmatchedTypes2.isEmpty()) {
+      typeDeclMatcher.matchClass(matching, unmatchedTypes1, unmatchedTypes2);
+    }
+
     // 1. Methods
     // if only there are unmatched nodes, try to match
     MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();

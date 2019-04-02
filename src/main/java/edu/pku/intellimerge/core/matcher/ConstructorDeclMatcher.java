@@ -19,13 +19,13 @@ public class ConstructorDeclMatcher {
    * Match methods that are unmatched for signature change, including many kinds of refactorings
    *
    * @param matching
-   * @param unmatchedMethods1
-   * @param unmatchedMethods2
+   * @param unmatched1
+   * @param unmatched2
    */
   public void matchConstructors(
       TwowayMatching matching,
-      List<SemanticNode> unmatchedMethods1,
-      List<SemanticNode> unmatchedMethods2) {
+      List<SemanticNode> unmatched1,
+      List<SemanticNode> unmatched2) {
     // use bipartite to match methods according to similarity
     Set<SemanticNode> partition1 = new HashSet<>();
     Set<SemanticNode> partition2 = new HashSet<>();
@@ -33,8 +33,8 @@ public class ConstructorDeclMatcher {
     DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite =
         new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    for (SemanticNode node1 : unmatchedMethods1) {
-      for (SemanticNode node2 : unmatchedMethods2) {
+    for (SemanticNode node1 : unmatched1) {
+      for (SemanticNode node2 : unmatched2) {
         biPartite.addVertex(node1);
         partition1.add(node1);
         biPartite.addVertex(node2);

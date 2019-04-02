@@ -148,10 +148,31 @@ public class ThreewayGraphMerger {
                 theirsCU.getPackageStatement()));
 
         // conservative strategy: remove no imports in case of latent bugs
-        Set<String> union = new LinkedHashSet<>();
-        union.addAll(oursCU.getImportStatements());
-        union.addAll(theirsCU.getImportStatements());
-        mergedCU.setImportStatements(union);
+        //        Set<String> union = new LinkedHashSet<>(theirsCU.getImportStatements());
+        //        union.addAll(oursCU.getImportStatements());
+        //        mergedCU.setImportStatements(union);
+        //        List<String> oursList = new ArrayList<>(oursCU.getImportStatements());
+        //        List<String> baseList = new ArrayList<>(((CompilationUnitNode)
+        // node).getImportStatements());
+        //        List<String> theirsList = new ArrayList<>(theirsCU.getImportStatements());
+        //        List<String> mergedList =
+        //            Stream.of(oursList, baseList, theirsList)
+        //                .flatMap(Collection::stream)
+        //                .distinct()
+        //                .collect(Collectors.toList());
+        //        mergedCU.setImportStatements(new LinkedHashSet<>(mergedList));
+        String oursString =
+            oursCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        String baseString =
+            ((CompilationUnitNode) node)
+                .getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        String theirsString =
+            theirsCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        LinkedHashSet<String> mergedSet =
+            new LinkedHashSet<>(
+                Arrays.asList(mergeTextually(oursString, baseString, theirsString).split("\n")));
+        mergedCU.setImportStatements(new LinkedHashSet<>(mergedSet));
+
         return mergedCU;
       }
     }
@@ -375,7 +396,7 @@ public class ThreewayGraphMerger {
     if (matchedParentNode != null) {
       for (SemanticNode newlyAdded : addedNodes) {
         SemanticNode parent = newlyAdded.getParent();
-        if (parent!=null && parent.equals(matchedParentNode)) {
+        if (parent != null && parent.equals(matchedParentNode)) {
           insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
         }
       }

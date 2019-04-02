@@ -9,6 +9,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.node.FieldDeclNode;
 import edu.pku.intellimerge.model.node.MethodDeclNode;
+import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import info.debatty.java.stringsimilarity.Cosine;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -39,6 +40,25 @@ public class SimilarityAlg {
     similarity += 10 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
     similarity += 5 * bodyASTSimilarity(n1.getBody(), n2.getBody());
     similarity /= 17;
+    return similarity;
+  }
+
+  /**
+   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature as well as
+   * context
+   *
+   * @param n1
+   * @param n2
+   * @return
+   */
+  public static double compositeNodeSimilarity(NonTerminalNode n1, NonTerminalNode n2) {
+    double similarity = 0.0;
+    // naive average in all dimensions of context(incoming and outgoing edges)
+    similarity += contextSimilarity(n1.incomingEdges, n2.incomingEdges);
+    similarity += contextSimilarity(n1.outgoingEdges, n2.outgoingEdges);
+    // navie string similarity of terminalNodeSimilarity signature
+    similarity += 10 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
+    similarity /= 12;
     return similarity;
   }
 

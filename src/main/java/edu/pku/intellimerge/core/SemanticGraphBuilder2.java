@@ -881,7 +881,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
           if (!isSuccessful) {
             SemanticEdge edge = semanticGraph.getEdge(sourceNode, targetNode);
-            edge.setWeight(edge.getWeight() + 1);
+            if(edge!=null){
+              edge.setWeight(edge.getWeight() + 1);
+            }
           }
         }
       }
