@@ -9,7 +9,8 @@ public class ComparisonResult {
   // sum of file LOC in this scenario
   private Integer totalAutoMergeLOC;
   private Integer totalManualMergeLOC;
-  private Integer totalSameAutoMergeLOC; // same with the manual
+  private Integer totalSameAutoMergeLOC;
+  private Integer totalSameManualLOC;
   private Double autoMergePrecision;
   private Double autoMergeRecall;
   private List<Document> autoMergedDiffDocs;
@@ -19,12 +20,14 @@ public class ComparisonResult {
       Integer totalAutoMergeLOC,
       Integer totalManualMergeLOC,
       Integer totalSameAutoMergeLOC,
+      Integer totalSameManualLOC,
       Double autoMergePrecision,
       Double autoMergeRecall,
       List<Document> autoMergedDiffDocs) {
     this.totalAutoMergeLOC = totalAutoMergeLOC;
     this.totalManualMergeLOC = totalManualMergeLOC;
     this.totalSameAutoMergeLOC = totalSameAutoMergeLOC;
+    this.totalSameManualLOC = totalSameManualLOC;
     this.autoMergePrecision = autoMergePrecision;
     this.autoMergeRecall = autoMergeRecall;
     this.autoMergedDiffDocs = autoMergedDiffDocs;
@@ -68,6 +71,10 @@ public class ComparisonResult {
 
   public void setTotalSameAutoMergeLOC(Integer totalSameAutoMergeLOC) {
     this.totalSameAutoMergeLOC = totalSameAutoMergeLOC;
+  }
+
+  public Integer getTotalSameManualLOC() {
+    return totalSameManualLOC;
   }
 
   public List<Document> getAutoMergedDiffDocs() {

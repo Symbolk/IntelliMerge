@@ -39,9 +39,9 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "javaparser";
+  private static final String REPO_NAME = "elasticsearch";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
-  private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
+  private static final String GIT_URL = "https://github.com/javaparser/javaparser.git"; // unused
   private static final String DIFF_DIR =
       "D:\\github\\ref_conflicts\\" + REPO_NAME; // the directory to temporarily save the diff files
   private static final String MERGE_RESULT_DIR =
@@ -50,7 +50,9 @@ public class Evaluator {
           + File.separator
           + Side.INTELLI.asString(); // the directory to eventually save the merge results
   private static final String STATISTICS_FILE_PATH =
-      "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_javaparser.csv";
+      "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_"
+          + REPO_NAME
+          + ".csv";
 
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
@@ -100,7 +102,6 @@ public class Evaluator {
             continue;
           }
 
-
           // 1. merge with IntelliMerge and jFSTMerge
           // runtime for each phase (need to run multiple times and get average)
           List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir);
@@ -117,11 +118,11 @@ public class Evaluator {
           logger.info("JFSTMerge done in {}ms.", jfstRuntime);
 
           // 2. remove all comments and format the manual results
-//          Utils.removeAllComments(intelliMergedDir);
-//          Utils.removeAllComments(gitMergedDir);
-//          Utils.removeAllComments(jfstMergedDir);
-//          Utils.removeAllComments(manualMergedDir);
-//          Utils.formatAllJavaFiles(manualMergedDir);
+          Utils.removeAllComments(intelliMergedDir);
+          Utils.removeAllComments(gitMergedDir);
+          Utils.removeAllComments(jfstMergedDir);
+          Utils.removeAllComments(manualMergedDir);
+          Utils.formatAllJavaFiles(manualMergedDir);
 
           // 3. compare merge results with manual results
           ArrayList<SourceFile> temp = new ArrayList<>();
@@ -151,7 +152,9 @@ public class Evaluator {
               compareAutoMerged(intelliMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", intelliVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", intelliVSmanual.getTotalManualMergeLOC());
-          scenarioDoc.append("same_with_manual_loc", intelliVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append(
+              "correct_loc_in_auto_merged", intelliVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_manual", intelliVSmanual.getTotalSameManualLOC());
           scenarioDoc.append("auto_merge_precision", intelliVSmanual.getAutoMergePrecision());
           scenarioDoc.append("auto_merge_recall", intelliVSmanual.getAutoMergeRecall());
           // files that stills contains diff hunks in auto_merge parts
@@ -173,7 +176,8 @@ public class Evaluator {
           ComparisonResult gitVSmanual = compareAutoMerged(gitMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", gitVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", gitVSmanual.getTotalManualMergeLOC());
-          scenarioDoc.append("same_with_manual_loc", gitVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_auto_merged", gitVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_manual", gitVSmanual.getTotalSameManualLOC());
           scenarioDoc.append("auto_merge_precision", gitVSmanual.getAutoMergePrecision());
           scenarioDoc.append("auto_merge_recall", gitVSmanual.getAutoMergeRecall());
           // files that stills contains diff hunks in auto_merge parts
@@ -196,7 +200,8 @@ public class Evaluator {
           ComparisonResult jfstVSmanual = compareAutoMerged(jfstMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", jfstVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", jfstVSmanual.getTotalManualMergeLOC());
-          scenarioDoc.append("same_with_manual_loc", jfstVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_auto_merged", jfstVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_manual", jfstVSmanual.getTotalSameManualLOC());
           scenarioDoc.append("auto_merge_precision", jfstVSmanual.getAutoMergePrecision());
           scenarioDoc.append("auto_merge_recall", jfstVSmanual.getAutoMergeRecall());
           // files that stills contains diff hunks in auto_merge parts
@@ -219,7 +224,7 @@ public class Evaluator {
    * @param diff3Style
    * @return
    */
-  private static Pair<Integer, List<Document>> extractMergeConflicts(
+  public static Pair<Integer, List<Document>> extractMergeConflicts(
       String mergeResultDir, boolean diff3Style) throws Exception {
     ArrayList<SourceFile> temp = new ArrayList<>();
     ArrayList<SourceFile> mergedResults =
@@ -270,7 +275,8 @@ public class Evaluator {
     Double autoMergeRecall = 0.0;
     Integer totalAutoMergedLOC = 0;
     Integer totalManualMergedLOC = 0;
-    Integer totalSameLOC = 0;
+    Integer totalSameLOCMerged = 0;
+    Integer totalSameLOCManual = 0;
 
     List<Document> fileDocs = new ArrayList<>();
 
@@ -320,9 +326,10 @@ public class Evaluator {
         for (Hunk hunk : diff.getHunks()) {
           // if there are two hunk with the same line count but opposite direction (+/-), compare
           // the lines to counteract possibly moved hunks
-          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
-            visitedHunks.add(hunk);
-          }
+          //          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
+          //            visitedHunks.add(hunk);
+          //          }
+          visitedHunks.add(hunk);
         }
         removeFormatCausedHunks(visitedHunks);
         // save the true positive hunks into mongodb
@@ -333,8 +340,8 @@ public class Evaluator {
           int toStartLine = hunk.getToFileRange().getLineStart();
           String fromContent = getHunkContent(hunk, Line.LineType.FROM, false);
           String toContent = getHunkContent(hunk, Line.LineType.TO, false);
-          int fromLOC = fromContent.length() >  0 ? hunk.getFromFileRange().getLineCount() : 0;
-          int toLOC = toContent.length() >  0 ? hunk.getToFileRange().getLineCount() : 0;
+          int fromLOC = fromContent.length() > 0 ? hunk.getFromFileRange().getLineCount() : 0;
+          int toLOC = toContent.length() > 0 ? hunk.getToFileRange().getLineCount() : 0;
           Document diffHunkDoc =
               new Document("from_start_line", fromStartLine)
                   .append("from_loc", fromLOC)
@@ -347,18 +354,20 @@ public class Evaluator {
           toDiffLoc += toLOC;
         }
       }
-      // if there exists differences, create  one document to save the diffs
+      // if there exists differences, create one document to save the diffs for the file
       if (diffHunkDocs.size() > 0) {
-          int sameLOC = autoMergedLOC - toDiffLoc; // TODO reconsider
-//        int sameLOC = manualLOC - fromDiffLoc;
-        totalSameLOC += sameLOC;
+        int sameLOCMerged = autoMergedLOC > 0 ? autoMergedLOC - toDiffLoc : 0;
+        int sameLOCManual = autoMergedLOC > 0 ? manualLOC - fromDiffLoc : 0;
+        totalSameLOCMerged += sameLOCMerged;
+        totalSameLOCManual += sameLOCManual;
+
         if (autoMergedLOC > 0) {
-          filePrecision = sameLOC / (double) autoMergedLOC;
+          filePrecision = sameLOCMerged / (double) autoMergedLOC;
         } else {
           filePrecision = 1.0;
         }
-        if (manualLOC > 0) {
-          fileRecall = sameLOC / (double) manualLOC;
+        if (autoMergedLOC > 0) {
+          fileRecall = sameLOCManual / (double) manualLOC;
         } else {
           fileRecall = 1.0;
         }
@@ -366,7 +375,8 @@ public class Evaluator {
             new Document("file_relative_path", relativePath)
                 .append("manual_loc", manualLOC)
                 .append("auto_merge_loc", autoMergedLOC)
-                .append("same_with_manual_loc", sameLOC)
+                .append("correct_loc_in_auto_merged", totalSameLOCMerged)
+                .append("correct_loc_in_manual", totalSameLOCManual)
                 .append("auto_merge_precision", filePrecision)
                 .append("auto_merge_recall", fileRecall)
                 .append("from_diff_loc", fromDiffLoc)
@@ -375,7 +385,8 @@ public class Evaluator {
         fileDocs.add(fileDocument);
       } else {
         // auto-merged lines are identical with manual merged lines
-        totalSameLOC += autoMergedLOC;
+        totalSameLOCMerged += autoMergedLOC;
+        totalSameLOCManual += manualLOC;
       }
     }
     logger.info(
@@ -383,17 +394,23 @@ public class Evaluator {
         numberOfMergedFiles,
         numberOfMergedFiles - numberOfDiffFiles);
     if (numberOfDiffFiles > 0) {
-      autoMergePrecision = totalSameLOC / totalAutoMergedLOC.doubleValue();
+      autoMergePrecision = totalSameLOCMerged / totalAutoMergedLOC.doubleValue();
     } else {
       // if auto_merge parts in all files are identical with manual, precision is 1.0
       autoMergePrecision = 1.0;
     }
-    autoMergeRecall = totalSameLOC / totalManualMergedLOC.doubleValue();
+    if (numberOfDiffFiles > 0) {
+      autoMergeRecall = totalSameLOCManual / totalManualMergedLOC.doubleValue();
+    } else {
+      // if auto_merge parts in all files are identical with manual, precision is 1.0
+      autoMergePrecision = 1.0;
+    }
     ComparisonResult result =
         new ComparisonResult(
             totalAutoMergedLOC,
             totalManualMergedLOC,
-            totalSameLOC,
+            totalSameLOCMerged,
+            totalSameLOCManual,
             autoMergePrecision,
             autoMergeRecall,
             fileDocs);
