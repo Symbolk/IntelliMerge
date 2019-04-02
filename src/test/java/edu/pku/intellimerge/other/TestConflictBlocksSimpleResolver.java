@@ -11,12 +11,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestConflictBlocksSimpleResolver {
   @Test
   public void testResolveConflictsDiff3() {
-    String path =
+    String inputFilePath =
         Utils.getProjectRootDir()
-            + "/src/test/resources/Rename/RenameField/gitMerged/SourceRoot.java";
-    String codeWithConflicts = Utils.readFileToString(path);
-    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff3(path, false);
+            + "/src/test/resources/ConflictFiles/Diff3/SourceRoot.java";
+    String outputFilePath =
+        Utils.getProjectRootDir()
+            + "/src/test/resources/ConflictFiles/Diff3/SourceRoot_Formatted.java";
+    String codeWithConflicts = Utils.readFileToString(inputFilePath);
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff3(inputFilePath, false);
     assertThat(conflictBlocks.size()).isEqualTo(2);
-    Utils.resolveConflictsSimply(codeWithConflicts, true);
+    String formattedCode = Utils.formatCodeWithConflicts(codeWithConflicts, true);
+    Utils.writeContent(outputFilePath, formattedCode);
+    conflictBlocks = Utils.extractConflictBlocksDiff3(outputFilePath, false);
+    assertThat(conflictBlocks.size()).isEqualTo(2);
+  }
+
+  @Test
+  public void testResolveConflictsDiff2() {
+    String inputFilePath =
+            Utils.getProjectRootDir()
+                    + "/src/test/resources/ConflictFiles/Diff2/SourceRoot.java";
+    String outputFilePath =
+            Utils.getProjectRootDir()
+                    + "/src/test/resources/ConflictFiles/Diff2/SourceRoot_Formatted.java";
+    String codeWithConflicts = Utils.readFileToString(inputFilePath);
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff2(inputFilePath, false);
+    assertThat(conflictBlocks.size()).isEqualTo(4);
+    String formattedCode = Utils.formatCodeWithConflicts(codeWithConflicts, false);
+    Utils.writeContent(outputFilePath, formattedCode);
+    conflictBlocks = Utils.extractConflictBlocksDiff2(outputFilePath, false);
+    assertThat(conflictBlocks.size()).isEqualTo(4);
   }
 }

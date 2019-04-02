@@ -3,6 +3,7 @@ package edu.pku.intellimerge.util;
 import com.commentremover.app.CommentProcessor;
 import com.commentremover.app.CommentRemover;
 import com.commentremover.exception.CommentRemoverException;
+import com.google.googlejavaformat.FormatterDiagnostic;
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import com.univocity.parsers.common.record.Record;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -586,7 +588,8 @@ public class Utils {
    * @param code
    * @return
    */
-  public static String resolveConflictsSimply(String code, boolean diff3Style) {
+  public static String formatCodeWithConflicts(String code, boolean diff3Style) {
+    String reformattedCode = "";
     // <<<<<<< ours
     String leftPattern = CONFLICT_LEFT_BEGIN + " " + Side.OURS.asString();
     // |||||||((?!<<<<<<<)(?s:.))+>>>>>>> theirs
@@ -617,13 +620,42 @@ public class Utils {
     }
     matcher = pattern.matcher(code);
     while (matcher.find()) {
-      String content = matcher.group();
-      //      System.out.println(content);
-      // TODO code smell here: need to be redesigned
-      code = code.replaceAll(Pattern.quote(content), "/* " + content + " */");
+      String matched = matcher.group();
+      String commented = "/* " + matched + " */";
+      code = code.replaceAll(Pattern.quote(matched), commented);
     }
 
-    return code;
+    try {
+      reformattedCode = new Formatter().formatSource(code);
+      // restore the conflict blocks
+      if (diff3Style) {
+        pattern = Pattern.compile("\\/\\* " + baseAndRightPattern + " \\*\\/");
+      } else {
+        pattern = Pattern.compile("\\/\\* " +  rightPattern + " \\*\\/");
+      }
+      matcher = pattern.matcher(reformattedCode);
+      while (matcher.find()) {
+        String matched = matcher.group();
+        String uncommented = matched.replaceFirst("\\/\\* ", "").replaceAll(" \\*\\/", "");
+        reformattedCode = reformattedCode.replaceAll(Pattern.quote(matched), uncommented);
+      }
+      reformattedCode = reformattedCode.replaceAll(Pattern.quote("/* " + leftPattern + " */"), leftPattern);
+    } catch (FormatterException e) {
+      // print +/- 5 lines as the context around the line that causes the exception
+      // to avoid output disaster
+      for (FormatterDiagnostic diagnostic : e.diagnostics()) {
+        List<String> lines = Arrays.asList(reformattedCode.split("\\r?\\n"));
+        int lineNumber = diagnostic.line();
+        int contextStart = lineNumber >= 5 ? lineNumber - 5 : 0;
+        int contextEnd = lineNumber + 5 < lines.size() ? lineNumber + 5 : lines.size();
+        for (int i = contextStart; i < contextEnd; ++i) {
+          System.err.println(lines.get(i));
+        }
+      }
+      e.printStackTrace();
+    }
+
+    return reformattedCode;
   }
 
   /**
@@ -718,6 +750,26 @@ public class Utils {
       } else {
         logger.error("{} : {} does not exist!", side.toString(), sourceFile.getAbsolutePath());
       }
+    }
+  }
+
+  /**
+   * Copy the entire directory into another, assert that sourceDir exists
+   *
+   * @param sourceDir
+   * @param targetDir
+   */
+  public static void copyDir(String sourceDir, String targetDir) {
+    File srcDir = new File(sourceDir);
+    if (srcDir.exists()) {
+      File destDir = new File(targetDir);
+      try {
+        FileUtils.copyDirectory(srcDir, destDir);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    } else {
+      logger.error("{} does not exist!", sourceDir);
     }
   }
 

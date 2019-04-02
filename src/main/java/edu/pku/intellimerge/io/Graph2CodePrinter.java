@@ -36,7 +36,8 @@ public class Graph2CodePrinter {
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
     // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
     builder.append("\n").append(printNode(node));
-    String reformattedCode = reformatCode(builder.toString());
+    //    String reformattedCode = reformatCode(builder.toString());
+    String reformattedCode = Utils.formatCodeWithConflicts(builder.toString(), false);
     Utils.writeContent(resultFilePath, reformattedCode, false);
     return resultFilePath;
   }
@@ -46,6 +47,7 @@ public class Graph2CodePrinter {
    *
    * @param code
    * @return
+   * @deprecated replaced by Utils.formatCodeWithConflicts()
    */
   private static String reformatCode(String code) {
     String reformattedCode = "";
@@ -60,16 +62,6 @@ public class Graph2CodePrinter {
                   "/* >>>>>>> " + Side.THEIRS.asString() + " */");
 
       reformattedCode = new Formatter().formatSource(reformattedCode);
-
-      reformattedCode =
-          reformattedCode
-              .replaceAll(
-                  "/\\* <<<<<<< " + Side.OURS.asString() + " \\*/",
-                  "<<<<<<< " + Side.OURS.asString())
-              .replaceAll("/\\* ======= \\*/", "=======")
-              .replaceAll(
-                  "/\\* >>>>>>> " + Side.THEIRS.asString() + " \\*/",
-                  ">>>>>>> " + Side.THEIRS.asString());
     } catch (FormatterException e) {
       // print +/- 5 lines as the context around the line that causes the exception
       // to avoid output disaster
@@ -83,8 +75,17 @@ public class Graph2CodePrinter {
         }
       }
       e.printStackTrace();
-    }
       return reformattedCode;
+    }
+    reformattedCode =
+        reformattedCode
+            .replaceAll(
+                "/\\* <<<<<<< " + Side.OURS.asString() + " \\*/", "<<<<<<< " + Side.OURS.asString())
+            .replaceAll("/\\* ======= \\*/", "=======")
+            .replaceAll(
+                "/\\* >>>>>>> " + Side.THEIRS.asString() + " \\*/",
+                ">>>>>>> " + Side.THEIRS.asString());
+    return reformattedCode;
   }
 
   /**
