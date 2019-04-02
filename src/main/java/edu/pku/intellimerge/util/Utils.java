@@ -600,7 +600,7 @@ public class Utils {
             + Side.THEIRS.asString();
     // =======((?!<<<<<<<)(?s:.))+>>>>>>> theirs
     String rightPattern =
-        CONFLICT_RIGHT_BEGIN
+        "======"
             + "((?!"
             + CONFLICT_LEFT_BEGIN
             + ")(?s:.))+"
@@ -640,11 +640,13 @@ public class Utils {
         reformattedCode = reformattedCode.replaceAll(Pattern.quote(matched), uncommented);
       }
       reformattedCode = reformattedCode.replaceAll(Pattern.quote("/* " + leftPattern + " */"), leftPattern);
+
+      return reformattedCode;
     } catch (FormatterException e) {
       // print +/- 5 lines as the context around the line that causes the exception
       // to avoid output disaster
       for (FormatterDiagnostic diagnostic : e.diagnostics()) {
-        List<String> lines = Arrays.asList(reformattedCode.split("\\r?\\n"));
+        List<String> lines = Arrays.asList(code.split("\\r?\\n"));
         int lineNumber = diagnostic.line();
         int contextStart = lineNumber >= 5 ? lineNumber - 5 : 0;
         int contextEnd = lineNumber + 5 < lines.size() ? lineNumber + 5 : lines.size();
@@ -653,9 +655,8 @@ public class Utils {
         }
       }
       e.printStackTrace();
+      return code;
     }
-
-    return reformattedCode;
   }
 
   /**

@@ -121,8 +121,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       parseResults = sourceRoot.tryToParseParallelized();
     }
     compilationUnits.addAll(
-        parseResults
-            .stream()
+        parseResults.stream()
             .filter(ParseResult::isSuccessful)
             .map(r -> r.getResult().get())
             .collect(Collectors.toList()));
@@ -210,8 +209,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             relativePath,
             absolutePath,
             cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
-            cu.getImports()
-                .stream()
+            cu.getImports().stream()
                 .map(ImportDeclaration::toString)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
@@ -225,9 +223,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       // if not exist, create one
       String finalPackageName = packageName;
       Optional<SemanticNode> packageDeclNodeOpt =
-          graph
-              .vertexSet()
-              .stream()
+          graph.vertexSet().stream()
               .filter(
                   node ->
                       node.getNodeType().equals(NodeType.PACKAGE)
@@ -243,9 +239,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 packageDeclaration.getNameAsString(),
                 packageDeclaration.toString().trim(),
                 packageDeclaration.getComment().map(Comment::toString).orElse(""),
-                packageDeclaration
-                    .getAnnotations()
-                    .stream()
+                packageDeclaration.getAnnotations().stream()
                     .map(AnnotationExpr::toString)
                     .collect(Collectors.toList()),
                 finalPackageName,
@@ -346,15 +340,14 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     // why the map(Modifier::toString) cannot be resolved for td, but no problem with md and fd?
     modifiers =
         (List<String>)
-            td.getModifiers()
-                .stream()
+            td.getModifiers().stream()
                 .map(modifier -> modifier.toString())
                 .collect(Collectors.toList());
 
     List<String> annotations =
         (List<String>)
             td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
-    String originalSignature = getTypeOriginalSignature(td);
+    String originalSignature = getTypeOriginalSignature(td, modifiers.get(0));
 
     TypeDeclNode tdNode =
         new TypeDeclNode(
@@ -374,7 +367,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type declaration
+   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type
+   * declaration
    *
    * @param td
    * @param tdNode
@@ -464,8 +458,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     : ";";
 
             annotations =
-                fd.getAnnotations()
-                    .stream()
+                fd.getAnnotations().stream()
                     .map(AnnotationExpr::toString)
                     .collect(Collectors.toList());
             FieldDeclNode fdNode =
@@ -516,8 +509,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           ConstructorDeclaration cd = (ConstructorDeclaration) child;
           comment = cd.getComment().map(Comment::toString).orElse("");
           annotations =
-              cd.getAnnotations()
-                  .stream()
+              cd.getAnnotations().stream()
                   .map(AnnotationExpr::toString)
                   .collect(Collectors.toList());
           displayName = cd.getSignature().toString();
@@ -563,13 +555,11 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
           annotations =
-              md.getAnnotations()
-                  .stream()
+              md.getAnnotations().stream()
                   .map(AnnotationExpr::toString)
                   .collect(Collectors.toList());
           List<String> typeParameters =
-              md.getTypeParameters()
-                  .stream()
+              md.getTypeParameters().stream()
                   .map(TypeParameter::asString)
                   .collect(Collectors.toList());
 
@@ -577,19 +567,16 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
               md.getParameters().stream().map(Parameter::toString).collect(Collectors.toList());
 
           List<String> parameterTypes =
-              md.getParameters()
-                  .stream()
+              md.getParameters().stream()
                   .map(Parameter::getType)
                   .map(Type::asString)
                   .collect(Collectors.toList());
           List<String> parameterNames =
-              md.getParameters()
-                  .stream()
+              md.getParameters().stream()
                   .map(Parameter::getNameAsString)
                   .collect(Collectors.toList());
           List<String> throwsExceptions =
-              md.getThrownExceptions()
-                  .stream()
+              md.getThrownExceptions().stream()
                   .map(ReferenceType::toString)
                   .collect(Collectors.toList());
 
@@ -602,7 +589,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 md.getDeclarationAsString(false, true, true)
                     .trim()
                     .replaceFirst(
-                        Pattern.quote(md.getTypeAsString()), typeParametersAsString + " " + md.getTypeAsString());
+                        Pattern.quote(md.getTypeAsString()),
+                        typeParametersAsString + " " + md.getTypeAsString());
           } else {
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
@@ -644,7 +632,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         // since initializer has no name, use the parent type declaration as its name]
         comment = id.getComment().map(Comment::toString).orElse("");
         displayName = td.getNameAsString();
-        qualifiedTypeName = packageName + "." + displayName;
+        qualifiedName = packageName + "." + displayName + "{}";
         String signature = displayName + "." + (id.isStatic() ? "static{}" : "{}");
         InitializerDeclNode idNode =
             new InitializerDeclNode(
@@ -652,7 +640,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 isInChangedFile,
                 NodeType.INITIALIZER_BLOCK,
                 displayName,
-                qualifiedTypeName,
+                qualifiedName,
                 signature,
                 comment,
                 id.isStatic(),
@@ -666,12 +654,49 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
 
         processBodyContent(id, idNode);
       }
+
+      // 8, annotation member declaration
+      if (child instanceof AnnotationMemberDeclaration) {
+        AnnotationMemberDeclaration amd = (AnnotationMemberDeclaration) child;
+        // since initializer has no name, use the parent type declaration as its name]
+        comment = amd.getComment().map(Comment::toString).orElse("");
+        displayName = amd.getNameAsString();
+        qualifiedName = qualifiedTypeName + "." + displayName;
+        String signature =
+            amd.toString().contains("default")
+                ? amd.toString().substring(0, amd.toString().indexOf("default")).trim()
+                : amd.toString().trim();
+        body =
+            amd.toString().contains("default")
+                ? amd.toString().substring(amd.toString().indexOf("default")).trim()
+                : ";";
+        AnnotationMemberNode idNode =
+            new AnnotationMemberNode(
+                nodeCount++,
+                isInChangedFile,
+                NodeType.ANNOTATION_MEMBER,
+                displayName,
+                qualifiedName,
+                signature,
+                comment,
+                new ArrayList<>(), // no annotations
+                new ArrayList<>(), // no modifiers
+                body,
+                amd.getRange());
+        graph.addVertex(idNode);
+
+        tdNode.appendChild(idNode);
+        graph.addEdge(
+            tdNode, idNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, idNode));
+
+        processBodyContent(amd, idNode);
+      }
     }
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity or constructor)
-   * body
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity
+   * or constructor) body
    *
    * @param cd
    * @param node
@@ -719,13 +744,25 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /** Get signature of type in original code */
-  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
+  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration, String firstModifier) {
     // remove comment if there is in string representation
-    String source = removeComment(typeDeclaration.toString());
-    //    if (typeDeclaration.getComment().isPresent()) {
-    //      source = source.replace(typeDeclaration.getComment().get().getContent(), "");
-    //    }
-    return source.substring(0, source.indexOf("{")).trim();
+//        String source = removeComment(typeDeclaration.toString());
+    String source = typeDeclaration.toString();
+    if (typeDeclaration.getComment().isPresent()) {
+      source = source.replace(Pattern.quote(typeDeclaration.getComment().get().toString()), "");
+    }
+    // if the comment bug in JavaParser is triggered, the comment is not completely removed
+//    List<String> lines = Arrays.asList(source.split("\n"));
+//    source = lines.stream().filter(line -> !line.startsWith("\\s\\*")).collect(Collectors.joining("\n"));
+    /** @Target({FIELD, METHOD}) public @interface DataPoint { String[] value() default {}; } * */
+    if (firstModifier.length() > 0 && source.indexOf(firstModifier) > 0) {
+      source = source.substring(source.indexOf(firstModifier));
+    }
+    if(source.indexOf("{") > 0){
+      return source.substring(0, source.indexOf("{")).trim();
+    }else{
+      return source.trim();
+    }
   }
 
   /**
@@ -746,12 +783,16 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
 
   /**
    * Remove comment from a string
-   *
+   * Unfortunately, Java's builtin regex support has problems with regexes containing repetitive alternative paths (that is, (A|B)*),
+   * so this may lead to StackOverflowError
    * @param source
    * @return
    */
   private String removeComment(String source) {
-    return source.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", "");
+    return source.replaceAll(
+        "((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
+    //    return source.replaceAll("[^:]//.*|/\\\\*((?!=*/)(?s:.))+\\\\*", "");
+    //    return source.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", "");
   }
 
   /**
@@ -763,7 +804,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    */
   private int buildEdgesForMethodCall(
       int edgeCount, Map<SemanticNode, List<MethodCallExpr>> methodCallExprs) {
-    // for every terminalNodeSimilarity call, find its declaration by terminalNodeSimilarity name and paramater num
+    // for every terminalNodeSimilarity call, find its declaration by terminalNodeSimilarity name
+    // and paramater num
     for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : methodCallExprs.entrySet()) {
       SemanticNode caller = entry.getKey();
       List<MethodCallExpr> exprs = entry.getValue();
@@ -772,9 +814,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         String methodName = expr.getNameAsString();
         int argNum = expr.getArguments().size();
         List<SemanticNode> candidates =
-            graph
-                .vertexSet()
-                .stream()
+            graph.vertexSet().stream()
                 .filter(
                     node -> {
                       if (node.getNodeType().equals(NodeType.METHOD)) {
@@ -881,7 +921,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
           if (!isSuccessful) {
             SemanticEdge edge = semanticGraph.getEdge(sourceNode, targetNode);
-            if(edge!=null){
+            if (edge != null) {
               edge.setWeight(edge.getWeight() + 1);
             }
           }
@@ -902,8 +942,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   public SemanticNode getTargetNode(
       Set<SemanticNode> vertexSet, String targetQualifiedName, NodeType targetNodeType) {
     Optional<SemanticNode> targetNodeOpt =
-        vertexSet
-            .stream()
+        vertexSet.stream()
             .filter(
                 node ->
                     node.getNodeType().equals(targetNodeType)
@@ -923,8 +962,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   public SemanticNode getTargetNodeForType(
       Set<SemanticNode> vertexSet, String displayName, NodeType targetNodeType) {
     Optional<SemanticNode> targetNodeOpt =
-        vertexSet
-            .stream()
+        vertexSet.stream()
             .filter(
                 node ->
                     node.getNodeType().equals(targetNodeType)
@@ -955,8 +993,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     if (targetNodeType.equals(NodeType.FIELD)) {
 
       targetNodeOpt =
-          vertexSet
-              .stream()
+          vertexSet.stream()
               .filter(
                   node ->
                       node.getNodeType().equals(targetNodeType)
