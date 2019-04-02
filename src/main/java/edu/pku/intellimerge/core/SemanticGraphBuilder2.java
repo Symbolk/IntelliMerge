@@ -35,6 +35,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Build Semantic Graph for one merge scenario, with fuzzy matching instead of symbolsolving */
@@ -601,7 +602,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 md.getDeclarationAsString(false, true, true)
                     .trim()
                     .replaceFirst(
-                        md.getTypeAsString(), typeParametersAsString + " " + md.getTypeAsString());
+                        Pattern.quote(md.getTypeAsString()), typeParametersAsString + " " + md.getTypeAsString());
           } else {
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
