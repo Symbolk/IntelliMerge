@@ -212,6 +212,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             cu.getImports().stream()
                 .map(ImportDeclaration::toString)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
+    graph.addVertex(cuNode);
 
     // 1. package
     String packageName = "";
@@ -244,17 +245,26 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     .collect(Collectors.toList()),
                 finalPackageName,
                 Arrays.asList(finalPackageName.split(".")));
-        graph.addVertex(cuNode);
         graph.addVertex(packageDeclNode);
 
         packageDeclNode.appendChild(cuNode);
+
+        // strange bug here: sometimes the above graph.addVertex(cuNode) fails
+        if(!graph.containsVertex(cuNode)){
+          graph.addVertex(cuNode);
+        }
+
         graph.addEdge(
             packageDeclNode,
             cuNode,
             new SemanticEdge(edgeCount++, EdgeType.CONTAIN, packageDeclNode, cuNode));
       } else {
-        graph.addVertex(cuNode);
         packageDeclNodeOpt.get().appendChild(cuNode);
+
+        // strange bug here: sometimes the above graph.addVertex(cuNode) fails
+        if(!graph.containsVertex(cuNode)){
+          graph.addVertex(cuNode);
+        }
         graph.addEdge(
             packageDeclNodeOpt.get(),
             cuNode,
@@ -334,6 +344,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       nodeType = cid.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
       nodeType = cid.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
     }
+
     List<String> modifiers = new ArrayList<>();
 
     String access = td.getAccessSpecifier().asString();
@@ -343,12 +354,13 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             td.getModifiers().stream()
                 .map(modifier -> modifier.toString())
                 .collect(Collectors.toList());
+    String comment = td.getComment().map(Comment::toString).orElse("");
 
     List<String> annotations =
         (List<String>)
             td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
 
-    String originalSignature = nodeType.label + " " + td.getNameAsString();
+    String originalSignature = getTypeOriginalSignature(td);
 
     TypeDeclNode tdNode =
         new TypeDeclNode(
@@ -358,7 +370,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             displayName,
             qualifiedName,
             originalSignature,
-            td.getComment().map(Comment::toString).orElse(""),
+                comment,
             annotations,
             access,
             modifiers,
@@ -748,24 +760,16 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * Get signature of type in original code
    *
    * @param typeDeclaration
-   * @param firstModifier
    * @return
-   * @deprecated
    */
-  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration, String firstModifier) {
+  private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
 //        String source = removeComment(typeDeclaration.toString());
-    String source = typeDeclaration.toString();
-    if (typeDeclaration.getComment().isPresent()) {
-      source = source.replace(Pattern.quote(typeDeclaration.getComment().get().toString()), "");
-    }
+      String source = typeDeclaration.removeComment().toString();
     // if the comment bug in JavaParser is triggered, the comment is not completely removed
 //    List<String> lines = Arrays.asList(source.split("\n"));
 //    source = lines.stream().filter(line -> !line.startsWith("\\s\\*")).collect(Collectors.joining("\n"));
-    /** @Target({FIELD, METHOD}) public @interface DataPoint { String[] value() default {}; } * */
-    if (firstModifier.length() > 0 && source.indexOf(firstModifier) > 0) {
-      source = source.substring(source.indexOf(firstModifier));
-    }
+
     if(source.indexOf("{") > 0){
       return source.substring(0, source.indexOf("{")).trim();
     }else{
