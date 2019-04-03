@@ -347,7 +347,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     List<String> annotations =
         (List<String>)
             td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
-    String originalSignature = getTypeOriginalSignature(td, modifiers.size() > 0 ? modifiers.get(0) : "");
+
+    String originalSignature = nodeType.label + " " + td.getNameAsString();
 
     TypeDeclNode tdNode =
         new TypeDeclNode(
@@ -743,7 +744,14 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     this.methodCallExprs.put(node, methodCallExprs);
   }
 
-  /** Get signature of type in original code */
+  /**
+   * Get signature of type in original code
+   *
+   * @param typeDeclaration
+   * @param firstModifier
+   * @return
+   * @deprecated
+   */
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration, String firstModifier) {
     // remove comment if there is in string representation
 //        String source = removeComment(typeDeclaration.toString());

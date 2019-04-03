@@ -109,6 +109,8 @@ public class Graph2CodePrinter {
     } else if (node instanceof NonTerminalNode) {
       if (!node.getNodeType().equals(NodeType.CU)) {
         builder.append(node.getComment());
+        builder.append(node.getAnnotations().stream().collect(Collectors.joining("\n"))).append("\n");
+        builder.append(node.getModifiers().stream().collect(Collectors.joining(" "))).append(" ");
         builder.append(node.getOriginalSignature());
         builder.append("{\n");
       }

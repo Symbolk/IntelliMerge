@@ -139,8 +139,9 @@ public class ThreewayGraphMerger {
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
-        mergedCU.setComment(
-            mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
+        // TODO disable comment merging at 4.3
+//        mergedCU.setComment(
+//            mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
         mergedCU.setPackageStatement(
             mergeTextually(
                 oursCU.getPackageStatement(),
@@ -197,16 +198,16 @@ public class ThreewayGraphMerger {
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
-        String mergedComment =
-            mergeTextually(
-                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
+//        String mergedComment =
+//            mergeTextually(
+//                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
         String mergedAnnotations =
             mergeTextually(
                 oursNode.getAnnotationsAsString(),
                 node.getAnnotationsAsString(),
                 theirsNode.getAnnotationsAsString());
         List<String> mergedModifiers =
-            mergeByUnion(
+            mergeListTextually(
                 oursTerminal.getModifiers(),
                 baseTerminal.getModifiers(),
                 theirsTerminal.getModifiers());
@@ -214,7 +215,7 @@ public class ThreewayGraphMerger {
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
-        mergedTerminal.setComment(mergedComment);
+//        mergedTerminal.setComment(mergedComment);
         mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
@@ -230,8 +231,8 @@ public class ThreewayGraphMerger {
         NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
 
         // merge the comment and signature
-        String mergedComment =
-            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
+//        String mergedComment =
+//            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
         String mergedAnnotations =
             mergeTextually(
                 oursNode.getAnnotationsAsString(),
@@ -240,7 +241,7 @@ public class ThreewayGraphMerger {
         List<String> mergedModifiers =
             mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
         String mergedSignature = mergeComponents(oursNode, node, theirsNode);
-        mergedNonTerminal.setComment(mergedComment);
+//        mergedNonTerminal.setComment(mergedComment);
         mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedNonTerminal.setModifiers(mergedModifiers);
         mergedNonTerminal.setOriginalSignature(mergedSignature);
@@ -519,5 +520,22 @@ public class ThreewayGraphMerger {
     unionList.addAll(base);
     unionList.addAll(right);
     return new ArrayList<>(unionList);
+  }
+
+  /**
+   * Convert a list of string to one string and merge textually
+   *
+   * @param left
+   * @param base
+   * @param right
+   * @return
+   */
+  private List<String> mergeListTextually(
+      List<String> left, List<String> base, List<String> right) {
+    String leftString = left.stream().collect(Collectors.joining("\n"));
+    String baseString = base.stream().collect(Collectors.joining("\n"));
+    String rightString = right.stream().collect(Collectors.joining("\n"));
+    String mergedString = mergeTextually(leftString, baseString, rightString);
+    return Arrays.asList(mergedString.split("\n"));
   }
 }
