@@ -347,7 +347,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     List<String> annotations =
         (List<String>)
             td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
-    String originalSignature = getTypeOriginalSignature(td, modifiers.get(0));
+    String originalSignature = getTypeOriginalSignature(td, modifiers.size() > 0 ? modifiers.get(0) : "");
 
     TypeDeclNode tdNode =
         new TypeDeclNode(

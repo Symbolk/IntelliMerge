@@ -622,7 +622,7 @@ public class Utils {
     while (matcher.find()) {
       String matched = matcher.group();
       String commented = "/* " + matched + " */";
-      code = code.replaceAll(Pattern.quote(matched), commented);
+      code = code.replaceAll(Pattern.quote(matched), Matcher.quoteReplacement(commented));
     }
 
     try {
@@ -637,7 +637,7 @@ public class Utils {
       while (matcher.find()) {
         String matched = matcher.group();
         String uncommented = matched.replaceFirst("\\/\\* ", "").replaceAll(" \\*\\/", "");
-        reformattedCode = reformattedCode.replaceAll(Pattern.quote(matched), uncommented);
+        reformattedCode = reformattedCode.replaceAll(Pattern.quote(matched), Matcher.quoteReplacement(uncommented));
       }
       reformattedCode = reformattedCode.replaceAll(Pattern.quote("/* " + leftPattern + " */"), leftPattern);
 
@@ -858,7 +858,7 @@ public class Utils {
   public static int computeFileLOC(String path) {
     List<String> lines =
         readFileToLines(path).stream()
-            .filter(line -> line.length() > 0)
+            .filter(line -> line.trim().length() > 0)
             .collect(Collectors.toList());
     return lines.size();
   }
