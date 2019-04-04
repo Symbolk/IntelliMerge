@@ -29,22 +29,53 @@ public class Statistics {
     MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
     MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
 
+    // rq3
     String runtimeCSVPath = "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\runtimes.csv";
+    // rq2
+    String conflictNUMCSVPath =
+        "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\conflicts_num.csv";
+    // rq1
+    String statisticsCSVPath =
+        "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\statistics.csv";
+
     File file = new File(runtimeCSVPath);
     if (file.exists()) {
       file.delete();
       Utils.writeContent(runtimeCSVPath, "merge_tool;repo_name;merge_commit;runtime\n", false);
     }
+    file = new File(conflictNUMCSVPath);
+    if (file.exists()) {
+      file.delete();
+      Utils.writeContent(conflictNUMCSVPath, "Project;IntelliMerge;;JFSTMerge;;GitMerge\n" +
+              ";NUM;LOC;NUM;LOC;NUM;LOC\n", false);
+    }
+    file = new File(statisticsCSVPath);
+    if (file.exists()) {
+      file.delete();
+      Utils.writeContent(
+          statisticsCSVPath,
+          "Project;IntelliMerge;;JFSTMerge;;GitMerge;\n" +
+                  ";Precision;Recall;Precision;Recall;Precision;Recall;\n",
+          false);
+    }
 
     List<String> repoNames = new ArrayList<>();
-//    repoNames.add("javaparser");
-//    repoNames.add("gradle");
-//    repoNames.add("junit4");
-    repoNames.add("fastjson");
+    repoNames.add("junit4");
+    repoNames.add("javaparser");
+    repoNames.add("gradle");
     repoNames.add("error-prone");
     repoNames.add("antlr4");
     repoNames.add("deeplearning4j");
+    repoNames.add("cassandra");
+
+    //    repoNames.add("elasticsearch");
+    //    repoNames.add("glide");
     for (String repoName : repoNames) {
+      StringBuilder numBuilder = new StringBuilder();
+      StringBuilder statBuilder = new StringBuilder();
+      numBuilder.append(repoName).append(";");
+      statBuilder.append(repoName).append(";");
+
       // one collection stands for one examined repo
       MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(repoName);
       MongoCollection<Document> gitDBCollection = gitDB.getCollection(repoName);
@@ -53,42 +84,54 @@ public class Statistics {
       // calculate average precision for the three tools
       Pair<Double, Double> pAndR = calculatePAndRForRepo(intelliDBCollection);
       Long runtime = calculateRuntimeForRepo(intelliDBCollection);
-      Integer numConflicts = calculateNumConflictsForRepo(intelliDBCollection);
+      Pair<Integer, Integer> conflicts = calculateNumConflictsForRepo(intelliDBCollection);
       collectRuntimeIntoCSV(runtimeCSVPath, intelliDBCollection, "IntelliMerge");
       System.out.println(repoName);
       System.out.println(
           String.format(
-              "%-20s %-40s %-40s %-40s %s",
+              "%-20s %-40s %-40s %-40s %-40s %s",
               "IntelliMerge",
               "Precision: " + pAndR.getLeft() + "%",
               "Recall: " + pAndR.getRight() + "%",
-              "Conflicts Num: " + numConflicts,
+              "Conflicts NUM: " + conflicts.getLeft(),
+              "Conflicts LOC: " + conflicts.getRight(),
               "Runtime: " + runtime + "ms"));
+      numBuilder.append(conflicts.getLeft()).append(";").append(conflicts.getRight()).append(";");
+      statBuilder.append(pAndR.getLeft()).append(";").append(pAndR.getRight()).append(";");
 
       pAndR = calculatePAndRForRepo(jfstDBCollection);
       runtime = calculateRuntimeForRepo(jfstDBCollection);
-      numConflicts = calculateNumConflictsForRepo(jfstDBCollection);
+      conflicts = calculateNumConflictsForRepo(jfstDBCollection);
       collectRuntimeIntoCSV(runtimeCSVPath, jfstDBCollection, "JFSTMerge");
 
       System.out.println(
           String.format(
-              "%-20s %-40s %-40s %-40s %s",
+              "%-20s %-40s %-40s %-40s %-40s %s",
               "JFSTMerge",
               "Precision: " + pAndR.getLeft() + "%",
               "Recall: " + pAndR.getRight() + "%",
-              "Conflicts Num: " + numConflicts,
+              "Conflicts Num: " + conflicts.getLeft(),
+              "Conflicts LOC: " + conflicts.getRight(),
               "Runtime: " + runtime + "ms"));
+      numBuilder.append(conflicts.getLeft()).append(";").append(conflicts.getRight()).append(";");
+      statBuilder.append(pAndR.getLeft()).append(";").append(pAndR.getRight()).append(";");
 
       pAndR = calculatePAndRForRepo(gitDBCollection);
-      numConflicts = calculateNumConflictsForRepo(gitDBCollection);
+      conflicts = calculateNumConflictsForRepo(gitDBCollection);
       System.out.println(
           String.format(
-              "%-20s %-40s %-40s %s",
+              "%-20s %-40s %-40s %-40s %s",
               "GitMerge",
               "Precision: " + pAndR.getLeft() + "%",
               "Recall: " + pAndR.getRight() + "%",
-              "Conflicts Num: " + numConflicts));
+              "Conflicts Num: " + conflicts.getLeft(),
+              "Conflicts LOC: " + conflicts.getRight()));
+      numBuilder.append(conflicts.getLeft()).append(";").append(conflicts.getRight()).append(";");
+      statBuilder.append(pAndR.getLeft()).append(";").append(pAndR.getRight()).append(";");
+
       System.out.println();
+      Utils.appendContent(conflictNUMCSVPath, numBuilder.toString());
+      Utils.appendContent(statisticsCSVPath, statBuilder.toString());
     }
   }
 
@@ -159,18 +202,24 @@ public class Statistics {
    * @param collection
    * @return
    */
-  private static Integer calculateNumConflictsForRepo(MongoCollection<Document> collection) {
+  private static Pair<Integer, Integer> calculateNumConflictsForRepo(
+      MongoCollection<Document> collection) {
     MongoCursor<Document> cursor = collection.find().iterator();
-    Integer sum = 0;
+    Integer num = 0;
+    Integer loc = 0;
     try {
       while (cursor.hasNext()) {
         Document doc = cursor.next();
-        sum += (Integer) doc.get("conflicts_num");
+        num += (Integer) doc.get("conflicts_num");
+        List<Document> merge_conflicts = (List<Document>) doc.get("merge_conflicts");
+        for (Document mc : merge_conflicts) {
+          loc += (Integer) mc.get("conflicts_loc");
+        }
       }
     } finally {
       cursor.close();
     }
-    return sum;
+    return Pair.of(num, loc);
   }
 
   /** Collect runtimes for all merge scenarios in all projects into one csv file */
