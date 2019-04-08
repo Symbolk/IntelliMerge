@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "elasticsearch";
+  private static final String REPO_NAME = "storm";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git"; // unused
   private static final String DIFF_DIR =
@@ -90,6 +90,8 @@ public class Evaluator {
           String gitMergedDir = sourceDir + File.separator + Side.GIT.asString() + File.separator;
           String manualMergedDir =
               sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
+          String manualMergedFormattedDir =
+              sourceDir + File.separator + Side.MANUAL.asString() + "_Formatted" + File.separator;
 
           // jump some cases where no base files collected, or no manual files collected
           String baseDir = sourceDir + File.separator + Side.BASE.asString() + File.separator;
@@ -122,14 +124,19 @@ public class Evaluator {
           Utils.removeAllComments(gitMergedDir);
           Utils.removeAllComments(jfstMergedDir);
           Utils.removeAllComments(manualMergedDir);
-          Utils.formatAllJavaFiles(manualMergedDir);
+          // in order to alleviate format caused diffs, compare git-merge and jfst with unformatted
+          // manual
+          // in order to alleviate format caused diffs, compare intelli with formatted manual
+          Utils.copyDir(manualMergedDir, manualMergedFormattedDir);
+          Utils.formatAllJavaFiles(manualMergedFormattedDir);
 
           // 3. compare merge results with manual results
           ArrayList<SourceFile> temp = new ArrayList<>();
           ArrayList<SourceFile> manualMergedResults =
-              Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
+              Utils.scanJavaSourceFiles(manualMergedFormattedDir, temp, manualMergedFormattedDir);
 
           // 1. Compare IntelliMerge with Manual
+//          Document scenarioDoc;
           Document scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
@@ -161,30 +168,7 @@ public class Evaluator {
           scenarioDoc.append("auto_merge_diffs", intelliVSmanual.getAutoMergedDiffDocs());
           intelliDBCollection.insertOne(scenarioDoc);
 
-          // 2. Compare GitMerge with Manual
-          scenarioDoc =
-              new Document("repo_name", REPO_NAME)
-                  .append("merge_commit", mergeCommit)
-                  .append("parent_1", parent1)
-                  .append("parent_2", parent2)
-                  .append("base_commit", baseCommit)
-                  .append("conflict_files_num", manualMergedResults.size());
-          Pair<Integer, List<Document>> gitMergeConflicts =
-              extractMergeConflicts(gitMergedDir, true);
-          scenarioDoc.append("conflicts_num", gitMergeConflicts.getLeft());
-          scenarioDoc.append("merge_conflicts", gitMergeConflicts.getRight());
-          ComparisonResult gitVSmanual = compareAutoMerged(gitMergedDir, manualMergedResults);
-          scenarioDoc.append("auto_merge_loc", gitVSmanual.getTotalAutoMergeLOC());
-          scenarioDoc.append("manual_merge_loc", gitVSmanual.getTotalManualMergeLOC());
-          scenarioDoc.append("correct_loc_in_auto_merged", gitVSmanual.getTotalSameAutoMergeLOC());
-          scenarioDoc.append("correct_loc_in_manual", gitVSmanual.getTotalSameManualLOC());
-          scenarioDoc.append("auto_merge_precision", gitVSmanual.getAutoMergePrecision());
-          scenarioDoc.append("auto_merge_recall", gitVSmanual.getAutoMergeRecall());
-          // files that stills contains diff hunks in auto_merge parts
-          scenarioDoc.append("auto_merge_diffs", gitVSmanual.getAutoMergedDiffDocs());
-          gitDBCollection.insertOne(scenarioDoc);
-
-          // 3. Compare JFSTMerge with Manual
+//           2. Compare JFSTMerge with Manual
           scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
@@ -207,6 +191,31 @@ public class Evaluator {
           // files that stills contains diff hunks in auto_merge parts
           scenarioDoc.append("auto_merge_diffs", jfstVSmanual.getAutoMergedDiffDocs());
           jfstDBCollection.insertOne(scenarioDoc);
+
+          // 3. Compare GitMerge with Manual
+          temp = new ArrayList<>();
+          manualMergedResults = Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
+          scenarioDoc =
+              new Document("repo_name", REPO_NAME)
+                  .append("merge_commit", mergeCommit)
+                  .append("parent_1", parent1)
+                  .append("parent_2", parent2)
+                  .append("base_commit", baseCommit)
+                  .append("conflict_files_num", manualMergedResults.size());
+          Pair<Integer, List<Document>> gitMergeConflicts =
+              extractMergeConflicts(gitMergedDir, false);
+          scenarioDoc.append("conflicts_num", gitMergeConflicts.getLeft());
+          scenarioDoc.append("merge_conflicts", gitMergeConflicts.getRight());
+          ComparisonResult gitVSmanual = compareAutoMerged(gitMergedDir, manualMergedResults);
+          scenarioDoc.append("auto_merge_loc", gitVSmanual.getTotalAutoMergeLOC());
+          scenarioDoc.append("manual_merge_loc", gitVSmanual.getTotalManualMergeLOC());
+          scenarioDoc.append("correct_loc_in_auto_merged", gitVSmanual.getTotalSameAutoMergeLOC());
+          scenarioDoc.append("correct_loc_in_manual", gitVSmanual.getTotalSameManualLOC());
+          scenarioDoc.append("auto_merge_precision", gitVSmanual.getAutoMergePrecision());
+          scenarioDoc.append("auto_merge_recall", gitVSmanual.getAutoMergeRecall());
+          // files that stills contains diff hunks in auto_merge parts
+          scenarioDoc.append("auto_merge_diffs", gitVSmanual.getAutoMergedDiffDocs());
+          gitDBCollection.insertOne(scenarioDoc);
 
           logger.info("Done with {}:{}", REPO_NAME, mergeCommit);
           processedMergeCommits.add(mergeCommit);
@@ -263,6 +272,8 @@ public class Evaluator {
   /**
    * Compare auto-merged results by tools with manual merged results for each merge scenario
    *
+   * <p>nesting level: project -> merge scenario -> file
+   *
    * @param mergeResultDir
    * @throws Exception
    */
@@ -295,7 +306,7 @@ public class Evaluator {
       double fileRecall = 0.0;
 
       int manualLOC =
-          Utils.computeFileLOC(fromFilePath); // the number of code lines in the manual merged file
+          Utils.readFileToLines(fromFilePath).size(); // the number of code lines in the manual merged file
       int autoMergedLOC = Utils.computeFileLOC(toFilePath);
       totalManualMergedLOC += manualLOC;
       totalAutoMergedLOC += autoMergedLOC;
@@ -326,12 +337,14 @@ public class Evaluator {
         for (Hunk hunk : diff.getHunks()) {
           // if there are two hunk with the same line count but opposite direction (+/-), compare
           // the lines to counteract possibly moved hunks
-          //          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
-          //            visitedHunks.add(hunk);
-          //          }
+//          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
+//            visitedHunks.add(hunk);
+//          }
           visitedHunks.add(hunk);
         }
-        removeFormatCausedHunks(visitedHunks);
+        // double check the diff hunks
+//        removeHunksInvolvingConflicts(visitedHunks);
+//        visitedHunks = removeFormatCausedHunks(visitedHunks);
         // save the true positive hunks into mongodb
         numberOfDiffFiles += visitedHunks.size() > 0 ? 1 : 0;
 
@@ -375,8 +388,8 @@ public class Evaluator {
             new Document("file_relative_path", relativePath)
                 .append("manual_loc", manualLOC)
                 .append("auto_merge_loc", autoMergedLOC)
-                .append("correct_loc_in_auto_merged", totalSameLOCMerged)
-                .append("correct_loc_in_manual", totalSameLOCManual)
+                .append("correct_loc_in_auto_merged", sameLOCMerged)
+                .append("correct_loc_in_manual", sameLOCManual)
                 .append("auto_merge_precision", filePrecision)
                 .append("auto_merge_recall", fileRecall)
                 .append("from_diff_loc", fromDiffLoc)
@@ -453,16 +466,31 @@ public class Evaluator {
    *
    * @param hunks
    */
-  private static void removeFormatCausedHunks(List<Hunk> hunks) {
-    List<Hunk> hunksCopy = new ArrayList<>(hunks);
-    for (Hunk hunk : hunksCopy) {
-      String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
-      String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
-      if (hunkFromContent.equals(hunkToContent)) {
-        hunks.remove(hunk);
-      }
-    }
+  private static List<Hunk> removeFormatCausedHunks(List<Hunk> hunks) {
+    //    List<Hunk> hunksCopy = new ArrayList<>(hunks);
+    //    for (Hunk hunk : hunksCopy) {
+    //      String hunkFromContent = getHunkContent(hunk, Line.LineType.FROM, true);
+    //      String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
+    //      if (hunkFromContent.equals(hunkToContent)) {
+    //        hunks.remove(hunk);
+    //      }
+    //    }
+    return hunks.stream()
+        .filter(
+            hunk ->
+                getHunkContent(hunk, Line.LineType.FROM, true)
+                    .equals(getHunkContent(hunk, Line.LineType.TO, true)))
+        .collect(Collectors.toList());
   }
+
+//  private static List<Hunk> removeHunksInvolvingConflicts(List<Hunk> hunks) {
+//    return hunks.stream()
+//            .filter(
+//                    hunk ->
+//                            getHunkContent(hunk, Line.LineType.FROM, true).concat(
+//                            (getHunkContent(hunk, Line.LineType.TO, true))).contains("<<<<<<")
+//            .collect(Collectors.toList());
+//  }
 
   /**
    * Get the corresponding content from hunk by line type (FROM/TO/NEUTRAL)

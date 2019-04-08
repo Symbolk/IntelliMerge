@@ -67,9 +67,10 @@ public class Statistics {
     repoNames.add("antlr4");
     repoNames.add("deeplearning4j");
     repoNames.add("cassandra");
+    repoNames.add("elasticsearch");
+    repoNames.add("realm-java");
+    repoNames.add("storm");
 
-    //    repoNames.add("elasticsearch");
-    //    repoNames.add("glide");
     for (String repoName : repoNames) {
       StringBuilder numBuilder = new StringBuilder();
       StringBuilder statBuilder = new StringBuilder();

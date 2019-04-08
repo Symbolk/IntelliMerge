@@ -12,7 +12,7 @@ import java.util.List;
 
 /** Class responsbile to collect and debug with a single file */
 public class SingleFileTester {
-  private static final String REPO_NAME = "antlr4";
+  private static final String REPO_NAME = "junit4";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git";
   private static final String SRC_DIR =
@@ -24,19 +24,20 @@ public class SingleFileTester {
   public static void main(String[] args) throws Exception {
     PropertyConfigurator.configure("log4j.properties");
 
-    String mergeCommit = "aae2183f03d0104fc4e119c31b62adee6f602a81";
+    String mergeCommit = "f4682ce2558cdca60d12fbef39e9ca0370eba592";
     String sourceDir = "D:\\github\\ref_conflicts\\" + REPO_NAME + File.separator + mergeCommit;
     String intelliMergedDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
 
     String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
-    String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
+    String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + "_Formatted" + File.separator;
 
     String targetDir = "D:\\github\\test";
     List<String> relativePaths = new ArrayList<>();
 
     // Test Copying
-    relativePaths.add("runtime\\Java\\src\\org\\antlr\\v4\\runtime\\atn\\ParserATNSimulator.java");
-    //            Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
+    relativePaths.add(
+        "src/test/java/org/junit/tests/running/classes/TestClassTest.java");
+//                Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
     //    Utils.removeAllComments(intelliMergedDir);
     //    Utils.removeAllComments(manualMergedDir);
     //    Utils.removeAllComments(jfstMergedDir);
@@ -44,7 +45,7 @@ public class SingleFileTester {
     // Test Merging
     String dirToMerge = "D:\\github\\test";
     mergeWithIntelli(dirToMerge);
-    mergeWithJFST(dirToMerge);
+//    mergeWithJFST(dirToMerge);
 
     // Test Extracting
     //    String dirToExtractConflicts =
@@ -65,8 +66,8 @@ public class SingleFileTester {
     String mergeResultDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
     String manualMergedDir = sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
     List<Long> runtimes = apiClient.processDirectory(sourceDir, mergeResultDir);
-    Utils.removeAllComments(mergeResultDir);
-    Utils.formatAllJavaFiles(manualMergedDir);
+//    Utils.removeAllComments(mergeResultDir);
+//    Utils.formatAllJavaFiles(manualMergedDir);
   }
 
   private static void mergeWithJFST(String sourceDir) {
