@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "storm";
+  private static final String REPO_NAME = "fastjson";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String GIT_URL = "https://github.com/javaparser/javaparser.git"; // unused
   private static final String DIFF_DIR =

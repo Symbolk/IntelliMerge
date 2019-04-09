@@ -3,6 +3,7 @@ package edu.pku.intellimerge.client;
 import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.exception.RangeNullException;
 import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
@@ -10,6 +11,8 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.Refactoring;
+import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.util.Utils;
 import org.eclipse.jgit.lib.Repository;
 import org.jgrapht.Graph;
@@ -243,7 +246,9 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
-    oursGraph.vertexSet().stream().filter(node->node.getNodeType().equals(NodeType.CU)).collect(Collectors.toList());
+    oursGraph.vertexSet().stream()
+        .filter(node -> node.getNodeType().equals(NodeType.CU))
+        .collect(Collectors.toList());
     stopwatch.stop();
     executorService.shutdown();
     long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -258,6 +263,12 @@ public class APIClient {
     stopwatch.stop();
     long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Matching done for {}.", matchingTime, targetDirName);
+
+    // save the detected refactorings into csv for human validation and debugging
+    String b2oCsvFilePath = resultDir + File.separator + "ours_refactorings.csv";
+    String b2tCsvFilePath = resultDir + File.separator + "theirs_refactorings.csv";
+    saveRefactorings(b2oCsvFilePath, merger.b2oMatching);
+    saveRefactorings(b2tCsvFilePath, merger.b2tMatching);
 
     // 4. Print the merged graph into code, keep the original format as possible
     stopwatch.reset().start();
@@ -275,5 +286,31 @@ public class APIClient {
     runtimes.add(mergingTime);
     runtimes.add(overall);
     return runtimes;
+  }
+
+  private void saveRefactorings(String filePath, TwowayMatching matching) {
+    Utils.writeContent(
+        filePath,
+        "refactoring_type;node_type;confidence;before_location;before_node;after_location;after_node\n",
+        false);
+    try {
+
+      for (Refactoring refactoring : matching.refactorings) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(refactoring.getRefactoringType().getLabel()).append(";");
+        builder.append(refactoring.getNodeType().asString()).append(";");
+        builder.append(String.valueOf(refactoring.getConfidence())).append(";");
+        builder.append(refactoring.getBeforeRange().begin.line).append("-");
+        builder.append(refactoring.getBeforeRange().end.line).append(";");
+        builder.append(refactoring.getBefore().getOriginalSignature()).append(";");
+        builder.append(refactoring.getAfterRange().begin.line).append("-");
+        builder.append(refactoring.getAfterRange().end.line).append(";");
+        builder.append(refactoring.getAfter().getOriginalSignature()).append("\n");
+
+        Utils.writeContent(filePath, builder.toString(), true);
+      }
+    } catch (RangeNullException e) {
+      e.printStackTrace();
+    }
   }
 }

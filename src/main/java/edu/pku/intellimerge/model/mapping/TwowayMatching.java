@@ -52,7 +52,7 @@ public class TwowayMatching {
     List<Refactoring> oneToOneRefactorings =
         refactorings.stream().filter(Refactoring::isOneToOne).collect(Collectors.toList());
     for (Refactoring refactoring : oneToOneRefactorings) {
-      one2oneMatchings.put(refactoring.getSource(), refactoring.getTarget());
+      one2oneMatchings.put(refactoring.getBefore(), refactoring.getAfter());
     }
   }
 

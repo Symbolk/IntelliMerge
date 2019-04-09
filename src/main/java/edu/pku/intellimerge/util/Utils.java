@@ -232,13 +232,15 @@ public class Utils {
   public static boolean writeContent(String filePath, String content, boolean append) {
     try {
       File file = new File(filePath);
+      if (file.exists() && !append) {
+        file.delete();
+      }
       if (!file.exists()) {
-        //        file.delete();
         file.getParentFile().mkdirs();
         file.createNewFile();
       }
-      FileWriter fileWritter = new FileWriter(filePath, append);
-      BufferedWriter writer = new BufferedWriter(fileWritter);
+      FileWriter fileWriter = new FileWriter(filePath, append);
+      BufferedWriter writer = new BufferedWriter(fileWriter);
       writer.write(content);
       writer.flush();
       writer.close();
@@ -631,15 +633,18 @@ public class Utils {
       if (diff3Style) {
         pattern = Pattern.compile("\\/\\* " + baseAndRightPattern + " \\*\\/");
       } else {
-        pattern = Pattern.compile("\\/\\* " +  rightPattern + " \\*\\/");
+        pattern = Pattern.compile("\\/\\* " + rightPattern + " \\*\\/");
       }
       matcher = pattern.matcher(reformattedCode);
       while (matcher.find()) {
         String matched = matcher.group();
         String uncommented = matched.replaceFirst("\\/\\* ", "").replaceAll(" \\*\\/", "");
-        reformattedCode = reformattedCode.replaceAll(Pattern.quote(matched), Matcher.quoteReplacement(uncommented));
+        reformattedCode =
+            reformattedCode.replaceAll(
+                Pattern.quote(matched), Matcher.quoteReplacement(uncommented));
       }
-      reformattedCode = reformattedCode.replaceAll(Pattern.quote("/* " + leftPattern + " */"), leftPattern);
+      reformattedCode =
+          reformattedCode.replaceAll(Pattern.quote("/* " + leftPattern + " */"), leftPattern);
 
       return reformattedCode;
     } catch (FormatterException e) {

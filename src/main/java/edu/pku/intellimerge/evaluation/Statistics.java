@@ -12,7 +12,6 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,26 +37,16 @@ public class Statistics {
     String statisticsCSVPath =
         "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\statistics.csv";
 
-    File file = new File(runtimeCSVPath);
-    if (file.exists()) {
-      file.delete();
-      Utils.writeContent(runtimeCSVPath, "merge_tool;repo_name;merge_commit;runtime\n", false);
-    }
-    file = new File(conflictNUMCSVPath);
-    if (file.exists()) {
-      file.delete();
-      Utils.writeContent(conflictNUMCSVPath, "Project;IntelliMerge;;JFSTMerge;;GitMerge\n" +
-              ";NUM;LOC;NUM;LOC;NUM;LOC\n", false);
-    }
-    file = new File(statisticsCSVPath);
-    if (file.exists()) {
-      file.delete();
-      Utils.writeContent(
-          statisticsCSVPath,
-          "Project;IntelliMerge;;JFSTMerge;;GitMerge;\n" +
-                  ";Precision;Recall;Precision;Recall;Precision;Recall;\n",
-          false);
-    }
+    Utils.writeContent(runtimeCSVPath, "merge_tool;repo_name;merge_commit;runtime\n", false);
+    Utils.writeContent(
+        conflictNUMCSVPath,
+        "Project;IntelliMerge;;JFSTMerge;;GitMerge\n" + ";NUM;LOC;NUM;LOC;NUM;LOC\n",
+        false);
+    Utils.writeContent(
+        statisticsCSVPath,
+        "Project;IntelliMerge;;JFSTMerge;;GitMerge;\n"
+            + ";Precision;Recall;Precision;Recall;Precision;Recall;\n",
+        false);
 
     List<String> repoNames = new ArrayList<>();
     repoNames.add("junit4");
