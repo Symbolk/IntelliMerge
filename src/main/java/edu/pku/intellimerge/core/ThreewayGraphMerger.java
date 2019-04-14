@@ -72,7 +72,7 @@ public class ThreewayGraphMerger {
     b2oMatching = b2oMatcher.matching;
     b2tMatching = b2tMatcher.matching;
 
-    // collect CU mapping that need to merge
+    // collect COMPILATION_UNIT mapping that need to merge
     Set<SemanticNode> internalAndNeedToMergeNodes =
         baseGraph.vertexSet().stream()
             .filter(SemanticNode::isInternal)
@@ -105,11 +105,11 @@ public class ThreewayGraphMerger {
    * @return
    */
   public List<String> threewayMerge() {
-    // bottom up merge children of the needToMerge CU
+    // bottom up merge children of the needToMerge COMPILATION_UNIT
     List<String> mergedFilePaths = new ArrayList<>();
     for (ThreewayMapping mapping : mapping) {
       if (mapping.baseNode.isPresent()) {
-        // merge the CU by merging its content
+        // merge the COMPILATION_UNIT by merging its content
         SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
         CompilationUnitNode mergedPackageAndImports = mergeCUHeader(mapping.baseNode.get());
@@ -126,7 +126,7 @@ public class ThreewayGraphMerger {
   }
 
   /**
-   * Merge the header part of CU, including comment, package and imports
+   * Merge the header part of COMPILATION_UNIT, including comment, package and imports
    *
    * @param node
    * @return a CUNode with header merged
@@ -228,7 +228,7 @@ public class ThreewayGraphMerger {
     } else {
       // nonterminal
       if (oursNode != null && theirsNode != null) {
-        NonTerminalNode mergedNonTerminal = (NonTerminalNode) mergedNode;
+        CompositeNode mergedNonTerminal = (CompositeNode) mergedNode;
 
         // merge the comment and signature
 //        String mergedComment =
@@ -390,7 +390,7 @@ public class ThreewayGraphMerger {
    */
   private void mergeUnmatchedNodes(
       SemanticNode node,
-      NonTerminalNode mergedNonTerminal,
+      CompositeNode mergedNonTerminal,
       TwowayMatching matching,
       List<SemanticNode> addedNodes) {
     SemanticNode matchedParentNode = matching.one2oneMatchings.getOrDefault(node, null);
@@ -410,7 +410,7 @@ public class ThreewayGraphMerger {
    * @param triple
    */
   private void insertBetweenNeighbors(
-      NonTerminalNode parent, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
+          CompositeNode parent, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
     boolean foundNeighor = false;
     if (triple.getLeft() != null) {
       int position = parent.getChildPosition(triple.getLeft());

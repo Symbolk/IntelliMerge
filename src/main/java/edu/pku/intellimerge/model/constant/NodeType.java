@@ -4,7 +4,7 @@ public enum NodeType {
   // physical nodes
   PROJECT(0, "project"), // logical node to represent folder
   PACKAGE(1, "package"),
-  CU(2, "compilation_unit"), // logical node to represent file
+  COMPILATION_UNIT(2, "compilation_unit"), // logical node to represent file
 
   // logical nodes
   // nonterminal

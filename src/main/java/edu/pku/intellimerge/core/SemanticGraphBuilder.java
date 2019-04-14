@@ -151,7 +151,7 @@ public class SemanticGraphBuilder {
     }
 
     /*
-     * build the graph by analyzing every CU
+     * build the graph by analyzing every COMPILATION_UNIT
      */
     for (CompilationUnit cu : compilationUnits) {
       processCompilationUnit(cu);
@@ -172,26 +172,6 @@ public class SemanticGraphBuilder {
     edgeCount = buildEdges(graph, edgeCount, callMethodEdges, EdgeType.CALL, NodeType.METHOD);
 
     // now edges are fixed
-    // save incoming edges and outgoing edges in corresponding nodes
-    for (SemanticNode node : graph.vertexSet()) {
-      Set<SemanticEdge> incommingEdges = graph.incomingEdgesOf(node);
-      for (SemanticEdge edge : incommingEdges) {
-        if (node.incomingEdges.containsKey(edge.getEdgeType())) {
-          node.incomingEdges.get(edge.getEdgeType()).add(graph.getEdgeSource(edge));
-        } else {
-          logger.error("Unexpected in edge:" + edge);
-        }
-      }
-      Set<SemanticEdge> outgoingEdges = graph.outgoingEdgesOf(node);
-      for (SemanticEdge edge : outgoingEdges) {
-        if (node.outgoingEdges.containsKey(edge.getEdgeType())) {
-          node.outgoingEdges.get(edge.getEdgeType()).add(graph.getEdgeTarget(edge));
-        } else {
-          logger.error("Unexpected out edge:" + edge);
-        }
-      }
-    }
-
     return graph;
   }
 
@@ -214,7 +194,7 @@ public class SemanticGraphBuilder {
         new CompilationUnitNode(
             nodeCount++,
             isInChangedFile,
-            NodeType.CU,
+            NodeType.COMPILATION_UNIT,
             fileName,
             "",
             fileName,

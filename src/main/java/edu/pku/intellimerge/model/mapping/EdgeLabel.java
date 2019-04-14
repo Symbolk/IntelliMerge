@@ -1,0 +1,38 @@
+package edu.pku.intellimerge.model.mapping;
+
+public enum EdgeLabel {
+  CONTAIN_PACKAGE(0),
+  CONTAIN_COMPILATION_UNIT(1),
+  IMPORT_CLASS(2),
+  IMPORT_ENUM(3),
+  IMPORT_INTERFACE(4),
+  EXTEND_CLASS(5),
+  IMPLEMENT_INTERFACE(6),
+  DEFINE_CLASS(7),
+  DEFINE_INTERFACE(8),
+  DEFINE_ENUM(9),
+  DEFINE_INNER_CLASS(10),
+  DEFINE_LOCAL_CLASS(11),
+  DEFINE_FIELD(12),
+  DEFINE_CONSTRUCTOR(13),
+  DEFINE_METHOD(14),
+  DEFINE_ENUM_CONSTANT(15),
+  DEFINE_INITIALIZER_BLOCK(16),
+  DEFINE_ANNOTATION_MEMBER(17),
+  READ_FIELD(18),
+  WRITE_FILED(19),
+  CALL_METHOD(20),
+  CALL_CONSTRUCTOR(21),
+  DECLARE_METHOD(22),
+  INITIALIZE_CLASS(23);
+
+  private Integer index;
+
+  EdgeLabel(Integer index) {
+    this.index = index;
+  }
+
+  public Integer getIndex() {
+    return index;
+  }
+}

@@ -12,6 +12,7 @@ import com.univocity.parsers.csv.CsvParserSettings;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.EdgeLabel;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -866,5 +867,14 @@ public class Utils {
             .filter(line -> line.trim().length() > 0)
             .collect(Collectors.toList());
     return lines.size();
+  }
+
+  public static Integer getEdgeLabelIndex(String edgeLabel) {
+    for (EdgeLabel label : EdgeLabel.values()) {
+      if (label.name().equals(edgeLabel)) {
+        return label.getIndex();
+      }
+    }
+    return -1;
   }
 }

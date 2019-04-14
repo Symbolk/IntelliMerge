@@ -246,9 +246,7 @@ public class APIClient {
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
-    oursGraph.vertexSet().stream()
-        .filter(node -> node.getNodeType().equals(NodeType.CU))
-        .collect(Collectors.toList());
+
     stopwatch.stop();
     executorService.shutdown();
     long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);

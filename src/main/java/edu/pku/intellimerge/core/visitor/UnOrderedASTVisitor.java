@@ -60,7 +60,7 @@ public class UnOrderedASTVisitor extends VoidVisitorAdapter<Graph<SemanticNode, 
     // Don't forget to call super, it may find more terminalNodeSimilarity calls inside the arguments of this terminalNodeSimilarity
     // call, for example.
     super.visit(cu, graph);
-    System.out.println("CU " + cu.getClass());
+    System.out.println("COMPILATION_UNIT " + cu.getClass());
   }
 
   @Override

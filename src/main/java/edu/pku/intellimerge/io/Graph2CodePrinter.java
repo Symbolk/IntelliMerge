@@ -7,7 +7,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
-import edu.pku.intellimerge.model.node.NonTerminalNode;
+import edu.pku.intellimerge.model.node.CompositeNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.Utils;
 
@@ -106,8 +106,8 @@ public class Graph2CodePrinter {
         builder.append(node.getOriginalSignature());
       }
       builder.append(((TerminalNode) node).getBody()).append("\n");
-    } else if (node instanceof NonTerminalNode) {
-      if (!node.getNodeType().equals(NodeType.CU)) {
+    } else if (node instanceof CompositeNode) {
+      if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
         builder.append(node.getComment());
         builder.append(node.getAnnotations().stream().collect(Collectors.joining("\n"))).append("\n");
         builder.append(node.getOriginalSignature());
@@ -133,7 +133,7 @@ public class Graph2CodePrinter {
         }
       }
 
-      if (!node.getNodeType().equals(NodeType.CU)) {
+      if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
         builder.append("\n}\n");
       }
     }

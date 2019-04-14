@@ -24,6 +24,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.NodeContext;
 import edu.pku.intellimerge.model.node.*;
 import edu.pku.intellimerge.util.Utils;
 import org.jgrapht.Graph;
@@ -127,7 +128,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             .collect(Collectors.toList()));
 
     /*
-     * build the graph by analyzing every CU
+     * build the graph by analyzing every COMPILATION_UNIT
      */
     logger.info("({}) CUs in {}", compilationUnits.size(), side);
     for (CompilationUnit cu : compilationUnits) {
@@ -153,24 +154,34 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     edgeCount = buildEdgesForMethodCall(edgeCount, methodCallExprs);
 
     // now edges are fixed
-    // save incoming edges and outgoing edges in corresponding nodes
+    // generate context info for each vertex
     for (SemanticNode node : graph.vertexSet()) {
-      Set<SemanticEdge> incommingEdges = graph.incomingEdgesOf(node);
-      for (SemanticEdge edge : incommingEdges) {
-        if (node.incomingEdges.containsKey(edge.getEdgeType())) {
-          node.incomingEdges.get(edge.getEdgeType()).add(graph.getEdgeSource(edge));
-        } else {
-          logger.error("Unexpected in edge:" + edge);
-        }
-      }
+
+      Set<SemanticEdge> incomingEdges = graph.incomingEdgesOf(node);
       Set<SemanticEdge> outgoingEdges = graph.outgoingEdgesOf(node);
-      for (SemanticEdge edge : outgoingEdges) {
-        if (node.outgoingEdges.containsKey(edge.getEdgeType())) {
-          node.outgoingEdges.get(edge.getEdgeType()).add(graph.getEdgeTarget(edge));
-        } else {
-          logger.error("Unexpected out edge:" + edge);
+      NodeContext context = new NodeContext(incomingEdges, outgoingEdges);
+
+      for (SemanticEdge edge : incomingEdges) {
+        String edgeLabel = edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
+        Integer index = Utils.getEdgeLabelIndex(edgeLabel);
+        if (index > 0) {
+          context.putIncomingVector(index, edge.getWeight());
+        }else{
+          logger.error("Unexpected Incoming Label:" + edgeLabel);
         }
       }
+
+      for (SemanticEdge edge : outgoingEdges) {
+        String edgeLabel = edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
+        Integer index = Utils.getEdgeLabelIndex(edgeLabel);
+        if (index > 0) {
+          context.putIncomingVector(index, edge.getWeight());
+        }else{
+          logger.error("Unexpected Outgoing Label:" + edgeLabel);
+        }
+      }
+
+      node.setContext(context);
     }
 
     return graph;
@@ -200,7 +211,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         new CompilationUnitNode(
             nodeCount++,
             isInChangedFile,
-            NodeType.CU,
+            NodeType.COMPILATION_UNIT,
             fileName,
             fileName,
             fileName,
@@ -250,7 +261,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         packageDeclNode.appendChild(cuNode);
 
         // strange bug here: sometimes the above graph.addVertex(cuNode) fails
-        if(!graph.containsVertex(cuNode)){
+        if (!graph.containsVertex(cuNode)) {
           graph.addVertex(cuNode);
         }
 
@@ -262,7 +273,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         packageDeclNodeOpt.get().appendChild(cuNode);
 
         // strange bug here: sometimes the above graph.addVertex(cuNode) fails
-        if(!graph.containsVertex(cuNode)){
+        if (!graph.containsVertex(cuNode)) {
           graph.addVertex(cuNode);
         }
         graph.addEdge(
@@ -370,7 +381,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             displayName,
             qualifiedName,
             originalSignature,
-                comment,
+            comment,
             annotations,
             access,
             modifiers,
@@ -764,15 +775,16 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    */
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
-//        String source = removeComment(typeDeclaration.toString());
-      String source = typeDeclaration.removeComment().toString();
+    //        String source = removeComment(typeDeclaration.toString());
+    String source = typeDeclaration.removeComment().toString();
     // if the comment bug in JavaParser is triggered, the comment is not completely removed
-//    List<String> lines = Arrays.asList(source.split("\n"));
-//    source = lines.stream().filter(line -> !line.startsWith("\\s\\*")).collect(Collectors.joining("\n"));
+    //    List<String> lines = Arrays.asList(source.split("\n"));
+    //    source = lines.stream().filter(line ->
+    // !line.startsWith("\\s\\*")).collect(Collectors.joining("\n"));
 
-    if(source.indexOf("{") > 0){
+    if (source.indexOf("{") > 0) {
       return source.substring(0, source.indexOf("{")).trim();
-    }else{
+    } else {
       return source.trim();
     }
   }
@@ -794,9 +806,10 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Remove comment from a string
-   * Unfortunately, Java's builtin regex support has problems with regexes containing repetitive alternative paths (that is, (A|B)*),
-   * so this may lead to StackOverflowError
+   * Remove comment from a string Unfortunately, Java's builtin regex support has problems with
+   * regexes containing repetitive alternative paths (that is, (A|B)*), so this may lead to
+   * StackOverflowError
+   *
    * @param source
    * @return
    */

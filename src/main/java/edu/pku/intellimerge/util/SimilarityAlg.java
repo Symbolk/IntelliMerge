@@ -7,9 +7,9 @@ import com.github.gumtreediff.tree.ITree;
 import com.github.gumtreediff.tree.TreeContext;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.EdgeType;
+import edu.pku.intellimerge.model.mapping.EdgeLabel;
+import edu.pku.intellimerge.model.node.CompositeNode;
 import edu.pku.intellimerge.model.node.FieldDeclNode;
-import edu.pku.intellimerge.model.node.MethodDeclNode;
-import edu.pku.intellimerge.model.node.NonTerminalNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import info.debatty.java.stringsimilarity.Cosine;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 public class SimilarityAlg {
 
   /**
-   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature as well as
-   * context
+   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature
+   * as well as context
    *
    * @param n1
    * @param n2
@@ -34,28 +34,71 @@ public class SimilarityAlg {
   public static double terminalNodeSimilarity(TerminalNode n1, TerminalNode n2) {
     double similarity = 0.0;
     // naive average in all dimensions of context(incoming and outgoing edges)
-    similarity += contextSimilarity(n1.incomingEdges, n2.incomingEdges);
-    similarity += contextSimilarity(n1.outgoingEdges, n2.outgoingEdges);
+    similarity += contextSimilarity2(n1, n2);
     // navie string similarity of terminalNodeSimilarity signature
-    similarity += 10 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity += 5 * bodyASTSimilarity(n1.getBody(), n2.getBody());
-    similarity /= 17;
+    similarity += stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
+    similarity += bodyASTSimilarity(n1.getBody(), n2.getBody());
+    similarity /= 3;
     return similarity;
   }
 
   /**
-   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature as well as
-   * context
+   * Compute the similarity of context edges of 2 nodes
+   *
+   * @param node1
+   * @param node2
+   * @return
+   */
+  public static double contextSimilarity2(SemanticNode node1, SemanticNode node2) {
+    // compute the cosine similarity
+    double inVectorSim =
+        vectorCosineSimilarity(
+            node1.context.getIncomingVector(), node2.context.getIncomingVector());
+    double outVectorSim =
+        vectorCosineSimilarity(
+            node1.context.getOutgoingVector(), node2.context.getOutgoingVector());
+    return (inVectorSim + outVectorSim) / 2; // average for now
+  }
+
+  /**
+   * Compute the cosine similarity of two vectors
+   *
+   * @param vector1
+   * @param vector2
+   * @return
+   */
+  private static double vectorCosineSimilarity(
+      Map<Integer, Integer> vector1, Map<Integer, Integer> vector2) {
+    double dotProduct = 0.0;
+    double norm1 = 0.0;
+    double norm2 = 0.0;
+
+    for (Integer index = 0; index < EdgeLabel.values().length; ++index) {
+      Integer a = vector1.get(index);
+      Integer b = vector2.get(index);
+      dotProduct += a * b;
+      norm1 += Math.pow(a, 2);
+      norm2 += Math.pow(b, 2);
+    }
+    norm1 = (Math.sqrt(norm1));
+    norm2 = (Math.sqrt(norm2));
+
+    double product = norm1 * norm2;
+    return product == 0.0 ? 0.0 : dotProduct / product;
+  }
+
+  /**
+   * Compute the similarity between two terminalNodeSimilarity declarations, considering signature
+   * as well as context
    *
    * @param n1
    * @param n2
    * @return
    */
-  public static double compositeNodeSimilarity(NonTerminalNode n1, NonTerminalNode n2) {
+  public static double compositeNodeSimilarity(CompositeNode n1, CompositeNode n2) {
     double similarity = 0.0;
     // naive average in all dimensions of context(incoming and outgoing edges)
-    similarity += contextSimilarity(n1.incomingEdges, n2.incomingEdges);
-    similarity += contextSimilarity(n1.outgoingEdges, n2.outgoingEdges);
+    similarity += contextSimilarity2(n1, n2);
     // navie string similarity of terminalNodeSimilarity signature
     similarity += 10 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
     similarity /= 12;
@@ -63,7 +106,8 @@ public class SimilarityAlg {
   }
 
   /**
-   * Signature textual similarity, but terminalNodeSimilarity name and parameter types should be the most important
+   * Signature textual similarity, but terminalNodeSimilarity name and parameter types should be the
+   * most important
    *
    * @param s1
    * @param s2
@@ -83,9 +127,7 @@ public class SimilarityAlg {
       Set<String> targetQNames1 =
           entry.getValue().stream().map(SemanticNode::getQualifiedName).collect(Collectors.toSet());
       Set<String> targetQNames2 =
-          edges2
-              .get(entry.getKey())
-              .stream()
+          edges2.get(entry.getKey()).stream()
               .map(SemanticNode::getQualifiedName)
               .collect(Collectors.toSet());
       if (targetQNames1.size() > 0 && targetQNames2.size() > 0) {
