@@ -2,16 +2,16 @@ package edu.pku.intellimerge.model;
 
 import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.model.mapping.NodeContext;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class SemanticNode {
-  public Map<EdgeType, List<SemanticNode>> incomingEdges = new LinkedHashMap<>();
-  public Map<EdgeType, List<SemanticNode>> outgoingEdges = new LinkedHashMap<>();
+  // context info
+  public NodeContext context;
+
+  // self attributes
   // signature
   private Boolean needToMerge;
 
@@ -213,6 +213,14 @@ public abstract class SemanticNode {
 
   public int getChildPosition(SemanticNode child) {
     return children.indexOf(child);
+  }
+
+  public NodeContext getContext() {
+    return context;
+  }
+
+  public void setContext(NodeContext context) {
+    this.context = context;
   }
 
   /**

@@ -35,12 +35,6 @@ public class InitializerDeclNode extends TerminalNode {
         body,
         range);
     this.isStatic = isStatic;
-    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
   public boolean isStatic() {

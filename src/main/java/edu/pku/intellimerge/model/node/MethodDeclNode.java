@@ -57,14 +57,6 @@ public class MethodDeclNode extends TerminalNode {
     this.parameterTypes = parameterTypes;
     this.parameterNames = parameterNames;
     this.throwExceptions = throwExceptions;
-
-    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.CALL, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
   // fake terminalNodeSimilarity constructor, only invocation but no definition
@@ -81,13 +73,6 @@ public class MethodDeclNode extends TerminalNode {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, range);
     this.methodName = methodName;
     this.parameterNames = parameterNames;
-
-    this.incomingEdges.put(EdgeType.CALL, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CALL, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.READ, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.WRITE, new ArrayList<>());
   }
 
   public String getAccess() {

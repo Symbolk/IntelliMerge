@@ -1,6 +1,5 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
@@ -9,7 +8,7 @@ import java.util.List;
 /**
  * Class or Interface Declaration
  */
-public class TypeDeclNode extends NonTerminalNode {
+public class TypeDeclNode extends CompositeNode {
   private String access; // can be empty for most inner class
   private String type; // annotation/class/interface/enum
   private String typeName;
@@ -35,17 +34,6 @@ public class TypeDeclNode extends NonTerminalNode {
     this.typeName = typeName;
 
     this.implementTypes = new ArrayList<>();
-    // Notice: here the order matters
-    this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.DECLARE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.EXTEND, new ArrayList<>());
-
-    this.outgoingEdges.put(EdgeType.IMPLEMENT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.EXTEND, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE, new ArrayList<>());
   }
 
   public void setExtendType(String extendType) {

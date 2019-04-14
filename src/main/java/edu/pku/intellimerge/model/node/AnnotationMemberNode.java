@@ -33,7 +33,5 @@ public class AnnotationMemberNode extends TerminalNode {
         modifiers,
         body,
         range);
-      this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
-      this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
   }
 }

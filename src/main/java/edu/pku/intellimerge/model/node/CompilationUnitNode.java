@@ -1,12 +1,10 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
-import java.util.ArrayList;
 import java.util.Set;
 
-public class CompilationUnitNode extends NonTerminalNode {
+public class CompilationUnitNode extends CompositeNode {
   private String packageStatement;
   private Set<String> importStatements; // ordered, so use LinkedHashSet
   private String fileName;
@@ -34,11 +32,6 @@ public class CompilationUnitNode extends NonTerminalNode {
     this.absolutePath = absolutePath;
     this.packageStatement = packageStatement;
     this.importStatements = importStatements;
-    this.incomingEdges.put(EdgeType.IMPORT, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
-
-    this.outgoingEdges.put(EdgeType.IMPORT, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DEFINE, new ArrayList<>());
   }
 
   public String getPackageStatement() {

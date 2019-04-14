@@ -1,12 +1,10 @@
 package edu.pku.intellimerge.model.node;
 
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class PackageDeclNode extends NonTerminalNode {
+public class PackageDeclNode extends CompositeNode {
   private String packageName;
   private List<String> packageNameHierachy; // qualified_package_name.split(".").remove(";")
 
@@ -24,7 +22,5 @@ public class PackageDeclNode extends NonTerminalNode {
     super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
-    this.incomingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.CONTAIN, new ArrayList<>());
   }
 }

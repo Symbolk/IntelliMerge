@@ -44,12 +44,6 @@ public class FieldDeclNode extends TerminalNode {
     this.access = access;
     this.fieldType = fieldType;
     this.fieldName = fieldName;
-
-    this.incomingEdges.put(EdgeType.DEFINE, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.READ, new ArrayList<>());
-    this.incomingEdges.put(EdgeType.WRITE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.DECLARE, new ArrayList<>());
-    this.outgoingEdges.put(EdgeType.INITIALIZE, new ArrayList<>());
   }
 
   public String getAccess() {

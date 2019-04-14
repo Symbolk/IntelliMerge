@@ -6,9 +6,9 @@ import edu.pku.intellimerge.model.constant.NodeType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NonTerminalNode extends SemanticNode {
+public class CompositeNode extends SemanticNode {
 
-  public NonTerminalNode(
+  public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
       NodeType nodeType,
@@ -31,7 +31,7 @@ public class NonTerminalNode extends SemanticNode {
   }
 
   // some nonterminal nodes do not have annotations or modifiers
-  public NonTerminalNode(
+  public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
       NodeType nodeType,
@@ -52,7 +52,7 @@ public class NonTerminalNode extends SemanticNode {
         new ArrayList<>());
   }
 
-  public NonTerminalNode(
+  public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
       NodeType nodeType,
@@ -74,7 +74,7 @@ public class NonTerminalNode extends SemanticNode {
 
   @Override
   public SemanticNode shallowClone() {
-    return new NonTerminalNode(
+    return new CompositeNode(
         this.getNodeID(),
         this.needToMerge(),
         this.getNodeType(),
