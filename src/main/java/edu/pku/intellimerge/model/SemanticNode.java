@@ -1,10 +1,10 @@
 package edu.pku.intellimerge.model;
 
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.mapping.NodeContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class SemanticNode {
@@ -25,7 +25,8 @@ public abstract class SemanticNode {
   // original signature in source code, here we generalize the definition of signature
   private String originalSignature;
   private String comment;
-  // annotations can be used before package, class, constructor, terminalNodeSimilarity/interface, field, parameter,
+  // annotations can be used before package, class, constructor, terminalNodeSimilarity/interface,
+  // field, parameter,
   // local variables
   private List<String> annotations;
   private List<String> modifiers;
@@ -153,7 +154,11 @@ public abstract class SemanticNode {
   }
 
   public Integer hashCodeSignature() {
-    return (getNodeType() + getSignature()).hashCode();
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((getNodeType() == null) ? 0 : getNodeType().hashCode());
+    result = prime * result + ((getSignature() == null) ? 0 : getSignature().hashCode());
+    return result;
   }
 
   public Boolean needToMerge() {
@@ -256,10 +261,16 @@ public abstract class SemanticNode {
    *
    * @return
    */
+  @Override
   public int hashCode() {
-    return asString().hashCode();
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((nodeType == null) ? 0 : nodeType.hashCode());
+    result = prime * result + ((qualifiedName == null) ? 0 : qualifiedName.hashCode());
+    return result;
   }
 
+  @Override
   public boolean equals(Object o) {
     return (o instanceof SemanticNode) && (asString().equals(((SemanticNode) o).asString()));
   }

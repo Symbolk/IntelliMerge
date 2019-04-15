@@ -21,7 +21,12 @@ public class SemanticEdge {
     this.isInternal = true;
   }
 
-  public SemanticEdge(Integer edgeID, EdgeType edgeType, SemanticNode source, SemanticNode target, boolean isInternal) {
+  public SemanticEdge(
+      Integer edgeID,
+      EdgeType edgeType,
+      SemanticNode source,
+      SemanticNode target,
+      boolean isInternal) {
     this.edgeID = edgeID;
     this.edgeType = edgeType;
     this.source = source;
@@ -32,6 +37,10 @@ public class SemanticEdge {
 
   public EdgeType getEdgeType() {
     return edgeType;
+  }
+
+  public void setEdgeType(EdgeType edgeType) {
+    this.edgeType = edgeType;
   }
 
   @Override
@@ -45,20 +54,13 @@ public class SemanticEdge {
         + target
         + '}';
   }
+
   public boolean isInternal() {
     return isInternal;
   }
 
   public void setInternal(boolean internal) {
     isInternal = internal;
-  }
-
-  public int hashCode() {
-    return toString().hashCode();
-  }
-
-  public boolean equals(Object o) {
-    return (o instanceof SemanticEdge) && (toString().equals(o.toString()));
   }
 
   public Integer getEdgeID() {
@@ -69,10 +71,6 @@ public class SemanticEdge {
     this.edgeID = edgeID;
   }
 
-  public void setEdgeType(EdgeType edgeType) {
-    this.edgeType = edgeType;
-  }
-
   public Integer getWeight() {
     return weight;
   }
@@ -81,7 +79,22 @@ public class SemanticEdge {
     this.weight = weight;
   }
 
-  public boolean isStructuredEdge(){
+  public boolean isStructuredEdge() {
     return this.edgeType.isStructureEdge;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((edgeType == null) ? 0 : edgeType.hashCode());
+    result = prime * result + ((source == null) ? 0 : source.hashCode());
+    result = prime * result + ((target == null) ? 0 : target.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return (o instanceof SemanticEdge) && (toString().equals(o.toString()));
   }
 }
