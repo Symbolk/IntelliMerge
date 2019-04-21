@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.core;
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -47,6 +49,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private int nodeCount;
   private int edgeCount;
   private boolean hasMultiModule;
+  // specify a list of files to parse, instead of parsing all files under the target dir
+  private List<String> fileRelativePaths = new ArrayList<>();
+
   /*
    * a series of temp containers to keep relationships between node and symbol
    * if the symbol is internal: draw the edge in graph;
@@ -65,6 +70,17 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private Side side;
   private String targetDir; // directory of the target files to be analyzed
 
+  public SemanticGraphBuilder2(Side side, String targetDir, boolean hasMultiModule) {
+    this.mergeScenario = null;
+    this.side = side;
+    this.targetDir = targetDir;
+    this.hasMultiModule = hasMultiModule;
+
+    this.graph = initGraph();
+    this.nodeCount = 0;
+    this.edgeCount = 0;
+  }
+
   public SemanticGraphBuilder2(
       MergeScenario mergeScenario, Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = mergeScenario;
@@ -75,6 +91,18 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
+  }
+
+  public SemanticGraphBuilder2(Side side, String targetDir, List<String> fileRelativePaths) {
+    this.mergeScenario = null;
+    this.side = side;
+    this.targetDir = targetDir;
+    this.hasMultiModule = false;
+    this.fileRelativePaths = fileRelativePaths;
+
+    this.graph = initGraph();
+    this.nodeCount = 0;
+    this.nodeCount = 0;
   }
 
   /**
@@ -110,22 +138,39 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     //    sourceRoot.getParserConfiguration().setSymbolResolver(symbolSolver);
 
     List<CompilationUnit> compilationUnits = new ArrayList<>();
-    List<ParseResult<CompilationUnit>> parseResults = new ArrayList<>();
-    if (hasMultiModule) {
-      // multi-module project: separated source folder for sub-projects/modules
-      ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
-      for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
-        parseResults.addAll(sourceRoot.tryToParseParallelized());
+
+    if (fileRelativePaths.isEmpty()) {
+
+      List<ParseResult<CompilationUnit>> parseResults = new ArrayList<>();
+      if (hasMultiModule) {
+        // multi-module project: separated source folder for sub-projects/modules
+        ProjectRoot projectRoot = new ParserCollectionStrategy().collect(root.toPath());
+        for (SourceRoot sourceRoot : projectRoot.getSourceRoots()) {
+          parseResults.addAll(sourceRoot.tryToParseParallelized());
+        }
+      } else {
+        SourceRoot sourceRoot = new SourceRoot(root.toPath());
+        parseResults = sourceRoot.tryToParseParallelized();
       }
+      compilationUnits.addAll(
+          parseResults.stream()
+              .filter(ParseResult::isSuccessful)
+              .map(r -> r.getResult().get())
+              .collect(Collectors.toList()));
+
     } else {
-      SourceRoot sourceRoot = new SourceRoot(root.toPath());
-      parseResults = sourceRoot.tryToParseParallelized();
+      for (String relativePath : fileRelativePaths) {
+        String absolutePath = sideDir + relativePath;
+        File file = new File(absolutePath);
+        if (file.exists()) {
+          try {
+            compilationUnits.add(JavaParser.parse(file));
+          } catch (FileNotFoundException e) {
+            e.printStackTrace();
+          }
+        }
+      }
     }
-    compilationUnits.addAll(
-        parseResults.stream()
-            .filter(ParseResult::isSuccessful)
-            .map(r -> r.getResult().get())
-            .collect(Collectors.toList()));
 
     /*
      * build the graph by analyzing every COMPILATION_UNIT
@@ -162,21 +207,23 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       NodeContext context = new NodeContext(incomingEdges, outgoingEdges);
 
       for (SemanticEdge edge : incomingEdges) {
-        String edgeLabel = edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
+        String edgeLabel =
+            edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
         Integer index = Utils.getEdgeLabelIndex(edgeLabel);
         if (index > 0) {
           context.putIncomingVector(index, edge.getWeight());
-        }else{
+        } else {
           logger.error("Unexpected Incoming Label:" + edgeLabel);
         }
       }
 
       for (SemanticEdge edge : outgoingEdges) {
-        String edgeLabel = edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
+        String edgeLabel =
+            edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
         Integer index = Utils.getEdgeLabelIndex(edgeLabel);
         if (index > 0) {
           context.putIncomingVector(index, edge.getWeight());
-        }else{
+        } else {
           logger.error("Unexpected Outgoing Label:" + edgeLabel);
         }
       }

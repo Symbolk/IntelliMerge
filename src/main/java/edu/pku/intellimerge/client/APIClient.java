@@ -9,7 +9,6 @@ import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
@@ -26,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /** Class responsible for processing one repo */
 public class APIClient {
@@ -233,14 +231,12 @@ public class APIClient {
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(
-            new SemanticGraphBuilder2(null, Side.OURS, targetDir, hasMultipleModules));
+        executorService.submit(new SemanticGraphBuilder2(Side.OURS, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(
-            new SemanticGraphBuilder2(null, Side.BASE, targetDir, hasMultipleModules));
+        executorService.submit(new SemanticGraphBuilder2(Side.BASE, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModules));
+            new SemanticGraphBuilder2(Side.THEIRS, targetDir, hasMultipleModules));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
