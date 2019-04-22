@@ -15,8 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MethodDeclMatcher {
-  public MethodDeclMatcher() {}
-
+  private static final Double MIN_SIMI= 0.618D;
   /**
    * Match methods that are unmatched for signature change, including many kinds of refactorings
    *
@@ -60,7 +59,7 @@ public class MethodDeclMatcher {
       SemanticNode sourceNode = biPartite.getEdgeSource(edge);
       SemanticNode targetNode = biPartite.getEdgeTarget(edge);
       double confidence = biPartite.getEdgeWeight(edge);
-      if (confidence >= 0.618) {
+      if (confidence >= MIN_SIMI) {
         matching.unmatchedNodes1.get(NodeType.METHOD).remove(sourceNode);
         matching.unmatchedNodes2.get(NodeType.METHOD).remove(targetNode);
         matching.markRefactoring(

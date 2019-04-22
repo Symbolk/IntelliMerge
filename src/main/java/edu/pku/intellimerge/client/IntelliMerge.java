@@ -17,12 +17,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class InteliMerge {
+public class IntelliMerge {
   private String folderPath;
   private List<String> fileRelativePaths;
   private String resultFolderPath;
 
-  public InteliMerge(String folderPath, List<String> fileRelativePaths, String resultFolderPath) {
+  public IntelliMerge(String folderPath, List<String> fileRelativePaths, String resultFolderPath) {
     this.folderPath = folderPath;
     this.fileRelativePaths = fileRelativePaths;
     this.resultFolderPath = resultFolderPath;
@@ -37,8 +37,8 @@ public class InteliMerge {
     filePaths.add("AbstractDateDeserializer.java");
     filePaths.add("TestClassTest.java");
     String resultPath = folderPath + File.separator + Side.INTELLI.asString() + "xx";
-    InteliMerge inteliMerge = new InteliMerge(folderPath, filePaths, resultPath);
-    inteliMerge.merge();
+    IntelliMerge intelliMerge = new IntelliMerge(folderPath, filePaths, resultPath);
+    intelliMerge.merge();
   }
 
   /** Merge a given list of files */
