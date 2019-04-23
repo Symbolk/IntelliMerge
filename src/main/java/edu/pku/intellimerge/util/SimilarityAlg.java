@@ -1,8 +1,10 @@
 package edu.pku.intellimerge.util;
 
 import com.github.gumtreediff.gen.jdt.JdtTreeGenerator;
+import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.matchers.Matcher;
 import com.github.gumtreediff.matchers.Matchers;
+import com.github.gumtreediff.matchers.SimilarityMetrics;
 import com.github.gumtreediff.tree.ITree;
 import com.github.gumtreediff.tree.TreeContext;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -155,17 +157,16 @@ public class SimilarityAlg {
     try {
       JdtTreeGenerator generator = new JdtTreeGenerator();
       generator.setKind(ASTParser.K_STATEMENTS);
-      TreeContext baseContext = generator.generateFromString(body1);
-      TreeContext othersContext = generator.generateFromString(body2);
+      TreeContext baseContext = generator.generateFrom().string(body1);
+      TreeContext othersContext = generator.generateFrom().string(body2);
       //            TreeContext src = Generators.getInstance().getTree(fSrc.getAbsolutePath());
       //            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
       ITree baseRoot = baseContext.getRoot();
       ITree othersRoot = othersContext.getRoot();
       baseRoot.getDescendants();
-      Matcher matcher = Matchers.getInstance().getMatcher(baseRoot, othersRoot);
-      baseContext.importTypeLabels(othersContext);
-      matcher.match();
-      similarity = matcher.jaccardSimilarity(baseRoot, othersRoot);
+      Matcher matcher = Matchers.getInstance().getMatcher();
+      MappingStore mappings = matcher.match(baseRoot, othersRoot);
+      similarity = SimilarityMetrics.chawatheSimilarity(baseRoot, othersRoot, mappings);
 
     } catch (IOException e) {
       e.printStackTrace();
