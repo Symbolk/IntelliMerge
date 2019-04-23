@@ -191,11 +191,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     edgeCount = buildEdges(graph, edgeCount, declObjectEdges, EdgeType.DECLARE, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, initObjectEdges, EdgeType.INITIALIZE, NodeType.CLASS);
 
-    //    edgeCount = buildEdges(graph, edgeCount, readFieldEdges, EdgeType.READ,
-    // NodeType.FIELD);
-    //    edgeCount = buildEdges(graph, edgeCount, writeFieldEdges, EdgeType.WRITE,
-    // NodeType.FIELD);
-
+    edgeCount = buildEdgesForFieldAccess(edgeCount, readFieldEdges, EdgeType.READ);
+    edgeCount = buildEdgesForFieldAccess(edgeCount, writeFieldEdges, EdgeType.WRITE);
     edgeCount = buildEdgesForMethodCall(edgeCount, methodCallExprs);
 
     // now edges are fixed
@@ -868,7 +865,58 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   }
 
   /**
-   * Fuzzy match methods, by terminalNodeSimilarity name and argument numbers (to be refined)
+   * Create field access edges with fuzzy matching
+   *
+   * @param edgeCount
+   * @param fieldAccess
+   * @param edgeType
+   * @return
+   */
+  private int buildEdgesForFieldAccess(
+      int edgeCount, Map<SemanticNode, List<FieldAccessExpr>> fieldAccess, EdgeType edgeType) {
+    for (Map.Entry<SemanticNode, List<FieldAccessExpr>> entry : fieldAccess.entrySet()) {
+      SemanticNode source = entry.getKey();
+      List<FieldAccessExpr> exprs = entry.getValue();
+      for (FieldAccessExpr expr : exprs) {
+        String fieldName = expr.getNameAsString();
+        List<SemanticNode> candidates =
+            graph.vertexSet().stream()
+                .filter(
+                    node -> {
+                      if (node.getNodeType().equals(NodeType.FIELD)) {
+                        FieldDeclNode field = (FieldDeclNode) node;
+                        return field.getFieldName().equals(fieldName);
+                      }
+                      return false;
+                    })
+                .collect(Collectors.toList());
+        if (candidates.isEmpty()) {
+          // create a dummy node for the external field
+          FieldDeclNode target =
+              new FieldDeclNode(
+                  nodeCount++,
+                  false,
+                  NodeType.FIELD,
+                  expr.getNameAsString(),
+                  fieldName,
+                  expr.toString(),
+                  fieldName,
+                  expr.getRange());
+
+          graph.addVertex(target);
+          createEdge(edgeCount++, source, target, edgeType, false);
+        } else {
+          // TODO if fuzzy matching gets multiple results, just select the first one for now
+          createEdge(
+              edgeCount++, source, candidates.get(0), edgeType, candidates.get(0).isInternal());
+        }
+      }
+    }
+    return edgeCount;
+  }
+
+  /**
+   * Create method call edges with fuzzy matching
    *
    * @param edgeCount
    * @param methodCallExprs
@@ -898,9 +946,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     })
                 .collect(Collectors.toList());
         if (candidates.isEmpty()) {
-          // fail to find the target node and build the edge, consider it as external
           List<String> argumentNames =
               expr.getArguments().stream().map(Expression::toString).collect(Collectors.toList());
+          // create a dummy node for the external method
           MethodDeclNode externalMethod =
               new MethodDeclNode(
                   nodeCount++,

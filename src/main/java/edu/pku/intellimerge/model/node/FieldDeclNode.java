@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.model.node;
 
 import com.github.javaparser.Range;
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
@@ -43,6 +42,31 @@ public class FieldDeclNode extends TerminalNode {
         range); // body initializer or ""
     this.access = access;
     this.fieldType = fieldType;
+    this.fieldName = fieldName;
+  }
+
+  // dummy/external node
+  public FieldDeclNode(
+      Integer nodeID,
+      Boolean needToMerge,
+      NodeType nodeType,
+      String displayName,
+      String qualifiedName,
+      String originalSignature,
+      String fieldName,
+      Optional<Range> range) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        "",
+        new ArrayList<>(),
+        new ArrayList<>(),
+        "",
+        range);
     this.fieldName = fieldName;
   }
 

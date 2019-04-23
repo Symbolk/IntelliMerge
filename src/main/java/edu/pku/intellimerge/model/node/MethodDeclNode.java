@@ -59,7 +59,7 @@ public class MethodDeclNode extends TerminalNode {
     this.throwExceptions = throwExceptions;
   }
 
-  // fake terminalNodeSimilarity constructor, only invocation but no definition
+  // dummy/external node
   public MethodDeclNode(
       Integer nodeID,
       Boolean needToMerge,
