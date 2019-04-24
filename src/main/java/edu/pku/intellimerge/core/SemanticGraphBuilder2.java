@@ -208,7 +208,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
         Integer index = Utils.getEdgeLabelIndex(edgeLabel);
         if (index > 0) {
-          context.putIncomingVector(index, edge.getWeight());
+          Integer value = context.getIncomingVector().get(index);
+          context.putIncomingVector(index, value + edge.getWeight());
         } else {
           logger.error("Unexpected Incoming Label:" + edgeLabel);
         }
@@ -219,7 +220,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             edge.getEdgeType().toString() + "_" + graph.getEdgeTarget(edge).getNodeType();
         Integer index = Utils.getEdgeLabelIndex(edgeLabel);
         if (index > 0) {
-          context.putIncomingVector(index, edge.getWeight());
+          Integer value = context.getOutgoingVector().get(index);
+          context.putOutgoingVector(index, value + edge.getWeight());
         } else {
           logger.error("Unexpected Outgoing Label:" + edgeLabel);
         }

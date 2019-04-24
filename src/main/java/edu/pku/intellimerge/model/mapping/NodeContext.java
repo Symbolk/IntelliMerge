@@ -11,8 +11,8 @@ public class NodeContext {
   private Set<SemanticEdge> outgoingEdges;
 
   // use map to save vectors for random access
-  private Map<Integer, Integer> incomingVector = new HashMap<>();;
-  private Map<Integer, Integer> outgoingVector = new HashMap<>();;
+  private Map<Integer, Integer> incomingVector = new HashMap<>();
+  private Map<Integer, Integer> outgoingVector = new HashMap<>();
 
   public NodeContext(
       Set<SemanticEdge> incomingEdges,
