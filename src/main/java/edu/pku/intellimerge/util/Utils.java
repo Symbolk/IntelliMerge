@@ -589,7 +589,7 @@ public class Utils {
    * side
    *
    * @param code
-   * @return
+   * @return * @deprecated replaced by format-preserving printer
    */
   public static String formatCodeWithConflicts(String code, boolean diff3Style) {
     String reformattedCode = "";

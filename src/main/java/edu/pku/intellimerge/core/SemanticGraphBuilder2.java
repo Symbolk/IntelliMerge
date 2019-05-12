@@ -552,7 +552,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     field.getTypeAsString(),
                     field.getNameAsString(),
                     body,
-                    field.getRange());
+                    fd.getRange());
             graph.addVertex(fdNode);
 
             // add edge between field and class
