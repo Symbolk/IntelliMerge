@@ -37,8 +37,11 @@ public class Graph2CodePrinter {
     // merged package imports
     StringBuilder builder = new StringBuilder();
     builder.append(cu.getComment().isEmpty() ? "" : cu.getComment() + System.lineSeparator());
-    builder.append(cu.getPackageStatement()).append(System.lineSeparator());
-    cu.getImportStatements().forEach(importStatement -> builder.append(importStatement.trim()).append(System.lineSeparator()));
+    builder.append(cu.getPackageStatement());
+    cu.getImportStatements()
+        .forEach(
+            importStatement ->
+                builder.append(importStatement.trim()).append(System.lineSeparator()));
     // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
     builder.append(System.lineSeparator()).append(printNode(node));
     //    String reformattedCode = reformatCode(builder.toString());
@@ -119,7 +122,7 @@ public class Graph2CodePrinter {
       } else {
         builder.append(node.getOriginalSignature());
       }
-      builder.append(((TerminalNode) node).getBody()).append(System.lineSeparator());
+      builder.append(((TerminalNode) node).getBody());
     } else if (node instanceof CompositeNode) {
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
         builder.append(node.getComment().isEmpty() ? "" : node.getComment());
@@ -173,10 +176,19 @@ public class Graph2CodePrinter {
       String line = null;
       while ((line = bufReader.readLine()) != null) {
         int spaceCount = line.indexOf(line.trim());
+        String indentedLine = "";
         if (spaceCount < indent) {
-          line = String.join("", Collections.nCopies(indent, " ")) + line;
+          indentedLine = String.join("", Collections.nCopies(indent, " ")) + line;
+        } else {
+          indentedLine = line;
         }
-        indentedLines.add(line);
+        if (line.contains(Utils.CONFLICT_LEFT_BEGIN)
+            || line.contains(Utils.CONFLICT_BASE_BEGIN)
+            || line.contains(Utils.CONFLICT_RIGHT_BEGIN)
+            || line.contains(Utils.CONFLICT_RIGHT_END)) {
+          indentedLine = line;
+        }
+        indentedLines.add(indentedLine);
       }
     } catch (IOException e) {
       e.printStackTrace();

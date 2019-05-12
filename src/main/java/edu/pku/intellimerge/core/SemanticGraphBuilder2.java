@@ -907,7 +907,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     return " "
         + removeSignature(
             declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""))
-        + (endWithBlankLine ? System.lineSeparator() : "");
+        + (endWithBlankLine ? System.lineSeparator() + System.lineSeparator() : "");
   }
 
   private String removeSignature(String string) {

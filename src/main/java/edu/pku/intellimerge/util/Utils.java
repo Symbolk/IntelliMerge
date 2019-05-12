@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
-  static final String CONFLICT_LEFT_BEGIN = "<<<<<<<";
-  static final String CONFLICT_BASE_BEGIN = "|||||||";
-  static final String CONFLICT_RIGHT_BEGIN = "=======";
-  static final String CONFLICT_RIGHT_END = ">>>>>>>";
+  public static final String CONFLICT_LEFT_BEGIN = "<<<<<<<";
+  public static final String CONFLICT_BASE_BEGIN = "|||||||";
+  public static final String CONFLICT_RIGHT_BEGIN = "=======";
+  public static final String CONFLICT_RIGHT_END = ">>>>>>>";
   private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
   /**
