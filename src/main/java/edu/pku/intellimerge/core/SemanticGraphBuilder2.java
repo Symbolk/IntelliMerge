@@ -526,12 +526,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .map(String::trim)
                   .collect(Collectors.toList());
           for (VariableDeclarator field : fd.getVariables()) {
-            displayName = field.toString();
+            displayName = field.toString().trim();
             qualifiedName = qualifiedTypeName + "." + displayName;
-            originalSignature = field.getTypeAsString() + " " + field.getNameAsString();
+            originalSignature = (field.getTypeAsString() + " " + field.getNameAsString()).trim();
             body =
                 field.getInitializer().isPresent()
-                    ? "=" + field.getInitializer().get().toString() + ";"
+                    ? " = " + field.getInitializer().get().toString() + ";"
                     : ";";
 
             annotations =

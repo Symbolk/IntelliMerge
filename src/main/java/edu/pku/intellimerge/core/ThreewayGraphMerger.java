@@ -139,9 +139,8 @@ public class ThreewayGraphMerger {
       if (oursNode != null && theirsNode != null) {
         CompilationUnitNode oursCU = (CompilationUnitNode) oursNode;
         CompilationUnitNode theirsCU = (CompilationUnitNode) theirsNode;
-        // TODO disable comment merging at 4.3
-//        mergedCU.setComment(
-//            mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
+        mergedCU.setComment(
+            mergeTextually(oursCU.getComment(), node.getComment(), theirsCU.getComment()));
         mergedCU.setPackageStatement(
             mergeTextually(
                 oursCU.getPackageStatement(),
@@ -198,9 +197,9 @@ public class ThreewayGraphMerger {
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
         TerminalNode theirsTerminal = (TerminalNode) theirsNode;
-//        String mergedComment =
-//            mergeTextually(
-//                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
+        String mergedComment =
+            mergeTextually(
+                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
         String mergedAnnotations =
             mergeTextually(
                 oursNode.getAnnotationsAsString(),
@@ -211,11 +210,17 @@ public class ThreewayGraphMerger {
                 oursTerminal.getModifiers(),
                 baseTerminal.getModifiers(),
                 theirsTerminal.getModifiers());
-        String mergedSignature = mergeComponents(oursTerminal, baseTerminal, theirsTerminal);
+        //        String mergedSignature = mergeComponents(oursTerminal, baseTerminal,
+        // theirsTerminal);
+        String mergedSignature =
+            mergeTextually(
+                oursTerminal.getOriginalSignature(),
+                baseTerminal.getOriginalSignature(),
+                theirsTerminal.getOriginalSignature());
         String mergedBody =
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
-//        mergedTerminal.setComment(mergedComment);
+        mergedTerminal.setComment(mergedComment);
         mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
@@ -231,8 +236,8 @@ public class ThreewayGraphMerger {
         CompositeNode mergedNonTerminal = (CompositeNode) mergedNode;
 
         // merge the comment and signature
-//        String mergedComment =
-//            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
+        String mergedComment =
+            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
         String mergedAnnotations =
             mergeTextually(
                 oursNode.getAnnotationsAsString(),
@@ -240,8 +245,13 @@ public class ThreewayGraphMerger {
                 theirsNode.getAnnotationsAsString());
         List<String> mergedModifiers =
             mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
-        String mergedSignature = mergeComponents(oursNode, node, theirsNode);
-//        mergedNonTerminal.setComment(mergedComment);
+        //        String mergedSignature = mergeComponents(oursNode, node, theirsNode);
+        String mergedSignature =
+            mergeTextually(
+                oursNode.getOriginalSignature(),
+                node.getOriginalSignature(),
+                theirsNode.getOriginalSignature());
+        mergedNonTerminal.setComment(mergedComment);
         mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
         mergedNonTerminal.setModifiers(mergedModifiers);
         mergedNonTerminal.setOriginalSignature(mergedSignature);
@@ -410,7 +420,7 @@ public class ThreewayGraphMerger {
    * @param triple
    */
   private void insertBetweenNeighbors(
-          CompositeNode parent, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
+      CompositeNode parent, Triple<SemanticNode, SemanticNode, SemanticNode> triple) {
     boolean foundNeighor = false;
     if (triple.getLeft() != null) {
       int position = parent.getChildPosition(triple.getLeft());
