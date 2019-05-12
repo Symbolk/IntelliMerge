@@ -11,8 +11,13 @@ import edu.pku.intellimerge.model.node.CompositeNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.Utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,14 +36,14 @@ public class Graph2CodePrinter {
         Utils.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
-    builder.append(cu.getComment()).append("\n");
-    builder.append(cu.getPackageStatement()).append("\n");
+    builder.append(cu.getComment().isEmpty() ? "" : cu.getComment() + System.lineSeparator());
+    builder.append(cu.getPackageStatement()).append(System.lineSeparator());
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
     // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
-    builder.append("\n").append(printNode(node));
+    builder.append(System.lineSeparator()).append(printNode(node));
     //    String reformattedCode = reformatCode(builder.toString());
-    String reformattedCode = Utils.formatCodeWithConflicts(builder.toString(), false);
-    Utils.writeContent(resultFilePath, reformattedCode, false);
+    //    String reformattedCode = Utils.formatCodeWithConflicts(builder.toString(), false);
+    Utils.writeContent(resultFilePath, builder.toString(), false);
     return resultFilePath;
   }
 
@@ -95,23 +100,35 @@ public class Graph2CodePrinter {
    * @return
    */
   private static String printNode(SemanticNode node) {
+    int indent = 0;
+    if (node.getRange().isPresent()) {
+      indent = node.getRange().get().begin.column - 1;
+    }
     StringBuilder builder = new StringBuilder();
     if (node instanceof TerminalNode) {
-      builder.append(node.getComment());
-      builder.append(node.getAnnotations().stream().collect(Collectors.joining("\n"))).append("\n");
+      builder.append(node.getComment().isEmpty() ? "" : node.getComment());
+      builder.append(
+          node.getAnnotations().isEmpty()
+              ? ""
+              : node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
+                  + System.lineSeparator());
       builder.append(node.getModifiers().stream().collect(Collectors.joining(" "))).append(" ");
       if (node.getNodeType().equals(NodeType.INITIALIZER_BLOCK)) {
         builder.append(node.getOriginalSignature().contains("static") ? "static" : "");
       } else {
         builder.append(node.getOriginalSignature());
       }
-      builder.append(((TerminalNode) node).getBody()).append("\n");
+      builder.append(((TerminalNode) node).getBody()).append(System.lineSeparator());
     } else if (node instanceof CompositeNode) {
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append(node.getComment());
-        builder.append(node.getAnnotations().stream().collect(Collectors.joining("\n"))).append("\n");
+        builder.append(node.getComment().isEmpty() ? "" : node.getComment());
+        builder.append(
+            node.getAnnotations().isEmpty()
+                ? ""
+                : node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
+                    + System.lineSeparator());
         builder.append(node.getOriginalSignature());
-        builder.append("{\n");
+        builder.append(" {" + System.lineSeparator());
       }
       if (node.getNodeType().equals(NodeType.ENUM)) {
         int childrenSize = node.getChildren().size();
@@ -129,14 +146,40 @@ public class Graph2CodePrinter {
         }
       } else {
         for (SemanticNode child : node.getChildren()) {
-          builder.append(printNode(child)).append("\n");
+          builder.append(printNode(child)).append(System.lineSeparator());
         }
       }
 
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append("\n}\n");
+        builder.append(System.lineSeparator() + "}" + System.lineSeparator());
       }
     }
-    return builder.toString();
+    return indentCodeLines(builder.toString(), indent);
+  }
+
+  /**
+   * Indent lines of code
+   *
+   * @param code
+   * @param indent
+   */
+  private static String indentCodeLines(String code, int indent) {
+    List<String> indentedLines = new ArrayList<>();
+    try {
+
+      BufferedReader bufReader = new BufferedReader(new StringReader(code));
+
+      String line = null;
+      while ((line = bufReader.readLine()) != null) {
+        int spaceCount = line.indexOf(line.trim());
+        if (spaceCount < indent) {
+          line = String.join("", Collections.nCopies(indent, " ")) + line;
+        }
+        indentedLines.add(line);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return indentedLines.stream().collect(Collectors.joining(System.lineSeparator()));
   }
 }

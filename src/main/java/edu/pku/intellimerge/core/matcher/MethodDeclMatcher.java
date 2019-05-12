@@ -50,7 +50,7 @@ public class MethodDeclMatcher {
     }
     // bipartite / to match most likely renamed methods
     // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
-    //    biPartite.edgeSet();
+        biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -73,8 +73,7 @@ public class MethodDeclMatcher {
   /**
    * Match possible extracted methods from unmatched methods
    *
-   * @param matching
-   * @param unmatchedMethods
+   * @param matching  * @param unmatchedMethods
    */
   public void matchExtractMethod(TwowayMatching matching, List<SemanticNode> unmatchedMethods) {
     //    BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();

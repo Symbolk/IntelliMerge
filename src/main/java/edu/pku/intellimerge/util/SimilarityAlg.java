@@ -163,7 +163,7 @@ public class SimilarityAlg {
       //            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
       ITree baseRoot = baseContext.getRoot();
       ITree othersRoot = othersContext.getRoot();
-      baseRoot.getDescendants();
+//      baseRoot.getDescendants();
       Matcher matcher = Matchers.getInstance().getMatcher();
       MappingStore mappings = matcher.match(baseRoot, othersRoot);
       similarity = SimilarityMetrics.chawatheSimilarity(baseRoot, othersRoot, mappings);

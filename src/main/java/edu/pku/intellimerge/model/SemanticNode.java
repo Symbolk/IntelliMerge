@@ -1,10 +1,12 @@
 package edu.pku.intellimerge.model;
 
+import com.github.javaparser.Range;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.mapping.NodeContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class SemanticNode {
@@ -32,6 +34,7 @@ public abstract class SemanticNode {
   private List<String> modifiers;
   // whether the node is defined inside the graph or not
   private boolean isInternal;
+  private Optional<Range> range;
 
   public SemanticNode() {}
 
@@ -44,7 +47,8 @@ public abstract class SemanticNode {
       String originalSignature,
       String comment,
       List<String> annotations,
-      List<String> modifiers) {
+      List<String> modifiers,
+      Optional<Range> range) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -56,6 +60,7 @@ public abstract class SemanticNode {
     this.modifiers = modifiers;
     this.children = new ArrayList<>();
     this.isInternal = true;
+    this.range = range;
   }
 
   public SemanticNode(
@@ -68,7 +73,8 @@ public abstract class SemanticNode {
       String comment,
       List<String> annotations,
       List<String> modifiers,
-      boolean isInternal) {
+      boolean isInternal,
+      Optional<Range> range) {
     this.nodeID = nodeID;
     this.needToMerge = needToMerge;
     this.nodeType = nodeType;
@@ -79,7 +85,7 @@ public abstract class SemanticNode {
     this.annotations = annotations;
     this.modifiers = modifiers;
     this.children = new ArrayList<>();
-    this.isInternal = isInternal;
+    this.range = range;
   }
 
   public boolean isInternal() {
@@ -142,6 +148,13 @@ public abstract class SemanticNode {
     this.modifiers = modifiers;
   }
 
+  public Optional<Range> getRange() {
+    return range;
+  }
+
+  public void setRange(Optional<Range> range) {
+    this.range = range;
+  }
   /** The unique identifier of the node in this project */
   public abstract String getSignature();
 

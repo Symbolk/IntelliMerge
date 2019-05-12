@@ -1,13 +1,13 @@
 package edu.pku.intellimerge.model.node;
 
+import com.github.javaparser.Range;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-/**
- * Class or Interface Declaration
- */
+/** Class or Interface Declaration */
 public class TypeDeclNode extends CompositeNode {
   private String access; // can be empty for most inner class
   private String type; // annotation/class/interface/enum
@@ -27,8 +27,19 @@ public class TypeDeclNode extends CompositeNode {
       String access,
       List<String> modifiers,
       String type,
-      String typeName) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations, modifiers);
+      String typeName,
+      Optional<Range> range) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations,
+        modifiers,
+        range);
     this.access = access;
     this.type = type;
     this.typeName = typeName;
@@ -43,5 +54,4 @@ public class TypeDeclNode extends CompositeNode {
   public void setImplementTypes(List<String> implementTypes) {
     this.implementTypes = implementTypes;
   }
-
 }

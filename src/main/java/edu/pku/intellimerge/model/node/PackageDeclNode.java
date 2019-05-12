@@ -1,8 +1,10 @@
 package edu.pku.intellimerge.model.node;
 
+import com.github.javaparser.Range;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.List;
+import java.util.Optional;
 
 public class PackageDeclNode extends CompositeNode {
   private String packageName;
@@ -18,8 +20,18 @@ public class PackageDeclNode extends CompositeNode {
       String comment,
       List<String> annotations,
       String packageName,
-      List<String> packageNameHierachy) {
-    super(nodeID, needToMerge, nodeType, displayName, qualifiedName, originalSignature, comment, annotations);
+      List<String> packageNameHierachy,
+      Optional<Range> range) {
+    super(
+        nodeID,
+        needToMerge,
+        nodeType,
+        displayName,
+        qualifiedName,
+        originalSignature,
+        comment,
+        annotations,
+        range);
     this.packageName = packageName;
     this.packageNameHierachy = packageNameHierachy;
   }

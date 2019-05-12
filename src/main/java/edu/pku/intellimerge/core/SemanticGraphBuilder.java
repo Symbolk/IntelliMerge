@@ -143,8 +143,7 @@ public class SemanticGraphBuilder {
       List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParseParallelized();
       //      List<ParseResult<CompilationUnit>> parseResults = sourceRoot.tryToParse();
       compilationUnits.addAll(
-          parseResults
-              .stream()
+          parseResults.stream()
               .filter(ParseResult::isSuccessful)
               .map(r -> r.getResult().get())
               .collect(Collectors.toList()));
@@ -203,8 +202,7 @@ public class SemanticGraphBuilder {
             relativePath,
             absolutePath,
             cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
-            cu.getImports()
-                .stream()
+            cu.getImports().stream()
                 .map(ImportDeclaration::toString)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
@@ -218,9 +216,7 @@ public class SemanticGraphBuilder {
       // if not exist, create one
       String finalPackageName = packageName;
       Optional<SemanticNode> packageDeclNodeOpt =
-          graph
-              .vertexSet()
-              .stream()
+          graph.vertexSet().stream()
               .filter(
                   node ->
                       node.getNodeType().equals(NodeType.PACKAGE)
@@ -236,13 +232,12 @@ public class SemanticGraphBuilder {
                 packageDeclaration.getNameAsString(),
                 packageDeclaration.toString().trim(),
                 packageDeclaration.getComment().map(Comment::toString).orElse(""),
-                packageDeclaration
-                    .getAnnotations()
-                    .stream()
+                packageDeclaration.getAnnotations().stream()
                     .map(AnnotationExpr::toString)
                     .collect(Collectors.toList()),
                 finalPackageName,
-                Arrays.asList(finalPackageName.split(".")));
+                Arrays.asList(finalPackageName.split(".")),
+                packageDeclaration.getRange());
         graph.addVertex(cuNode);
         graph.addVertex(packageDeclNode);
         graph.addEdge(
@@ -357,12 +352,14 @@ public class SemanticGraphBuilder {
             access,
             modifiers,
             nodeType.asString(),
-            displayName);
+            displayName,
+            td.getRange());
     return tdNode;
   }
 
   /**
-   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type declaration
+   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type
+   * declaration
    *
    * @param td
    * @param tdNode
@@ -420,8 +417,7 @@ public class SemanticGraphBuilder {
                     qualifiedName,
                     originalSignature,
                     fd.getComment().map(Comment::toString).orElse(""),
-                    fd.getAnnotations()
-                        .stream()
+                    fd.getAnnotations().stream()
                         .map(AnnotationExpr::toString)
                         .collect(Collectors.toList()),
                     access,
@@ -478,8 +474,7 @@ public class SemanticGraphBuilder {
                   qualifiedName,
                   cd.getDeclarationAsString(),
                   cd.getComment().map(Comment::toString).orElse(""),
-                  cd.getAnnotations()
-                      .stream()
+                  cd.getAnnotations().stream()
                       .map(AnnotationExpr::toString)
                       .collect(Collectors.toList()),
                   modifiers,
@@ -506,30 +501,25 @@ public class SemanticGraphBuilder {
           modifiers =
               md.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
           List<String> annotations =
-              md.getAnnotations()
-                  .stream()
+              md.getAnnotations().stream()
                   .map(AnnotationExpr::toString)
                   .collect(Collectors.toList());
           List<String> typeParameters =
-              md.getTypeParameters()
-                  .stream()
+              md.getTypeParameters().stream()
                   .map(TypeParameter::asString)
                   .collect(Collectors.toList());
 
           List<String> parameterTypes =
-              md.getParameters()
-                  .stream()
+              md.getParameters().stream()
                   .map(Parameter::getType)
                   .map(Type::asString)
                   .collect(Collectors.toList());
           List<String> parameterNames =
-              md.getParameters()
-                  .stream()
+              md.getParameters().stream()
                   .map(Parameter::getNameAsString)
                   .collect(Collectors.toList());
           List<String> throwsExceptions =
-              md.getThrownExceptions()
-                  .stream()
+              md.getThrownExceptions().stream()
                   .map(ReferenceType::toString)
                   .collect(Collectors.toList());
           MethodDeclNode mdNode =
@@ -563,8 +553,8 @@ public class SemanticGraphBuilder {
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity or constructor)
-   * body
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity
+   * or constructor) body
    *
    * @param cd
    * @param node
@@ -767,8 +757,7 @@ public class SemanticGraphBuilder {
   public SemanticNode getTargetNode(
       Set<SemanticNode> vertexSet, String targetQualifiedName, NodeType targetNodeType) {
     Optional<SemanticNode> targetNodeOpt =
-        vertexSet
-            .stream()
+        vertexSet.stream()
             .filter(
                 node ->
                     node.getNodeType().equals(targetNodeType)

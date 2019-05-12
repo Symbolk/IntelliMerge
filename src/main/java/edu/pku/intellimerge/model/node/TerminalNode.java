@@ -1,7 +1,6 @@
 package edu.pku.intellimerge.model.node;
 
 import com.github.javaparser.Range;
-import edu.pku.intellimerge.exception.RangeNullException;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 
@@ -11,7 +10,6 @@ import java.util.Optional;
 
 public class TerminalNode extends SemanticNode {
 
-  private Optional<Range> range;
   private String body;
 
   public TerminalNode(
@@ -35,9 +33,9 @@ public class TerminalNode extends SemanticNode {
         originalSignature,
         comment,
         annotations,
-        modifiers);
+        modifiers,
+        range);
     this.body = body;
-    this.range = range; // since javaparser stores range in Optional, so directly save it
   }
 
   public TerminalNode(
@@ -58,8 +56,8 @@ public class TerminalNode extends SemanticNode {
         "",
         new ArrayList<>(),
         new ArrayList<>(),
-        false);
-    this.range = range; // since javaparser stores range in Optional, so directly save it
+        false,
+        range);
   }
 
   @Override
@@ -75,7 +73,7 @@ public class TerminalNode extends SemanticNode {
         this.getAnnotations(),
         this.getModifiers(),
         this.getBody(),
-        this.range);
+        this.getRange());
   }
 
   @Override
@@ -91,14 +89,6 @@ public class TerminalNode extends SemanticNode {
   @Override
   public List<SemanticNode> getChildren() {
     return new ArrayList<>();
-  }
-
-  public Range getRange() throws RangeNullException {
-    return range.orElseThrow(() -> new RangeNullException("Range is null for :", this));
-  }
-
-  public void setRange(Optional<Range> range) {
-    this.range = range;
   }
 
   public String getBody() {

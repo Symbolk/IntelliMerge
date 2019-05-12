@@ -8,6 +8,8 @@ import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
 import org.jgrapht.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -18,6 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class IntelliMerge {
+  private static final Logger logger = LoggerFactory.getLogger(IntelliMerge.class);
+
   private String folderPath;
   private List<String> fileRelativePaths;
   private String resultFolderPath;
@@ -34,9 +38,9 @@ public class IntelliMerge {
 
     String folderPath = "D:\\github\\test2";
     List<String> filePaths = new ArrayList<>();
-    filePaths.add("AbstractDateDeserializer.java");
-    filePaths.add("TestClassTest.java");
-    String resultPath = folderPath + File.separator + Side.INTELLI.asString() + "xx";
+//    filePaths.add("AbstractDateDeserializer.java");
+    filePaths.add("SourceRoot.java");
+    String resultPath = folderPath + File.separator + Side.INTELLI.asString();
     IntelliMerge intelliMerge = new IntelliMerge(folderPath, filePaths, resultPath);
     intelliMerge.merge();
   }
@@ -58,13 +62,17 @@ public class IntelliMerge {
       Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
       Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
 
+      logger.info("Graph building done.");
       executorService.shutdown();
 
       Utils.prepareDir(resultFolderPath);
       ThreewayGraphMerger merger =
           new ThreewayGraphMerger(resultFolderPath, oursGraph, baseGraph, theirsGraph);
       merger.threewayMap();
+      logger.info("Graph mapping done.");
+
       merger.threewayMerge();
+      logger.info("Graph merging done.");
 
     } catch (InterruptedException e) {
       e.printStackTrace();

@@ -69,10 +69,6 @@ public class Refactoring {
   }
 
   public Range getRangeForTerminalNode(SemanticNode node) throws RangeNullException {
-    if (node instanceof TerminalNode) {
-      return ((TerminalNode) node).getRange();
-    } else {
-      return null;
-    }
+    return node.getRange().orElseThrow(() -> new RangeNullException("Range is null for: ", node));
   }
 }

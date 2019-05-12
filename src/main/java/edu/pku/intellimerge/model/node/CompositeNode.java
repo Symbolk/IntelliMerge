@@ -1,13 +1,16 @@
 package edu.pku.intellimerge.model.node;
 
+import com.github.javaparser.Range;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class CompositeNode extends SemanticNode {
 
+  // type decl
   public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
@@ -17,7 +20,8 @@ public class CompositeNode extends SemanticNode {
       String originalSignature,
       String comment,
       List<String> annotations,
-      List<String> modifiers) {
+      List<String> modifiers,
+      Optional<Range> range) {
     super(
         nodeID,
         needToMerge,
@@ -27,10 +31,11 @@ public class CompositeNode extends SemanticNode {
         originalSignature,
         comment,
         annotations,
-        modifiers);
+        modifiers,
+        range);
   }
 
-  // some nonterminal nodes do not have annotations or modifiers
+  // package decl nodes do not have annotations or modifiers
   public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
@@ -39,7 +44,8 @@ public class CompositeNode extends SemanticNode {
       String qualifiedName,
       String originalSignature,
       String comment,
-      List<String> annotations) {
+      List<String> annotations,
+      Optional<Range> range) {
     super(
         nodeID,
         needToMerge,
@@ -49,9 +55,11 @@ public class CompositeNode extends SemanticNode {
         originalSignature,
         comment,
         annotations,
-        new ArrayList<>());
+        new ArrayList<>(),
+        range);
   }
 
+  // compilation unit decl
   public CompositeNode(
       Integer nodeID,
       Boolean needToMerge,
@@ -69,7 +77,8 @@ public class CompositeNode extends SemanticNode {
         originalSignature,
         comment,
         new ArrayList<>(),
-        new ArrayList<>());
+        new ArrayList<>(),
+        Optional.empty());
   }
 
   @Override
@@ -83,7 +92,8 @@ public class CompositeNode extends SemanticNode {
         this.getOriginalSignature(),
         this.getComment(),
         this.getAnnotations(),
-        this.getModifiers());
+        this.getModifiers(),
+        this.getRange());
   }
 
   @Override
