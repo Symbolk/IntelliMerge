@@ -1,6 +1,7 @@
 package edu.pku.intellimerge.core;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.JavaToken;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.*;
@@ -888,9 +889,25 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private String getCallableBody(CallableDeclaration declaration) {
+    boolean endWithBlankLine = false;
+    Optional<JavaToken> nextToken =
+        declaration
+            .getTokenRange()
+            .map(TokenRange::getEnd)
+            .map(JavaToken::getNextToken)
+            .orElse(Optional.empty());
+    if (nextToken.isPresent()) {
+      if (nextToken.get().getCategory().isEndOfLine()) {
+        Optional<JavaToken> nextNextToken = nextToken.get().getNextToken();
+        if (nextNextToken.isPresent()) {
+          endWithBlankLine = nextNextToken.get().getCategory().isEndOfLine();
+        }
+      }
+    }
     return " "
         + removeSignature(
-            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""));
+            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""))
+        + (endWithBlankLine ? System.lineSeparator() : "");
   }
 
   private String removeSignature(String string) {

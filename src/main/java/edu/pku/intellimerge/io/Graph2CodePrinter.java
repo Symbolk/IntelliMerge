@@ -52,7 +52,8 @@ public class Graph2CodePrinter {
    *
    * @param code
    * @return
-   * @deprecated replaced by Utils.formatCodeWithConflicts()
+   * @deprecated
+   * @see Utils#formatCodeWithConflicts(String, boolean)
    */
   private static String reformatCode(String code) {
     String reformattedCode = "";
@@ -151,7 +152,7 @@ public class Graph2CodePrinter {
       }
 
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append(System.lineSeparator() + "}" + System.lineSeparator());
+        builder.append("}" + System.lineSeparator());
       }
     }
     return indentCodeLines(builder.toString(), indent);
