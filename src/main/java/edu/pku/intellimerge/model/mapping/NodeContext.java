@@ -3,6 +3,7 @@ package edu.pku.intellimerge.model.mapping;
 import edu.pku.intellimerge.model.SemanticEdge;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +14,15 @@ public class NodeContext {
   // use map to save vectors for random access
   private Map<Integer, Integer> incomingVector = new HashMap<>();
   private Map<Integer, Integer> outgoingVector = new HashMap<>();
+
+  public NodeContext(){
+    this.incomingEdges = new HashSet<>();
+    this.outgoingEdges = new HashSet<>();
+    for (Integer i = 0; i < EdgeLabel.values().length; i++) {
+      this.incomingVector.put(i, 0);
+      this.outgoingVector.put(i, 0);
+    }
+  }
 
   public NodeContext(
       Set<SemanticEdge> incomingEdges,
@@ -56,5 +66,17 @@ public class NodeContext {
 
   public void putOutgoingVector(Integer key, Integer value) {
     this.outgoingVector.put(key, value);
+  }
+
+  public NodeContext join(NodeContext context) {
+    this.incomingEdges.addAll(context.getIncomingEdges());
+    this.outgoingEdges.addAll(context.getOutgoingEdges());
+    context
+        .getIncomingVector()
+        .forEach((key, value) -> this.incomingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+    context
+        .getOutgoingVector()
+        .forEach((key, value) -> this.outgoingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+    return this;
   }
 }

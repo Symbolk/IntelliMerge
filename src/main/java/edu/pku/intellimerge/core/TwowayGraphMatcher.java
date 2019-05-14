@@ -71,16 +71,6 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
   public void bottomUpMatch() {
     // divide and conquer: match each type of nodes separately
 
-    // 4. Types
-    TypeDeclMatcher typeDeclMatcher = new TypeDeclMatcher();
-    List<SemanticNode> unmatchedTypes1 =
-        matching.unmatchedNodes1.getOrDefault(NodeType.CLASS, new ArrayList<>());
-    List<SemanticNode> unmatchedTypes2 =
-        matching.unmatchedNodes2.getOrDefault(NodeType.CLASS, new ArrayList<>());
-    if (!unmatchedTypes1.isEmpty() && !unmatchedTypes2.isEmpty()) {
-      typeDeclMatcher.matchClass(matching, unmatchedTypes1, unmatchedTypes2);
-    }
-
     // 1. Methods
     // if only there are unmatched nodes, try to match
     MethodDeclMatcher methodDeclMatcher = new MethodDeclMatcher();
@@ -88,14 +78,12 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
         matching.unmatchedNodes1.getOrDefault(NodeType.METHOD, new ArrayList<>());
     List<SemanticNode> unmatchedMethods2 =
         matching.unmatchedNodes2.getOrDefault(NodeType.METHOD, new ArrayList<>());
-    // TODO avoid subjection
     if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }
     if (!unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchExtractMethod(matching, unmatchedMethods2);
     }
-    if (!unmatchedMethods2.isEmpty()) {}
 
     // 2. Fields
     FieldDeclMatcher fieldDeclMatcher = new FieldDeclMatcher();
@@ -117,6 +105,19 @@ public class TwowayGraphMatcher implements Callable<TwowayMatching> {
       constructorDeclMatcher.matchConstructors(
           matching, unmatchedConstructors1, unmatchedConstructors2);
     }
+
+    // 4. Types
+    TypeDeclMatcher typeDeclMatcher = new TypeDeclMatcher();
+    List<SemanticNode> unmatchedTypes1 =
+            matching.unmatchedNodes1.getOrDefault(NodeType.CLASS, new ArrayList<>());
+    List<SemanticNode> unmatchedTypes2 =
+            matching.unmatchedNodes2.getOrDefault(NodeType.CLASS, new ArrayList<>());
+    if (!unmatchedTypes1.isEmpty() && !unmatchedTypes2.isEmpty()) {
+      typeDeclMatcher.matchClass(matching, unmatchedTypes1, unmatchedTypes2);
+    }
+
+    // 5. Packages
+
 
     matching.getOne2OneRefactoring();
   }

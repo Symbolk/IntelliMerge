@@ -3,11 +3,16 @@ package edu.pku.intellimerge.core;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
+import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
+import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.NodeCluster;
+import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.*;
+import edu.pku.intellimerge.util.SimilarityAlg;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -18,12 +23,16 @@ import org.eclipse.jgit.merge.MergeAlgorithm;
 import org.eclipse.jgit.merge.MergeFormatter;
 import org.eclipse.jgit.merge.MergeResult;
 import org.jgrapht.Graph;
+import org.jgrapht.alg.matching.MaximumWeightBipartiteMatching;
+import org.jgrapht.graph.DefaultUndirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
@@ -97,6 +106,156 @@ public class ThreewayGraphMerger {
     //    } catch (ExecutionException e) {
     //      e.printStackTrace();
     //    }
+  }
+
+  /** Directly map nodes from 3 graphs based on entropy algorithm */
+  public void threewayMap2() {
+    // 1. top down map nodes from 3 graphs
+    List<NodeCluster> nodeClusters = new ArrayList<>();
+    List<SemanticNode> baseUnmatched = new ArrayList<>();
+    List<SemanticNode> leftUnmatched = new ArrayList<>();
+    List<SemanticNode> rightUnmatched = new ArrayList<>();
+    Map<Integer, SemanticNode> baseMap = getNodeMap(baseGraph);
+    Map<Integer, SemanticNode> leftMap = getNodeMap(oursGraph);
+    Map<Integer, SemanticNode> rightMap = getNodeMap(theirsGraph);
+    for (Map.Entry<Integer, SemanticNode> entry : baseMap.entrySet()) {
+      boolean matchedInLeft = leftMap.containsKey(entry.getKey());
+      boolean matchedInRight = rightMap.containsKey(entry.getKey());
+      NodeCluster cluster = new NodeCluster();
+      if (matchedInLeft && matchedInRight) {
+        cluster.addNode(entry.getValue(), Side.BASE);
+        cluster.addNode(leftMap.get(entry.getKey()), Side.OURS);
+        cluster.addNode(rightMap.get(entry.getKey()), Side.THEIRS);
+        leftMap.remove(entry.getKey());
+        rightMap.remove(entry.getKey());
+        nodeClusters.add(cluster);
+      } else {
+        if (matchedInLeft) {
+          cluster.addNode(entry.getValue(), Side.BASE);
+          cluster.addNode(leftMap.get(entry.getKey()), Side.OURS);
+          leftMap.remove(entry.getKey());
+          nodeClusters.add(cluster);
+        } else if (matchedInRight) {
+          cluster.addNode(entry.getValue(), Side.BASE);
+          cluster.addNode(rightMap.get(entry.getKey()), Side.THEIRS);
+          rightMap.remove(entry.getKey());
+          nodeClusters.add(cluster);
+        } else {
+          baseUnmatched.add(entry.getValue());
+        }
+      }
+    }
+    leftMap.entrySet().forEach(entry -> leftUnmatched.add(entry.getValue()));
+    rightMap.entrySet().forEach(entry -> rightUnmatched.add(entry.getValue()));
+
+    // 2. biparitie matching to find mapping with changed signature but similiar context
+    List<Refactoring> b2lRefs = biparitieMatch(baseUnmatched, leftUnmatched);
+    List<Refactoring> b2rRefs = biparitieMatch(baseUnmatched, rightUnmatched);
+    for (Refactoring ref1 : b2lRefs) {
+      boolean matchedInOtherSide = false;
+      for (Refactoring ref2 : b2rRefs) {
+        if (ref1.getBefore().equals(ref2.getBefore())) {
+          matchedInOtherSide = true;
+          // only n=3
+          NodeCluster cluster = new NodeCluster();
+          cluster.addNode(ref1.getBefore(), Side.BASE);
+          cluster.addNode(ref1.getAfter(), Side.OURS);
+          cluster.addNode(ref2.getAfter(), Side.THEIRS);
+        }
+      }
+    }
+
+    // 3. for unmatched nodes, find nodes at the other side of specific edges
+    // TODO for other type of unmatched nodes
+    List<SemanticNode> leftUnmatchedMethods =
+        leftUnmatched.stream()
+            .filter(node -> node.getNodeType().equals(NodeType.METHOD))
+            .collect(Collectors.toList());
+    for (SemanticNode node : leftUnmatchedMethods) {
+      // find callers in left
+      Set<MethodDeclNode> callers = new HashSet<>();
+      for (SemanticEdge edge : node.getContext().getIncomingEdges()) {
+        if (edge.getEdgeType().equals(EdgeType.CALL)) {
+          SemanticNode sourceNode = oursGraph.getEdgeSource(edge);
+          if (sourceNode instanceof MethodDeclNode) {
+            callers.add((MethodDeclNode) sourceNode);
+          }
+        }
+      }
+      callers.size();
+      // for every caller, find which cluster it is (if exists)
+
+    }
+    // 4. compute and compare entropy before and after merging unmatched nodes
+
+    // 5. util: all unmatched nodes are visited
+  }
+
+  /**
+   * Match nodes from two lists
+   *
+   * @param nodes1 base
+   * @param nodes2 left/right
+   */
+  public List<Refactoring> biparitieMatch(List<SemanticNode> nodes1, List<SemanticNode> nodes2) {
+    double MIN_SIMI = 0.618D;
+    List<Refactoring> refactorings = new ArrayList<>();
+    // use bipartite to match methods according to similarity
+    Set<SemanticNode> partition1 = new HashSet<>();
+    Set<SemanticNode> partition2 = new HashSet<>();
+    // should be simple graph: no self-loops and no multiple edges
+    DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite =
+        new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+    for (SemanticNode node1 : nodes1) {
+      for (SemanticNode node2 : nodes2) {
+        biPartite.addVertex(node1);
+        partition1.add(node1);
+        biPartite.addVertex(node2);
+        partition2.add(node2);
+        biPartite.addEdge(node1, node2);
+        double similarity =
+            SimilarityAlg.terminalNodeSimilarity((MethodDeclNode) node1, (MethodDeclNode) node2);
+        biPartite.setEdgeWeight(node1, node2, similarity);
+      }
+    }
+    // bipartite / to match most likely renamed methods
+    // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
+    biPartite.edgeSet();
+    MaximumWeightBipartiteMatching matcher =
+        new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
+    // add one2oneMatchings found and remove from unmatched
+    Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
+    for (DefaultWeightedEdge edge : edges) {
+      SemanticNode sourceNode = biPartite.getEdgeSource(edge);
+      SemanticNode targetNode = biPartite.getEdgeTarget(edge);
+      double confidence = biPartite.getEdgeWeight(edge);
+      if (confidence >= MIN_SIMI) {
+        Refactoring refactoring =
+            new Refactoring(
+                RefactoringType.CHANGE_SIGNATURE,
+                sourceNode.getNodeType(),
+                confidence,
+                sourceNode,
+                targetNode);
+        refactorings.add(refactoring);
+      }
+    }
+
+    return refactorings;
+  }
+  /**
+   * Get a hash map, with signature hash value as key and node itself as value
+   *
+   * @param graph
+   * @return
+   */
+  private Map<Integer, SemanticNode> getNodeMap(Graph<SemanticNode, SemanticEdge> graph) {
+    return graph.vertexSet().stream()
+        .filter(SemanticNode::needToMerge)
+        .collect(
+            Collectors.toMap(
+                SemanticNode::hashCodeSignature, Function.identity(), (o, n) -> o, HashMap::new));
   }
 
   /**

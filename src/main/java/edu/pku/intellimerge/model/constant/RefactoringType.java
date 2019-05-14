@@ -10,6 +10,7 @@ public enum RefactoringType {
   CHANGE_FIELD_SIGNATURE("Change Field Signature", true),
   // rename type/move type
   CHANGE_TYPE_SIGNATURE("Change Type Signature", true),
+  CHANGE_SIGNATURE("Change Signature", true),
 
   // many2many match
   // extract terminalNodeSimilarity

@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.client;
 
+import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -14,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class IntelliMerge {
   private static final Logger logger = LoggerFactory.getLogger(IntelliMerge.class);
@@ -39,6 +37,7 @@ public class IntelliMerge {
     String folderPath = "D:\\github\\test2";
     List<String> filePaths = new ArrayList<>();
 //    filePaths.add("AbstractDateDeserializer.java");
+//    filePaths.add("TestClassTest.java");
     filePaths.add("SourceRoot.java");
     String resultPath = folderPath + File.separator + Side.INTELLI.asString();
     IntelliMerge intelliMerge = new IntelliMerge(folderPath, filePaths, resultPath);
@@ -47,6 +46,8 @@ public class IntelliMerge {
 
   /** Merge a given list of files */
   public void merge() {
+    Stopwatch stopwatch = Stopwatch.createStarted();
+
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
@@ -68,11 +69,14 @@ public class IntelliMerge {
       Utils.prepareDir(resultFolderPath);
       ThreewayGraphMerger merger =
           new ThreewayGraphMerger(resultFolderPath, oursGraph, baseGraph, theirsGraph);
-      merger.threewayMap();
+      merger.threewayMap2();
       logger.info("Graph mapping done.");
 
       merger.threewayMerge();
       logger.info("Graph merging done.");
+
+      stopwatch.stop();
+      logger.info("Overall time cost: {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     } catch (InterruptedException e) {
       e.printStackTrace();

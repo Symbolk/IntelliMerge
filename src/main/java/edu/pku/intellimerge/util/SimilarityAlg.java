@@ -26,6 +26,20 @@ import java.util.stream.Collectors;
 public class SimilarityAlg {
 
   /**
+   * Compute the similarity between two nodes
+   * @param node1
+   * @param node2
+   * @return
+   */
+  public static double nodeSimilarity(SemanticNode node1, SemanticNode node2) {
+    if (node1 instanceof TerminalNode) {
+      return terminalNodeSimilarity((TerminalNode) node1, (TerminalNode) node2);
+    } else {
+      return compositeNodeSimilarity((CompositeNode) node1, (CompositeNode) node2);
+    }
+  }
+
+  /**
    * Compute the similarity between two terminalNodeSimilarity declarations, considering signature
    * as well as context
    *
@@ -163,7 +177,7 @@ public class SimilarityAlg {
       //            TreeContext dst = Generators.getInstance().getTree(fDst.getAbsolutePath());
       ITree baseRoot = baseContext.getRoot();
       ITree othersRoot = othersContext.getRoot();
-//      baseRoot.getDescendants();
+      //      baseRoot.getDescendants();
       Matcher matcher = Matchers.getInstance().getMatcher();
       MappingStore mappings = matcher.match(baseRoot, othersRoot);
       similarity = SimilarityMetrics.chawatheSimilarity(baseRoot, othersRoot, mappings);
