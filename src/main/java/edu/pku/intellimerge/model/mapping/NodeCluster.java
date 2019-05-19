@@ -4,8 +4,8 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.SimilarityAlg;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class NodeCluster {
   private List<SemanticNode> baseNodes; // assert: non empty
@@ -37,13 +37,15 @@ public class NodeCluster {
     }
     // join the context
     this.context.join(node.getContext());
-    // recompute the entropy
-    // TODO: add the context entropy
-    this.entropy = computeContentEntropy();
   }
 
+  /**
+   * Compute the content of node cluster
+   *
+   * @return
+   */
   private double computeContentEntropy() {
-    double contentEntropy = 0D;
+    double entropy = 0D;
     int numOfNodes = getNumOfNodes();
     for (SemanticNode nX : getAllNodes()) {
       double pX = 1.0 / numOfNodes;
@@ -53,9 +55,64 @@ public class NodeCluster {
         double simXY = SimilarityAlg.nodeSimilarity(nX, nY);
         sum += pY * simXY;
       }
-      contentEntropy += pX * Math.log(sum) / Math.log(2);
+      entropy += pX * Math.log(sum) / Math.log(2);
     }
-    return Math.abs(contentEntropy) * -1;
+    return Math.abs(entropy);
+  }
+
+  /**
+   * Compute context entropy for incoming or outgoing edges
+   *
+   * @param inOrOut true == in
+   * @return entropy >= 0.0
+   */
+  private double computeContextEntropy(boolean inOrOut) {
+    double entropy = 0D;
+    // views from graphs composes view set
+    List<Set<Integer>> viewCollection = new ArrayList<>();
+
+    // for every graph, compute types that are not 0 from vector as its view
+    viewCollection.add(getViewFromGraph(baseNodes, inOrOut));
+    viewCollection.add(getViewFromGraph(leftNodes, inOrOut));
+    viewCollection.add(getViewFromGraph(rightNodes, inOrOut));
+
+    viewCollection =
+        viewCollection.stream()
+            .filter(collection -> collection.size() > 0)
+            .collect(Collectors.toList());
+    // compute entropy from the view set
+    int numOfViews = viewCollection.size();
+    for (Set<Integer> x : viewCollection) {
+      double pX = 1.0 / numOfViews;
+      double sum = 0D;
+      for (Set<Integer> y : viewCollection) {
+        double pY = 1.0 / numOfViews;
+        double simXY = SimilarityAlg.jaccard(x, y);
+        sum += pY * simXY;
+      }
+      // sum != 0
+      entropy += pX * Math.log(sum) / Math.log(2);
+    }
+    return Math.abs(entropy);
+  }
+
+  /**
+   * Get view of edges from one graph
+   *
+   * @param nodes
+   * @param inOrOut
+   * @return
+   */
+  private Set<Integer> getViewFromGraph(List<SemanticNode> nodes, boolean inOrOut) {
+    Set<Integer> view = new HashSet<>();
+    for (SemanticNode node : nodes) {
+      Map<Integer, Integer> vector =
+          inOrOut ? node.getContext().getIncomingVector() : node.getContext().getOutgoingVector();
+      vector.entrySet().stream()
+          .filter(entry -> !entry.getValue().equals(0))
+          .forEach(entry -> view.add(entry.getKey()));
+    }
+    return view;
   }
 
   private int getNumOfNodes() {
@@ -63,7 +120,10 @@ public class NodeCluster {
   }
 
   public double getEntropy() {
-    return entropy;
+    // recompute the entropy
+    this.entropy =
+        computeContentEntropy() + (computeContextEntropy(true) + computeContextEntropy(false)) / 2;
+    return this.entropy;
   }
 
   public List<SemanticNode> getBaseNodes() {

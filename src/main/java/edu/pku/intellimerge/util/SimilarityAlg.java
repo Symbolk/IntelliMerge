@@ -27,6 +27,7 @@ public class SimilarityAlg {
 
   /**
    * Compute the similarity between two nodes
+   *
    * @param node1
    * @param node2
    * @return
@@ -194,7 +195,7 @@ public class SimilarityAlg {
    * @param s2
    * @return
    */
-  private static double jaccard(Set s1, Set s2) {
+  public static double jaccard(Set s1, Set s2) {
     Set<String> union = new HashSet<>();
     union.addAll(s1);
     union.addAll(s2);
@@ -202,7 +203,7 @@ public class SimilarityAlg {
     intersection.addAll(s1);
     intersection.retainAll(s2);
 
-    return (double) intersection.size() / union.size();
+    return union.size() == 0 ? 0D : (double) intersection.size() / union.size();
   }
 
   /**

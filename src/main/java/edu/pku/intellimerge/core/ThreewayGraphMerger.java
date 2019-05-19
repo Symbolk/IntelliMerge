@@ -3,7 +3,6 @@ package edu.pku.intellimerge.core;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
-import edu.pku.intellimerge.model.constant.EdgeType;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.Side;
@@ -110,7 +109,7 @@ public class ThreewayGraphMerger {
 
   /** Directly map nodes from 3 graphs based on entropy algorithm */
   public void threewayMap2() {
-    // 1. top down map nodes from 3 graphs
+    // 1. top down mapping by signature
     List<NodeCluster> nodeClusters = new ArrayList<>();
     List<SemanticNode> baseUnmatched = new ArrayList<>();
     List<SemanticNode> leftUnmatched = new ArrayList<>();
@@ -148,7 +147,7 @@ public class ThreewayGraphMerger {
     leftMap.entrySet().forEach(entry -> leftUnmatched.add(entry.getValue()));
     rightMap.entrySet().forEach(entry -> rightUnmatched.add(entry.getValue()));
 
-    // 2. biparitie matching to find mapping with changed signature but similiar context
+    // 2. biparitie matching by similarity
     List<Refactoring> b2lRefs = biparitieMatch(baseUnmatched, leftUnmatched);
     List<Refactoring> b2rRefs = biparitieMatch(baseUnmatched, rightUnmatched);
     for (Refactoring ref1 : b2lRefs) {
@@ -165,28 +164,10 @@ public class ThreewayGraphMerger {
       }
     }
 
-    // 3. for unmatched nodes, find nodes at the other side of specific edges
-    // TODO for other type of unmatched nodes
-    List<SemanticNode> leftUnmatchedMethods =
-        leftUnmatched.stream()
-            .filter(node -> node.getNodeType().equals(NodeType.METHOD))
-            .collect(Collectors.toList());
-    for (SemanticNode node : leftUnmatchedMethods) {
-      // find callers in left
-      Set<MethodDeclNode> callers = new HashSet<>();
-      for (SemanticEdge edge : node.getContext().getIncomingEdges()) {
-        if (edge.getEdgeType().equals(EdgeType.CALL)) {
-          SemanticNode sourceNode = oursGraph.getEdgeSource(edge);
-          if (sourceNode instanceof MethodDeclNode) {
-            callers.add((MethodDeclNode) sourceNode);
-          }
-        }
-      }
-      callers.size();
-      // for every caller, find which cluster it is (if exists)
-
+    // 3. cluster unmatched nodes by shrinking outgoing edges with specific types
+    for (NodeCluster cluster : nodeClusters) {
+      System.out.println(cluster.getEntropy());
     }
-    // 4. compute and compare entropy before and after merging unmatched nodes
 
     // 5. util: all unmatched nodes are visited
   }
