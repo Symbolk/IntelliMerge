@@ -175,18 +175,24 @@ public class Graph2CodePrinter {
 
       String line = null;
       while ((line = bufReader.readLine()) != null) {
-        int spaceCount = line.indexOf(line.trim());
         String indentedLine = "";
-        if (spaceCount < indent) {
-          indentedLine = String.join("", Collections.nCopies(indent, " ")) + line;
+        // do not indent empty lines
+        if (line.isEmpty()) {
+          indentedLine = line;
         } else {
-          indentedLine = line;
-        }
-        if (line.contains(Utils.CONFLICT_LEFT_BEGIN)
-            || line.contains(Utils.CONFLICT_BASE_BEGIN)
-            || line.contains(Utils.CONFLICT_RIGHT_BEGIN)
-            || line.contains(Utils.CONFLICT_RIGHT_END)) {
-          indentedLine = line;
+          int spaceCount = line.indexOf(line.trim());
+          if (spaceCount < indent) {
+            indentedLine = String.join("", Collections.nCopies(indent, " ")) + line;
+          } else {
+            indentedLine = line;
+          }
+          // do not indent conflict tags
+          if (line.contains(Utils.CONFLICT_LEFT_BEGIN)
+              || line.contains(Utils.CONFLICT_BASE_BEGIN)
+              || line.contains(Utils.CONFLICT_RIGHT_BEGIN)
+              || line.contains(Utils.CONFLICT_RIGHT_END)) {
+            indentedLine = line;
+          }
         }
         indentedLines.add(indentedLine);
       }
