@@ -35,6 +35,8 @@ public abstract class SemanticNode {
   // whether the node is defined inside the graph or not
   private boolean isInternal;
   private Optional<Range> range;
+  // number of trailing blank lines, used for format preservation
+  private int trailingBlankLines;
 
   public SemanticNode() {}
 
@@ -239,6 +241,14 @@ public abstract class SemanticNode {
 
   public void setContext(NodeContext context) {
     this.context = context;
+  }
+
+  public int getTrailingBlankLines() {
+    return trailingBlankLines;
+  }
+
+  public void setTrailingBlankLines(int trailingBlankLines) {
+    this.trailingBlankLines = trailingBlankLines;
   }
 
   /**

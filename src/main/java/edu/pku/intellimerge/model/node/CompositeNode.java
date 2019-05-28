@@ -83,17 +83,20 @@ public class CompositeNode extends SemanticNode {
 
   @Override
   public SemanticNode shallowClone() {
-    return new CompositeNode(
-        this.getNodeID(),
-        this.needToMerge(),
-        this.getNodeType(),
-        this.getDisplayName(),
-        this.getQualifiedName(),
-        this.getOriginalSignature(),
-        this.getComment(),
-        this.getAnnotations(),
-        this.getModifiers(),
-        this.getRange());
+    CompositeNode node =
+        new CompositeNode(
+            this.getNodeID(),
+            this.needToMerge(),
+            this.getNodeType(),
+            this.getDisplayName(),
+            this.getQualifiedName(),
+            this.getOriginalSignature(),
+            this.getComment(),
+            this.getAnnotations(),
+            this.getModifiers(),
+            this.getRange());
+    node.setTrailingBlankLines(this.getTrailingBlankLines());
+    return node;
   }
 
   @Override

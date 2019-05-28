@@ -165,6 +165,9 @@ public class ThreewayGraphMerger {
     }
 
     // 3. cluster unmatched nodes by shrinking outgoing edges with specific types
+    // for node clusters with less than 2 nodes, merge from most similiar one (to detect one2one)
+
+    // for all node clusters, merge from
     for (NodeCluster cluster : nodeClusters) {
       System.out.println(cluster.getEntropy());
     }

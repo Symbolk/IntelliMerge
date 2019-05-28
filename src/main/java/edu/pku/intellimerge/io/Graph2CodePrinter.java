@@ -150,12 +150,21 @@ public class Graph2CodePrinter {
         }
       } else {
         for (SemanticNode child : node.getChildren()) {
-          builder.append(printNode(child)).append(System.lineSeparator());
+          builder
+              .append(printNode(child))
+              .append(
+                  String.join(
+                      "",
+                      Collections.nCopies(child.getTrailingBlankLines(), System.lineSeparator())));
         }
       }
 
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append("}" + System.lineSeparator());
+        builder
+            .append("}")
+            .append(
+                String.join(
+                    "", Collections.nCopies(node.getTrailingBlankLines(), System.lineSeparator())));
       }
     }
     return indentCodeLines(builder.toString(), indent);

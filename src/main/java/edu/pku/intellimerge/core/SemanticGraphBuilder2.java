@@ -343,6 +343,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     for (TypeDeclaration td : cu.getTypes()) {
       //        td.getMembers()
       TypeDeclNode tdNode = processTypeDeclaration(td, packageName, nodeCount++, isInChangedFile);
+      tdNode.setTrailingBlankLines(getTrailingBlankLines(td));
       graph.addVertex(tdNode);
 
       if (td.isTopLevelType()) {
@@ -473,6 +474,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           // add edge from the parent td to the nested td
           TypeDeclNode childTDNode =
               processTypeDeclaration(childTD, qualifiedTypeName, nodeCount++, isInChangedFile);
+          childTDNode.setTrailingBlankLines(getTrailingBlankLines(childTD));
           graph.addVertex(childTDNode);
 
           tdNode.appendChild(childTDNode);
@@ -506,6 +508,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   comment,
                   body,
                   ecd.getRange());
+          ecdNode.setTrailingBlankLines(getTrailingBlankLines(ecd));
           graph.addVertex(ecdNode);
 
           // add edge between field and class
@@ -554,6 +557,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     field.getNameAsString(),
                     body,
                     fd.getRange());
+            fdNode.setTrailingBlankLines(getTrailingBlankLines(fd));
             graph.addVertex(fdNode);
 
             // add edge between field and class
@@ -612,6 +616,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   displayName,
                   body,
                   cd.getRange());
+          cdNode.setTrailingBlankLines(getTrailingBlankLines(cd));
           graph.addVertex(cdNode);
 
           tdNode.appendChild(cdNode);
@@ -702,6 +707,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   body,
                   md.getRange());
           mdNode.setParameterList(parameterList);
+          mdNode.setTrailingBlankLines(getTrailingBlankLines(md));
           graph.addVertex(mdNode);
 
           tdNode.appendChild(mdNode);
@@ -732,6 +738,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 id.isStatic(),
                 id.getBody().toString(),
                 id.getRange());
+        idNode.setTrailingBlankLines(getTrailingBlankLines(id));
         graph.addVertex(idNode);
 
         tdNode.appendChild(idNode);
@@ -756,7 +763,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             amd.toString().contains("default")
                 ? amd.toString().substring(amd.toString().indexOf("default")).trim()
                 : ";";
-        AnnotationMemberNode idNode =
+        AnnotationMemberNode amdNode =
             new AnnotationMemberNode(
                 nodeCount++,
                 isInChangedFile,
@@ -769,13 +776,14 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 new ArrayList<>(), // no modifiers
                 body,
                 amd.getRange());
-        graph.addVertex(idNode);
+        amdNode.setTrailingBlankLines(getTrailingBlankLines(amd));
+        graph.addVertex(amdNode);
 
-        tdNode.appendChild(idNode);
+        tdNode.appendChild(amdNode);
         graph.addEdge(
-            tdNode, idNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, idNode));
+            tdNode, amdNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, amdNode));
 
-        processBodyContent(amd, idNode);
+        processBodyContent(amd, amdNode);
       }
     }
   }
@@ -929,6 +937,29 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         .map(String::trim)
         .orElse("");
   }
+
+  /**
+   * Get number of trailing blank lines after one node in source code
+   * @param node
+   * @return
+   */
+  private int getTrailingBlankLines(Node node){
+    int count = -1;  // -1 because every line naturally has a trailing enter
+    if(node.getTokenRange().isPresent()){
+      JavaToken endToken = node.getTokenRange().get().getEnd();
+      while(endToken.getNextToken().isPresent()){
+        JavaToken nextToken = endToken.getNextToken().get();
+        if(nextToken.getCategory().isEndOfLine()){
+          count++;
+          endToken = nextToken;
+        }else{
+          break;
+        }
+      }
+    }
+    return count < 0 ? 0 : count;
+  }
+
   /**
    * Create field access edges with fuzzy matching
    *
