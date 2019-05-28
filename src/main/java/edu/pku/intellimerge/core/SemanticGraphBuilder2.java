@@ -846,7 +846,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
     //        String source = removeComment(typeDeclaration.toString());
-    String source = typeDeclaration.removeComment().toString();
+    String source = typeDeclaration.removeComment().getTokenRange().get().toString();
     // if the comment bug in JavaParser is triggered, the comment is not completely removed
     //    List<String> lines = Arrays.asList(source.split("\n"));
     //    source = lines.stream().filter(line ->
@@ -866,7 +866,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private String getFieldOriginalSignature(FieldDeclaration fieldDeclaration) {
-    String source = removeComment(fieldDeclaration.toString());
+    String source = removeComment(fieldDeclaration.getTokenRange().toString());
     //    if (fieldDeclaration.getComment().isPresent()) {
     //      source = source.replace(fieldDeclaration.getComment().get().getContent(), "");
     //    }
@@ -897,25 +897,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private String getCallableBody(CallableDeclaration declaration) {
-    boolean endWithBlankLine = false;
-    Optional<JavaToken> nextToken =
-        declaration
-            .getTokenRange()
-            .map(TokenRange::getEnd)
-            .map(JavaToken::getNextToken)
-            .orElse(Optional.empty());
-    if (nextToken.isPresent()) {
-      if (nextToken.get().getCategory().isEndOfLine()) {
-        Optional<JavaToken> nextNextToken = nextToken.get().getNextToken();
-        if (nextNextToken.isPresent()) {
-          endWithBlankLine = nextNextToken.get().getCategory().isEndOfLine();
-        }
-      }
-    }
     return " "
         + removeSignature(
-            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""))
-        + (endWithBlankLine ? System.lineSeparator() + System.lineSeparator() : "");
+            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""));
   }
 
   private String removeSignature(String string) {
@@ -944,7 +928,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private int getTrailingBlankLines(Node node){
-    int count = -1;  // -1 because every line naturally has a trailing enter
+    int count = 0;  // every line naturally has a trailing enter
     if(node.getTokenRange().isPresent()){
       JavaToken endToken = node.getTokenRange().get().getEnd();
       while(endToken.getNextToken().isPresent()){
@@ -957,7 +941,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         }
       }
     }
-    return count < 0 ? 0 : count;
+    return count;
   }
 
   /**
