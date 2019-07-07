@@ -10,6 +10,7 @@ import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -52,6 +53,55 @@ public class GitService {
     return repository;
   }
 
+  /**
+   * Generate a Repository object from the repoPath
+   *
+   * @param repoPath
+   * @return
+   * @throws Exception
+   */
+  public static Repository createRepository(String repoPath) throws Exception {
+
+    File folder = new File(repoPath);
+    Repository repository;
+    RepositoryBuilder builder = new RepositoryBuilder();
+    repository = builder.setGitDir(new File(folder, ".git")).readEnvironment().findGitDir().build();
+
+    logger.info(
+        "Repository: {} current branch: {}",
+        repository.getDirectory().getAbsolutePath(),
+        repository.getBranch());
+
+    return repository;
+  }
+
+  /**
+   * Check if the two branches to be merged are valid
+   *
+   * @return
+   */
+  public static boolean checkIfBranchesValid(String repoPath, String branch) {
+    try {
+      Repository repository = createRepository(repoPath);
+      if (repository.getBranch().equals(branch)) {
+        return true;
+      } else {
+        Git git = new Git(repository);
+
+        String localBranch = "refs/heads/" + branch;
+        List<Ref> refs = git.branchList().call();
+        for (Ref ref : refs) {
+          if (ref.getName().equals(localBranch)) {
+            return true;
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
+
   public static Repository cloneIfNotExistsWithBranch(
       String projectPath, String cloneUrl, String branch) throws Exception {
 
@@ -85,12 +135,30 @@ public class GitService {
     return repository;
   }
 
+  public static String getHEADCommit(Repository repository, String branchName) throws Exception {
+    return repository.findRef("refs/heads/" + branchName).getObjectId().getName();
+  }
+
+  public static String getBASECommit(Repository repository, String commit1, String commit2)
+      throws Exception {
+    try (RevWalk revWalk = new RevWalk(repository)) {
+      RevCommit revCommit1 = revWalk.parseCommit(repository.resolve(commit1));
+      RevCommit revCommit2 = revWalk.parseCommit(repository.resolve(commit2));
+      revWalk.setRevFilter(RevFilter.MERGE_BASE);
+      revWalk.markStart(revCommit1);
+      revWalk.markStart(revCommit2);
+      RevCommit mergeBase = revWalk.next();
+      return mergeBase.getName();
+    }
+  }
+
   public static void checkout(Repository repository, String commitID) throws Exception {
     try (Git git = new Git(repository)) {
       CheckoutCommand checkout = git.checkout().setName(commitID);
       checkout.call();
     }
-    logger.info("Checking out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
+    logger.info(
+        "Checking out {} {} ...", repository.getDirectory().getParent().toString(), commitID);
     //		File workingDir = repository.getDirectory().getParentFile();
     //		ExternalProcess.execute(workingDir, "git", "checkout", commitID);
   }
@@ -112,11 +180,8 @@ public class GitService {
     try (Git git = new Git(repository)) {
 
       final List<DiffEntry> javaDiffEntries =
-          git.diff()
-              .setOldTree(prepareTreeParser(repository, oldCommit))
-              .setNewTree(prepareTreeParser(repository, newCommit))
-              .call()
-              .stream()
+          git.diff().setOldTree(prepareTreeParser(repository, oldCommit))
+              .setNewTree(prepareTreeParser(repository, newCommit)).call().stream()
               .filter(diffEntry -> isJavaFile(diffEntry.getNewPath()))
               .collect(Collectors.toList());
 

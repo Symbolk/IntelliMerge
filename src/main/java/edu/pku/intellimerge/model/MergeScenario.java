@@ -50,6 +50,15 @@ public class MergeScenario {
     this.theirsDiffEntries = new ArrayList<>();
   }
 
+  public MergeScenario(String oursCommitID, String baseCommitID, String theirsCommitID) {
+    this.oursCommitID = oursCommitID;
+    this.baseCommitID = baseCommitID;
+    this.theirsCommitID = theirsCommitID;
+    this.oursDiffEntries = new ArrayList<>();
+    this.baseDiffEntries = new ArrayList<>();
+    this.theirsDiffEntries = new ArrayList<>();
+  }
+
   /**
    * Whether the file is changed in this side, if yes, it needs to be merged
    *

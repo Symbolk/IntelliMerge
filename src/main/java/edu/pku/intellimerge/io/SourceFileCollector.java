@@ -41,7 +41,7 @@ public class SourceFileCollector {
   private boolean onlyBothModified = false;
   // copy imported files or not
   private boolean copyImportedFiles = true;
-  // collect the file content to files or not (faster)
+  // save the collected file content to disk or not (true for development, false for production)
   //  private boolean collectToFiles = true;
 
   public SourceFileCollector(
@@ -51,17 +51,39 @@ public class SourceFileCollector {
     this.collectedFilePath = collectedFilePath;
   }
 
-  public SourceFileCollector(
-      Repository repository,
-      String collectedFilePath,
-      MergeScenario mergeScenario,
-      boolean onlyBothModified,
-      boolean copyImportedFiles) {
-    this.repository = repository;
-    this.collectedFilePath = collectedFilePath;
-    this.mergeScenario = mergeScenario;
-    this.onlyBothModified = onlyBothModified;
-    this.copyImportedFiles = copyImportedFiles;
+  public SourceFileCollector(String repoPath, List<String> branchNames, String collectedDir) {
+    try {
+      this.repository = GitService.createRepository(repoPath);
+      this.mergeScenario = generateMergeScenarioFromBranches(branchNames);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    this.collectedFilePath = collectedDir;
+    this.copyImportedFiles = false;
+  }
+
+  /**
+   * Get commit ids at the HEAD of the parent branches, and their base commit id
+   *
+   * @param branchNames
+   * @return
+   */
+  private MergeScenario generateMergeScenarioFromBranches(List<String> branchNames)
+      throws Exception {
+    if (repository != null) {
+      String oursCommitID = GitService.getHEADCommit(repository, branchNames.get(0));
+      String theirsCommitID = GitService.getHEADCommit(repository, branchNames.get(1));
+      String baseCommitID = GitService.getBASECommit(repository, oursCommitID, theirsCommitID);
+
+      MergeScenario mergeScenario = new MergeScenario(oursCommitID, baseCommitID, theirsCommitID);
+      return mergeScenario;
+    } else {
+      return null;
+    }
+  }
+
+  public MergeScenario getMergeScenario() {
+    return mergeScenario;
   }
 
   public void setOnlyBothModified(boolean onlyBothModified) {
@@ -78,7 +100,6 @@ public class SourceFileCollector {
       getDiffJavaFiles();
       if (this.onlyBothModified) {
         // collect only BothSides modified files in two sides
-        // TODO collect static imported files
         collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
         collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
         collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);

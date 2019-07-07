@@ -26,7 +26,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-/** Class responsible for processing one repo */
+/**
+ * This class is responsible for providing APIs for evaluation
+ * */
 public class APIClient {
 
   private Logger logger = LoggerFactory.getLogger(APIClient.class);

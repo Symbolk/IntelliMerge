@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     compile fileTree(dir: 'lib', include: ['*.jar'])
+    compile group: 'com.beust', name: 'jcommander', version: '1.72'
     compile group: 'com.github.javaparser', name: 'javaparser-core', version: '3.12.0'
     compile group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.12.0'
     compile group: 'org.jgrapht', name: 'jgrapht-core', version: '1.3.0'

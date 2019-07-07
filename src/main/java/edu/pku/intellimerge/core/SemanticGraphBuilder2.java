@@ -70,18 +70,53 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private MergeScenario mergeScenario;
   private Side side;
   private String targetDir; // directory of the target files to be analyzed
+  private String sideDir = "";
 
+  /**
+   * Analyze all java files in the given directory (used with option -d)
+   *
+   * @param side
+   * @param targetDir
+   */
+  public SemanticGraphBuilder2(Side side, String targetDir) {
+    this.mergeScenario = null;
+    this.side = side;
+    this.targetDir = targetDir;
+    this.hasMultiModule = false;
+
+    this.sideDir = targetDir + File.separator;
+    this.graph = initGraph();
+    this.nodeCount = 0;
+    this.edgeCount = 0;
+  }
+
+  /**
+   * Analyze all Java files under a directory with sub-folders for each side (ours/base/theirs)
+   *
+   * @param side
+   * @param targetDir
+   * @param hasMultiModule
+   */
   public SemanticGraphBuilder2(Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = null;
     this.side = side;
     this.targetDir = targetDir;
     this.hasMultiModule = hasMultiModule;
 
+    this.sideDir = targetDir + File.separator + side.asString() + File.separator;
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
   }
 
+  /**
+   * Analyze MergeScenario when merging branches (used with option -d)
+   *
+   * @param mergeScenario
+   * @param side
+   * @param targetDir
+   * @param hasMultiModule
+   */
   public SemanticGraphBuilder2(
       MergeScenario mergeScenario, Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = mergeScenario;
@@ -89,11 +124,19 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     this.targetDir = targetDir;
     this.hasMultiModule = hasMultiModule;
 
+    this.sideDir = targetDir + File.separator + side.asString() + File.separator;
     this.graph = initGraph();
     this.nodeCount = 0;
     this.edgeCount = 0;
   }
 
+  /**
+   * Only analyze a given list of files
+   *
+   * @param side
+   * @param targetDir
+   * @param fileRelativePaths
+   */
   public SemanticGraphBuilder2(Side side, String targetDir, List<String> fileRelativePaths) {
     this.mergeScenario = null;
     this.side = side;
@@ -101,6 +144,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     this.hasMultiModule = false;
     this.fileRelativePaths = fileRelativePaths;
 
+    this.sideDir = targetDir + File.separator + side.asString() + File.separator;
     this.graph = initGraph();
     this.nodeCount = 0;
     this.nodeCount = 0;
@@ -129,7 +173,6 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   public Graph<SemanticNode, SemanticEdge> call() {
 
     // the folder path which contains collected files to build the graph upon
-    String sideDir = targetDir + File.separator + side.asString() + File.separator;
     // just for sure: reinit the graph
     this.graph = initGraph();
 
@@ -244,11 +287,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     String absolutePath =
         Utils.formatPathSeparator(
             cu.getStorage().map(CompilationUnit.Storage::getPath).map(Path::toString).orElse(""));
-    String relativePath =
-        absolutePath.replace(
-            Utils.formatPathSeparator(
-                targetDir + File.separator + side.asString() + File.separator),
-            "");
+    String relativePath = absolutePath.replace(Utils.formatPathSeparator(sideDir), "");
 
     // whether this file is modified: if yes, all nodes in it need to be merged (rough way)
     boolean isInChangedFile =

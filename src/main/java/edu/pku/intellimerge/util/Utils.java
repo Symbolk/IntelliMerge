@@ -369,6 +369,15 @@ public class Utils {
     }
   }
 
+  /** Remove a directory by first removing all files inside it, then remove the empty folder */
+  public static void removeDir(String dir) {
+    File dirFile = new File(dir);
+    if (dirFile.exists() && dirFile.isDirectory()) {
+      clearDir(dir);
+      dirFile.delete();
+    }
+  }
+
   /**
    * Delete all files and subfolders to clear the directory
    *
