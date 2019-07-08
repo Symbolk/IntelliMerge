@@ -16,7 +16,7 @@ import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.util.GitService;
 import edu.pku.intellimerge.util.Utils;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.BasicConfigurator;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /** The class is responsible to provide CLI and API service to users */
 public class IntelliMerge {
@@ -39,21 +42,28 @@ public class IntelliMerge {
   @Parameter(
       names = {"-b", "--branches"},
       arity = 2,
-      description = "Names of branches to be merged. The order should be ours, theirs.")
-  List<String> branchNames = new ArrayList<String>();
+      description =
+          "Names of two branches to be merged. The order should be <left> <right> to merge <right> branch to <left>.")
+  List<String> branchNames = new ArrayList<>();
 
   @Parameter(
       names = {"-d", "--directories"},
       arity = 3,
       description =
-          "Absolute path of three directories, which contains Java files to be merged. The order should be ours, base, theirs.")
+          "Absolute paths of three directories with Java files inside to be merged. The order should be <left> <base> <right>.")
   List<String> directoryPaths = new ArrayList<>();
 
   @Parameter(
       names = {"-o", "--output"},
       arity = 1,
-      description = "Output directory to save the merged files.")
+      description = "Absolute path of an empty directory to save the merging results.")
   String outputPath = "";
+
+  @Parameter(
+      names = {"-s", "--hasSubModule"},
+      arity = 1,
+      description = "Whether the repository has sub-module.")
+  boolean hasSubModule = true;
 
   @Parameter(
       names = {"-t", "--threshold"},
@@ -61,22 +71,13 @@ public class IntelliMerge {
       description = "[Optional] The threshold value for heuristic rules, default: 0.618.")
   String thresholdString = "0.618";
 
-  private String folderPath;
-  private List<String> fileRelativePaths;
-  private String resultFolderPath;
-  //  Double threshold = Double.valueOf(thresholdString);
-
   public IntelliMerge() {}
-
-  public IntelliMerge(String folderPath, List<String> fileRelativePaths, String resultFolderPath) {
-    this.folderPath = folderPath;
-    this.fileRelativePaths = fileRelativePaths;
-    this.resultFolderPath = resultFolderPath;
-  }
 
   public static void main(String[] args) {
     // config the logger
-    PropertyConfigurator.configure("log4j.properties");
+    //    PropertyConfigurator.configure("log4j.properties");
+    // use basic configuration when packaging
+    BasicConfigurator.configure();
 
     try {
       IntelliMerge merger = new IntelliMerge();
@@ -157,7 +158,7 @@ public class IntelliMerge {
       commandLineOptions.parse(args);
       checkArguments(this);
       if (repoPath.length() > 0 && !branchNames.isEmpty()) {
-        mergeBranches(repoPath, branchNames, outputPath, true);
+        mergeBranches(repoPath, branchNames, outputPath, hasSubModule);
 
       } else if (!directoryPaths.isEmpty()) {
         mergeDirectories(directoryPaths, outputPath);
@@ -172,38 +173,38 @@ public class IntelliMerge {
   /**
    * Collect, analyze, match and merge java files collected in one merge scenario
    *
-   * @param hasMultipleModule whether the repo has sub-modules
+   * @param hasSubModule whether the repo has sub-modules
    * @throws Exception
    */
-  public void mergeBranches(
-      String repoPath, List<String> branchNames, String outputPath, boolean hasMultipleModule)
+  public List<String> mergeBranches(
+      String repoPath, List<String> branchNames, String outputPath, boolean hasSubModule)
       throws Exception {
 
     // 1. Collect diff java files and imported files between ours/theirs commit and base commit
-
     // Collect source files to be analyzed in the system temp dir
+    // For Windows: C:\Users\USERNAME\AppData\Local\Temp\IntelliMerge\
     String collectedDir =
-        System.getProperty("java.io.tmpdir") + File.separator + "IntelliMerge" + File.separator;
+        System.getProperty("java.io.tmpdir") + "IntelliMerge" + File.separator;
 
     SourceFileCollector collector = new SourceFileCollector(repoPath, branchNames, collectedDir);
 
     collector.collectFilesForAllSides();
     logger.info("Files collected in {}", collectedDir);
 
-    // 2.1 Build graphs from collected files
+    // 2. Build graphs from collected files
     Stopwatch stopwatch = Stopwatch.createStarted();
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     MergeScenario mergeScenario = collector.getMergeScenario();
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedDir, hasMultipleModule));
+            new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedDir, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedDir, hasMultipleModule));
+            new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedDir, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedDir, hasMultipleModule));
+            new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedDir, hasSubModule));
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
@@ -215,41 +216,44 @@ public class IntelliMerge {
     Utils.prepareDir(outputPath);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
-    // 3. Match node and merge the 3-way graphs
 
+    // 3. Match nodes and merge programs with the 3-way graphs
     stopwatch.reset().start();
     merger.threewayMap();
     stopwatch.stop();
 
     logger.info("({}ms) Done matching graphs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-    // 4. Print the merged graph into code, keep the original format as possible
+    // 4. Print the merged graph into files, keeping the original format and directory structure
     stopwatch.reset().start();
-    merger.threewayMerge();
+    List<String> mergedFilePaths = merger.threewayMerge();
     stopwatch.stop();
     logger.info("({}ms) Done merging programs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     // Clear and remove temp directory
-    //    Utils.removeDir(collectedFileDir);
+    Utils.removeDir(collectedDir);
+    return mergedFilePaths;
   }
 
   /**
    * Analyze all java files under the target directory, as if they are collected from merge scenario
    *
-   * @return runtime at each phase in order
+   * @return merging results
    * @throws Exception
    */
-  public List<Long> mergeDirectories(List<String> directoryPaths, String outputPath)
+  public List<String> mergeDirectories(List<String> directoryPaths, String outputPath)
       throws Exception {
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
+    // 1. Build graphs from given directories
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.OURS, directoryPaths.get(0)));
+        executorService.submit(new SemanticGraphBuilder2(directoryPaths.get(0), Side.OURS, false));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.BASE, directoryPaths.get(1)));
+        executorService.submit(new SemanticGraphBuilder2(directoryPaths.get(1), Side.BASE, false));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.THEIRS, directoryPaths.get(2)));
+        executorService.submit(
+            new SemanticGraphBuilder2(directoryPaths.get(2), Side.THEIRS, false));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
@@ -264,7 +268,8 @@ public class IntelliMerge {
     Utils.prepareDir(outputPath);
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
-    // 3. Match node and merge the 3-way graphs.
+
+    // 2. Match nodes across the 3-way graphs.
     stopwatch.reset().start();
     merger.threewayMap();
     stopwatch.stop();
@@ -277,7 +282,7 @@ public class IntelliMerge {
     saveAlignment(b2oCsvFilePath, merger.b2oMatching);
     saveAlignment(b2tCsvFilePath, merger.b2tMatching);
 
-    // 4. Print the merged graph into code, keep the original format as possible
+    // 3. Merge programs with the 3-way graphs, keeping the original format and directory structure
     stopwatch.reset().start();
     List<String> mergedFilePaths = merger.threewayMerge();
     stopwatch.stop();
@@ -287,12 +292,7 @@ public class IntelliMerge {
     long overall = buildingTime + matchingTime + mergingTime;
     logger.info("Overall time cost: {}ms.", overall);
 
-    List<Long> runtimes = new ArrayList<>();
-    runtimes.add(buildingTime);
-    runtimes.add(matchingTime);
-    runtimes.add(mergingTime);
-    runtimes.add(overall);
-    return runtimes;
+    return mergedFilePaths;
   }
 
   /**
@@ -326,42 +326,6 @@ public class IntelliMerge {
       } catch (RangeNullException e) {
         e.printStackTrace();
       }
-    }
-  }
-
-  /** Merge a given list of files */
-  public void merge() {
-    ExecutorService executorService = Executors.newFixedThreadPool(3);
-
-    Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.OURS, folderPath, fileRelativePaths));
-    Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.BASE, folderPath, fileRelativePaths));
-    Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
-        executorService.submit(
-            new SemanticGraphBuilder2(Side.THEIRS, folderPath, fileRelativePaths));
-
-    try {
-      Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
-      Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
-      Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
-
-      logger.info("Graph building done.");
-      executorService.shutdown();
-
-      Utils.prepareDir(resultFolderPath);
-      ThreewayGraphMerger graphMerger =
-          new ThreewayGraphMerger(resultFolderPath, oursGraph, baseGraph, theirsGraph);
-      graphMerger.threewayMap();
-      logger.info("Graph mapping done.");
-
-      graphMerger.threewayMerge();
-      logger.info("Graph merging done.");
-
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
     }
   }
 }

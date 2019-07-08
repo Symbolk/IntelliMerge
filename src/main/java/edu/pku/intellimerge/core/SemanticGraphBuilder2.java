@@ -78,11 +78,11 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param side
    * @param targetDir
    */
-  public SemanticGraphBuilder2(Side side, String targetDir) {
+  public SemanticGraphBuilder2(String targetDir, Side side, boolean hasMultiModule) {
     this.mergeScenario = null;
     this.side = side;
     this.targetDir = targetDir;
-    this.hasMultiModule = false;
+    this.hasMultiModule = hasMultiModule;
 
     this.sideDir = targetDir + File.separator;
     this.graph = initGraph();

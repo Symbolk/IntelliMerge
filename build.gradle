@@ -10,9 +10,33 @@ idea {
     }
 }
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'edu.pku.intellimerge.client.IntelliMerge'
+        )
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    classifier = 'all'
+    from {
+        configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    with jar
+}
+
+artifacts {
+    archives fatJar
+}
 
 group 'edu.pku.intellimerge'
-version '1.0-SNAPSHOT'
+version '1.0.7'
 
 sourceCompatibility = 1.8
 
