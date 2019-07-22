@@ -10,7 +10,7 @@ public class MergeScenario {
   public String repoName;
   public String repoPath;
   public String srcPath; // only needed in SemanticGraphBuilderV1 for symbolsolving
-  public String mergeCommitID;
+  public String mergeCommitID; // optional
   public String oursCommitID;
   public String baseCommitID;
   public String theirsCommitID;

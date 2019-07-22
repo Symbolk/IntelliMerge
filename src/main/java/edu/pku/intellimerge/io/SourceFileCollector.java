@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SourceFileCollector {
 
@@ -97,14 +98,14 @@ public class SourceFileCollector {
   /** Collect related source files to process together */
   public void collectFilesForAllSides() {
     try {
-      getDiffJavaFiles();
+      computeDiffEntries();
       if (this.onlyBothModified) {
-        // collect only BothSides modified files in two sides
+        // collect only both modified files in two sides
         collectFilesForOneSide(Side.OURS, mergeScenario.bothModifiedEntries);
         collectFilesForOneSide(Side.BASE, mergeScenario.bothModifiedEntries);
         collectFilesForOneSide(Side.THEIRS, mergeScenario.bothModifiedEntries);
       } else {
-        // collect diff files for all sides
+        // collect both-sides modified and one-side modified files
         collectFilesForOneSide(Side.OURS, mergeScenario.oursDiffEntries);
         collectFilesForOneSide(Side.BASE, mergeScenario.baseDiffEntries);
         collectFilesForOneSide(Side.THEIRS, mergeScenario.theirsDiffEntries);
@@ -152,17 +153,36 @@ public class SourceFileCollector {
    * @return
    * @throws Exception
    */
-  public void getDiffJavaFiles() throws Exception {
-    mergeScenario.oursDiffEntries =
-        GitService.listDiffFilesJava(
-            repository, mergeScenario.baseCommitID, mergeScenario.oursCommitID);
-    mergeScenario.theirsDiffEntries =
-        GitService.listDiffFilesJava(
-            repository, mergeScenario.baseCommitID, mergeScenario.theirsCommitID);
-    // 2 ways to union the diff file list
-    //      List<SimpleDiffEntry> baseDiffEntries = oursDiffEntries;
+  public void computeDiffEntries() throws Exception {
+    Set<SimpleDiffEntry> oursDiffEntries =
+        new HashSet<>(
+            GitService.listDiffFilesJava(
+                repository, mergeScenario.baseCommitID, mergeScenario.oursCommitID));
+    Set<SimpleDiffEntry> theirsDiffEntries =
+        new HashSet<>(
+            GitService.listDiffFilesJava(
+                repository, mergeScenario.baseCommitID, mergeScenario.theirsCommitID));
+    // add one-side modified entries to the other side's entries
+    Set<SimpleDiffEntry> modifiedOurs =
+        oursDiffEntries.stream()
+            .filter(
+                simpleDiffEntry ->
+                    simpleDiffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY))
+            .collect(Collectors.toSet());
+    Set<SimpleDiffEntry> modifiedTheirs =
+        theirsDiffEntries.stream()
+            .filter(
+                simpleDiffEntry ->
+                    simpleDiffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY))
+            .collect(Collectors.toSet());
+    //      List<SimpleDiffEntry> baseDiffEntries = modifiedOurs;
     //      theirsDiffEntries.removeAll(baseDiffEntries);
     //      baseDiffEntries.addAll(theirsDiffEntries);
+    oursDiffEntries.addAll(modifiedTheirs);
+    theirsDiffEntries.addAll(modifiedOurs);
+    mergeScenario.oursDiffEntries = new ArrayList<>(oursDiffEntries);
+    mergeScenario.theirsDiffEntries = new ArrayList<>(theirsDiffEntries);
+
     Set<SimpleDiffEntry> union = new HashSet<>();
     union.addAll(mergeScenario.oursDiffEntries);
     union.addAll(mergeScenario.theirsDiffEntries);
@@ -207,16 +227,22 @@ public class SourceFileCollector {
     List<String> diffFilePaths = new ArrayList<>();
     List<String> importedFilePaths = new ArrayList<>();
     for (SimpleDiffEntry diffEntry : diffEntries) {
-      if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
+      // relative path known to git
+      String relativePath = "";
+      if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.ADD)) {
+        relativePath = diffEntry.getNewPath();
+      } else {
         // e.g. src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
-        String relativePath = diffEntry.getOldPath();
-        diffFilePaths.add(relativePath);
+        relativePath = diffEntry.getOldPath();
       }
+      diffFilePaths.add(relativePath);
     }
     // get file content with ObjectLoader
     try (RevWalk revWalk = new RevWalk(repository)) {
       ObjectId commitObj = repository.resolve(sideCommitID);
       RevCommit commit = revWalk.parseCommit(commitObj);
+      // get the content of changed file before and after changing, return file paths imported by
+      // them
       importedFilePaths = generateFiles(diffFilePaths, commit, sideCollectedFilePath);
       if (copyImportedFiles && !importedFilePaths.isEmpty()) {
         generateFiles(importedFilePaths, commit, sideCollectedFilePath);
