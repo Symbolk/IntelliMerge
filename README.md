@@ -97,7 +97,7 @@ Usage: IntelliMerge [options]
 
 1. Merged Java files.
 
-2. a csv file with the alignment information of program elements affected by refactorings, which can be consumed by applications that assist the developer in manually resolving conflicts * and examining auto-merged parts.
+2. A csv file with the alignment information of program elements affected by refactorings, which can be consumed by the [IntelliMerge-UI] (under development) for developers to verify resolved conflicts and manually resolve remained conflicts.
 
    Example:
 
@@ -107,10 +107,10 @@ Change Method Signature;method;0.8035;9-11;String getDirector();23-25;String get
 Change Method Signature;method;0.9747;13-15;void setDirector(String director);27-29;void setDirector(String director)
 Change Method Signature;method;0.8065;15-20;int getFrequentRenterPoints(int daysRented);15-20;int getPointsOfFrequentRenters(int daysRented)
 Change Method Signature;method;0.8027;8-10;int getFrequentRenterPoints(int daysRented);8-10;int getPointsOfFrequentRenters(int daysRented)
-Change Field Signature;field;1.0;4-4;String director;10-10;String director
+Change Field Signature;field;1.0;4-4;private String director;10-10;public String director
 ```
 
-> * under development
+> [IntelliMerge-UI]: https://github.com/Symbolk/IntelliMerge-UI
 
 ### Example
 
