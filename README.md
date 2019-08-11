@@ -77,7 +77,7 @@ Usage: IntelliMerge [options]
 
 1. The absolute path of a cloned repository.
 
-2. Names of the two branches to be merged, make sure they are local branches with the following command:
+2. Names of the two **local** branches to be merged, make sure they are local branches with the following command:
 
    ```bash
    D:\github\repos\fastjson (android -> origin)
@@ -118,7 +118,13 @@ We provide a sample repository as the example input data, so you can have a quic
 
 1. Clone the sample repository from: https://github.com/Symbolk/intellimerge-sample-input, suppose that  it is cloned into: `D:\github\intellimerge-sample-input\`
 
-2. Merge branches with the following command:
+2. Checkout local branches from remote ones with the following command under the cloned repository:
+```
+git checkout ours
+git checkout theirs
+```
+
+3. Merge branches with the following command:
 
    ```bash
    java -jar IntelliMerge-VERSION.jar -r D:\github\intellimerge-sample-input -s true -b ours theirs -o D:\github\intellimerge-sample-input\result1
@@ -126,7 +132,7 @@ We provide a sample repository as the example input data, so you can have a quic
 
    > Remember to replace the arguments with the path where you clone the sample repository into.
 
-3. Merge directories with the following command:
+4. Merge directories with the following command:
 
    ```bash
    java -jar IntelliMerge-VERSION.jar -d D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\left D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\base D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\right -o D:\github\intellimerge-sample-input\result2
@@ -146,7 +152,7 @@ Merge two local branches of a Git repository.
 #### Parameters
 
 1. repoPath: Absolute path of the target Git repository.
-2. branchNames: Names of two branches to be merged. The order should be <left> <right> to merge <right> branch to <left>.
+2. branchNames: Names of two **local** branches to be merged. The order should be <left> <right> to merge <right> branch to <left>.
 3. outputPath: Absolute path of an empty directory to save the merging results.
 4. hasSubModule: Whether the Git repository has submodules.
 
