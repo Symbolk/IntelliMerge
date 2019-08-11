@@ -17,15 +17,14 @@ public class ManualResultsChecker {
   private static final Logger logger = LoggerFactory.getLogger(ManualResultsChecker.class);
 
   public static void main(String[] args) {
-    String baseDir = "D:\\github\\ref_conflicts\\";
+    String inputPath = "D:\\github\\ref_conflicts\\";
     String repoName = "cassandra";
-    String collectedFilePath = "D:\\github\\incorrect_ground_truth\\";
-    String summaryFilePath = collectedFilePath + "summary.txt";
+    String outputPath = "D:\\github\\incorrect_ground_truth\\";
+    String summaryFilePath = outputPath + "summary.txt";
 
-    baseDir = baseDir + repoName;
+    inputPath = inputPath + repoName;
     try {
-
-      File file = new File(baseDir);
+      File file = new File(inputPath);
       File[] files = file.listFiles();
       for (File f : files) {
         if (f.isDirectory()) {
@@ -44,15 +43,15 @@ public class ManualResultsChecker {
               // copy the file into the folder, and record the exception message
               File javaFile = new File(sourceFile.getAbsolutePath());
               if (javaFile.exists()) {
-                String commitID =
-                    f.getAbsolutePath()
-                        .trim()
-                        .substring(
-                            f.getAbsolutePath().lastIndexOf(File.separator) + 1,
-                            f.getAbsolutePath().length());
+                String commitID = f.getName();
+//                    f.getAbsolutePath()
+//                        .trim()
+//                        .substring(
+//                            f.getAbsolutePath().lastIndexOf(File.separator) + 1,
+//                            f.getAbsolutePath().length());
                 File dstFile =
                     new File(
-                        collectedFilePath
+                        outputPath
                             + repoName
                             + File.separator
                             + commitID
