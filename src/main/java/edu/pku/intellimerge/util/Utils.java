@@ -256,7 +256,7 @@ public class Utils {
   }
 
   /**
-   * Writes the given content in the file of the given file path.
+   * Writes the given content in the file of the given file path, overwrite the original
    *
    * @param filePath
    * @param content
@@ -304,7 +304,7 @@ public class Utils {
   /**
    * Scan all java files under the directory, return a list of SourceFiles
    *
-   * @param path
+   * @param path target dir to scan
    * @param javaSourceFiles
    * @param prefixPath to which the relative path is relative
    * @return
@@ -591,6 +591,68 @@ public class Utils {
       writeLinesToFile(path, lines);
     }
     return mergeConflicts;
+  }
+
+  /**
+   * Convert all conflict blocks in diff3 to diff2 by deleting the base lines
+   *
+   * @param inputDir
+   */
+  public static void convertDiff3ToDiff2(String inputDir) throws Exception {
+    File file = new File(inputDir);
+    File[] files = file.listFiles();
+    for (File f : files) {
+      if (f.isDirectory()) {
+        String mergedFileDir = f.getAbsolutePath() + File.separator + Side.GIT.asString();
+        // for all files under it, delete the base lines and write back
+        ArrayList<SourceFile> temp = new ArrayList<>();
+        ArrayList<SourceFile> mergedFiles =
+            Utils.scanJavaSourceFiles(mergedFileDir, temp, mergedFileDir);
+        for (SourceFile sourceFile : mergedFiles) {
+          List<String> lines = readFileToLines(sourceFile.getAbsolutePath());
+          List<String> newLines = new ArrayList<>();
+          boolean isBaseLines = false;
+          for (String line : lines) {
+            if (line.startsWith(CONFLICT_BASE_BEGIN)) {
+              isBaseLines = true;
+            }
+            if (line.startsWith(CONFLICT_RIGHT_BEGIN)) {
+              isBaseLines = false;
+            }
+            if (!isBaseLines) {
+              newLines.add(line);
+            }
+          }
+          String newContent = newLines.stream().collect(Collectors.joining(System.lineSeparator()));
+          if (!writeContent(sourceFile.getAbsolutePath(), newContent)) {
+            System.err.println(sourceFile.getAbsolutePath());
+          }
+        }
+      }
+    }
+  }
+
+  public static void main(String[] args) {
+    List<String> repoNames = new ArrayList<>();
+    repoNames.add("junit4");
+    repoNames.add("javaparser");
+    repoNames.add("gradle");
+    repoNames.add("error-prone");
+    //    repoNames.add("antlr4");
+    repoNames.add("deeplearning4j");
+    repoNames.add("cassandra");
+    repoNames.add("elasticsearch");
+    repoNames.add("realm-java");
+    repoNames.add("storm");
+    for (String repo : repoNames) {
+      String repoDir = "D:\\github\\ref_conflicts_diff2\\" + repo;
+      try {
+        convertDiff3ToDiff2(repoDir);
+        System.out.println("Done with " + repo);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   /**
