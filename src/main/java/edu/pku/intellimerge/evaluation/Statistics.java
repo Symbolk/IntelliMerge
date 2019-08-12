@@ -24,18 +24,16 @@ public class Statistics {
     PropertyConfigurator.configure("log4j.properties");
     MongoClientURI connectionString = new MongoClientURI("mongodb://localhost:27017");
     MongoClient mongoClient = new MongoClient(connectionString);
-    MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
-    MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
-    MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
+    MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual2");
+    MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual2");
+    MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual2");
 
     // rq3
-    String runtimeCSVPath = "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\runtimes.csv";
+    String runtimeCSVPath = "D:\\github\\temp\\runtimes.csv";
     // rq2
-    String conflictNUMCSVPath =
-        "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\conflicts_num.csv";
+    String conflictNUMCSVPath = "D:\\github\\temp\\conflicts_num.csv";
     // rq1
-    String statisticsCSVPath =
-        "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\statistics.csv";
+    String statisticsCSVPath = "D:\\github\\temp\\statistics.csv";
 
     Utils.writeContent(runtimeCSVPath, "merge_tool;repo_name;merge_commit;runtime\n", false);
     Utils.writeContent(
@@ -50,15 +48,15 @@ public class Statistics {
 
     List<String> repoNames = new ArrayList<>();
     repoNames.add("junit4");
-    repoNames.add("javaparser");
-    repoNames.add("gradle");
-    repoNames.add("error-prone");
-    repoNames.add("antlr4");
-    repoNames.add("deeplearning4j");
-    repoNames.add("cassandra");
-    repoNames.add("elasticsearch");
-    repoNames.add("realm-java");
-    repoNames.add("storm");
+//    repoNames.add("javaparser");
+//    repoNames.add("gradle");
+//    repoNames.add("error-prone");
+//    repoNames.add("antlr4");
+//    repoNames.add("deeplearning4j");
+//    repoNames.add("cassandra");
+//    repoNames.add("elasticsearch");
+//    repoNames.add("realm-java");
+//    repoNames.add("storm");
 
     for (String repoName : repoNames) {
       StringBuilder numBuilder = new StringBuilder();
@@ -201,7 +199,7 @@ public class Statistics {
       while (cursor.hasNext()) {
         Document doc = cursor.next();
         num += (Integer) doc.get("conflicts_num");
-        List<Document> merge_conflicts = (List<Document>) doc.get("merge_conflicts");
+        List<Document> merge_conflicts = (List<Document>) doc.get("conflict_blocks");
         for (Document mc : merge_conflicts) {
           loc += (Integer) mc.get("conflicts_loc");
         }

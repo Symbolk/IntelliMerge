@@ -110,7 +110,8 @@ public class Graph2CodePrinter {
     }
     StringBuilder builder = new StringBuilder();
     if (node instanceof TerminalNode) {
-      builder.append(node.getComment().isEmpty() ? "" : (node.getComment().trim() + System.lineSeparator()));
+      builder.append(
+          node.getComment().isEmpty() ? "" : (node.getComment().trim() + System.lineSeparator()));
       builder.append(
           node.getAnnotations().isEmpty()
               ? ""
@@ -130,8 +131,9 @@ public class Graph2CodePrinter {
         builder.append(
             node.getAnnotations().isEmpty()
                 ? ""
-                : node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
-                    + System.lineSeparator());
+                : (node.getAnnotations().stream()
+                        .collect(Collectors.joining(System.lineSeparator()))
+                    + System.lineSeparator()));
         builder.append(node.getOriginalSignature());
         builder.append(" {" + System.lineSeparator());
       }

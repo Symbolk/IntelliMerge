@@ -6,8 +6,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.univocity.parsers.common.record.Record;
-import edu.pku.intellimerge.client.APIClient;
+import edu.pku.intellimerge.client.IntelliMerge;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
@@ -26,9 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -39,20 +36,11 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "fastjson";
+  private static final String REPO_NAME = "junit4";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
-  private static final String GIT_URL = "https://github.com/javaparser/javaparser.git"; // unused
-  private static final String DIFF_DIR =
-      "D:\\github\\ref_conflicts\\" + REPO_NAME; // the directory to temporarily save the diff files
-  private static final String MERGE_RESULT_DIR =
-      "D:\\github\\merges\\"
-          + REPO_NAME
-          + File.separator
-          + Side.INTELLI.asString(); // the directory to eventually save the merge results
-  private static final String STATISTICS_FILE_PATH =
-      "F:\\workspace\\dev\\refactoring-analysis-results\\stats\\merge_scenarios_involved_refactorings_"
-          + REPO_NAME
-          + ".csv";
+  private static final String DATA_DIR =
+      "D:\\github\\ref_conflicts_diff2\\"
+          + REPO_NAME; // the directory to temporarily save the diff files
 
   public static void main(String[] args) {
     PropertyConfigurator.configure("log4j.properties");
@@ -60,38 +48,29 @@ public class Evaluator {
     try {
       MongoClientURI connectionString = new MongoClientURI("mongodb://localhost:27017");
       MongoClient mongoClient = new MongoClient(connectionString);
-      MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
-      MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
-      MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
+      MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual2");
+      MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual2");
+      MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual2");
       MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
       MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
       MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
 
-      APIClient apiClient =
-          new APIClient(REPO_NAME, REPO_DIR, GIT_URL, DIFF_DIR, MERGE_RESULT_DIR, true);
+      // replay the collected merge scenario with IntelliMerge and jFSTMerge, save the data on disk
+      // and mongodb
+      File file = new File(DATA_DIR);
+      File[] files = file.listFiles();
+      for (File f : files) {
+        if (f.isDirectory()) {
+          String sourceDir = f.getAbsolutePath();
+          String mergeCommit = f.getName();
 
-      // read merge scenario info from csv, merge and record runtime data in the database
-      List<Record> records = Utils.readCSVAsRecord(STATISTICS_FILE_PATH, ";");
-      Set<String> processedMergeCommits = new HashSet<>();
-
-      for (Record record : records) {
-        String mergeCommit = record.getString("merge_commit");
-        String parent1 = record.getString("parent1");
-        String parent2 = record.getString("parent2");
-        String baseCommit = record.getString("merge_base");
-        if (!processedMergeCommits.contains(mergeCommit)) {
-          // source files to be merged
-          String sourceDir = DIFF_DIR + File.separator + mergeCommit;
-
-          // merged files by 3 tools
+          // dirs to save merged files by 3 tools
           String intelliMergedDir =
               sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
           String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
           String gitMergedDir = sourceDir + File.separator + Side.GIT.asString() + File.separator;
           String manualMergedDir =
               sourceDir + File.separator + Side.MANUAL.asString() + File.separator;
-          String manualMergedFormattedDir =
-              sourceDir + File.separator + Side.MANUAL.asString() + "_Formatted" + File.separator;
 
           // jump some cases where no base files collected, or no manual files collected
           String baseDir = sourceDir + File.separator + Side.BASE.asString() + File.separator;
@@ -104,9 +83,15 @@ public class Evaluator {
             continue;
           }
 
-          // 1. merge with IntelliMerge and jFSTMerge
+          // 1. replay the merge with the three tools
           // runtime for each phase (need to run multiple times and get average)
-          List<Long> runtimes = apiClient.processDirectory(sourceDir, intelliMergedDir);
+          IntelliMerge intelliMerge = new IntelliMerge();
+          List<String> directories = new ArrayList<>();
+          directories.add(sourceDir + File.separator + Side.OURS.asString());
+          directories.add(sourceDir + File.separator + Side.BASE.asString());
+          directories.add(sourceDir + File.separator + Side.THEIRS.asString());
+          List<Long> runtimes = intelliMerge.mergeDirectories(directories, intelliMergedDir, true);
+          logger.info("IntelliMerge done in {}ms", runtimes.size() == 4 ? runtimes.get(3) : -1);
 
           Stopwatch stopwatch = Stopwatch.createStarted();
           JFSTMerge jfstMerge = new JFSTMerge();
@@ -120,30 +105,27 @@ public class Evaluator {
           logger.info("JFSTMerge done in {}ms.", jfstRuntime);
 
           // 2. remove all comments and format the manual results
-          Utils.removeAllComments(intelliMergedDir);
-          Utils.removeAllComments(gitMergedDir);
-          Utils.removeAllComments(jfstMergedDir);
-          Utils.removeAllComments(manualMergedDir);
+          //          Utils.removeAllComments(intelliMergedDir);
+          //          Utils.removeAllComments(gitMergedDir);
+          //          Utils.removeAllComments(jfstMergedDir);
+          //          Utils.removeAllComments(manualMergedDir);
           // in order to alleviate format caused diffs, compare git-merge and jfst with unformatted
           // manual
           // in order to alleviate format caused diffs, compare intelli with formatted manual
-          Utils.copyDir(manualMergedDir, manualMergedFormattedDir);
-          Utils.formatAllJavaFiles(manualMergedFormattedDir);
+          //          Utils.copyDir(manualMergedDir, manualMergedFormattedDir);
+          //          String manualMergedFormattedDir = sourceDir + File.separator +
+          // Side.MANUAL.asString() + "_Formatted" + File.separator;
+          //          Utils.formatAllJavaFiles(manualMergedFormattedDir);
 
           // 3. compare merge results with manual results
           ArrayList<SourceFile> temp = new ArrayList<>();
           ArrayList<SourceFile> manualMergedResults =
-              Utils.scanJavaSourceFiles(manualMergedFormattedDir, temp, manualMergedFormattedDir);
+              Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
 
           // 1. Compare IntelliMerge with Manual
-//          Document scenarioDoc;
+          //          Document scenarioDoc;
           Document scenarioDoc =
-              new Document("repo_name", REPO_NAME)
-                  .append("merge_commit", mergeCommit)
-                  .append("parent_1", parent1)
-                  .append("parent_2", parent2)
-                  .append("base_commit", baseCommit)
-                  .append("conflict_files_num", manualMergedResults.size());
+              new Document("repo_name", REPO_NAME).append("merge_commit", mergeCommit);
           if (runtimes.size() == 4) {
             scenarioDoc
                 .append("time_graph_building", runtimes.get(0))
@@ -154,7 +136,7 @@ public class Evaluator {
           Pair<Integer, List<Document>> intelliMergeConflicts =
               extractMergeConflicts(intelliMergedDir, false);
           scenarioDoc.append("conflicts_num", intelliMergeConflicts.getLeft());
-          scenarioDoc.append("merge_conflicts", intelliMergeConflicts.getRight());
+          scenarioDoc.append("conflict_blocks", intelliMergeConflicts.getRight());
           ComparisonResult intelliVSmanual =
               compareAutoMerged(intelliMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", intelliVSmanual.getTotalAutoMergeLOC());
@@ -164,23 +146,19 @@ public class Evaluator {
           scenarioDoc.append("correct_loc_in_manual", intelliVSmanual.getTotalSameManualLOC());
           scenarioDoc.append("auto_merge_precision", intelliVSmanual.getAutoMergePrecision());
           scenarioDoc.append("auto_merge_recall", intelliVSmanual.getAutoMergeRecall());
-          // files that stills contains diff hunks in auto_merge parts
+          // diff hunks between auto-merged code and manually-merged code
           scenarioDoc.append("auto_merge_diffs", intelliVSmanual.getAutoMergedDiffDocs());
           intelliDBCollection.insertOne(scenarioDoc);
 
-//           2. Compare JFSTMerge with Manual
+          // 2. Compare JFSTMerge with Manual
           scenarioDoc =
               new Document("repo_name", REPO_NAME)
                   .append("merge_commit", mergeCommit)
-                  .append("parent_1", parent1)
-                  .append("parent_2", parent2)
-                  .append("base_commit", baseCommit)
-                  .append("time_overall", jfstRuntime)
-                  .append("conflict_files_num", manualMergedResults.size());
+                  .append("time_overall", jfstRuntime);
           Pair<Integer, List<Document>> jfstMergeConflicts =
               extractMergeConflicts(jfstMergedDir, false);
           scenarioDoc.append("conflicts_num", jfstMergeConflicts.getLeft());
-          scenarioDoc.append("merge_conflicts", jfstMergeConflicts.getRight());
+          scenarioDoc.append("conflict_blocks", jfstMergeConflicts.getRight());
           ComparisonResult jfstVSmanual = compareAutoMerged(jfstMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", jfstVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", jfstVSmanual.getTotalManualMergeLOC());
@@ -195,17 +173,11 @@ public class Evaluator {
           // 3. Compare GitMerge with Manual
           temp = new ArrayList<>();
           manualMergedResults = Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
-          scenarioDoc =
-              new Document("repo_name", REPO_NAME)
-                  .append("merge_commit", mergeCommit)
-                  .append("parent_1", parent1)
-                  .append("parent_2", parent2)
-                  .append("base_commit", baseCommit)
-                  .append("conflict_files_num", manualMergedResults.size());
+          scenarioDoc = new Document("repo_name", REPO_NAME).append("merge_commit", mergeCommit);
           Pair<Integer, List<Document>> gitMergeConflicts =
-              extractMergeConflicts(gitMergedDir, false);
+              extractMergeConflicts(gitMergedDir, true);
           scenarioDoc.append("conflicts_num", gitMergeConflicts.getLeft());
-          scenarioDoc.append("merge_conflicts", gitMergeConflicts.getRight());
+          scenarioDoc.append("conflict_blocks", gitMergeConflicts.getRight());
           ComparisonResult gitVSmanual = compareAutoMerged(gitMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", gitVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", gitVSmanual.getTotalManualMergeLOC());
@@ -218,7 +190,6 @@ public class Evaluator {
           gitDBCollection.insertOne(scenarioDoc);
 
           logger.info("Done with {}:{}", REPO_NAME, mergeCommit);
-          processedMergeCommits.add(mergeCommit);
         }
       }
     } catch (Exception e) {
@@ -227,7 +198,7 @@ public class Evaluator {
   }
 
   /**
-   * Extract all merge conflicts from merged results
+   * Extract all merge conflicts and !remove them! from merged results
    *
    * @param mergeResultDir
    * @param diff3Style
@@ -245,7 +216,10 @@ public class Evaluator {
       int conflictLOC = 0;
       List<Document> conflictDocs = new ArrayList<>();
       List<ConflictBlock> conflictBlocks =
-          Utils.extractConflictBlocks(sourceFile.getAbsolutePath(), diff3Style, true);
+          Utils.extractConflictBlocks(
+              sourceFile.getAbsolutePath(),
+              sourceFile.getAbsolutePath().replaceFirst("Merged", "Merged_auto"),
+              true);
       conflictNum += conflictBlocks.size();
       for (ConflictBlock conflictBlock : conflictBlocks) {
         Document conflictDoc =
@@ -284,6 +258,7 @@ public class Evaluator {
     int numberOfDiffFiles = 0;
     Double autoMergePrecision = 0.0;
     Double autoMergeRecall = 0.0;
+    // total numbers of all files in this merge scenario
     Integer totalAutoMergedLOC = 0;
     Integer totalManualMergedLOC = 0;
     Integer totalSameLOCMerged = 0;
@@ -291,13 +266,12 @@ public class Evaluator {
 
     List<Document> fileDocs = new ArrayList<>();
 
-    // for each file in the manual results, find and diff with the corresponding result auto-merged
-    // by tools
+    // for each file in the merged results, compare with the manual merged file by `git diff`
     for (SourceFile manualMergedFile : manualMergedResults) {
       String fromFilePath = manualMergedFile.getAbsolutePath();
       String relativePath = manualMergedFile.getRelativePath();
       String toFilePath = Utils.formatPathSeparator(mergeResultDir + relativePath);
-      // TODO modify jFSTMerge to save as the relative path
+      // TODO modify jFSTMerge to save files with hierarchy, currently it saves files flatly
       String fileName = manualMergedFile.getFileName();
       if (mergeResultDir.contains(Side.JFST.asString())) {
         toFilePath = Utils.formatPathSeparator(mergeResultDir + File.separator + fileName);
@@ -306,8 +280,9 @@ public class Evaluator {
       double fileRecall = 0.0;
 
       int manualLOC =
-          Utils.readFileToLines(fromFilePath).size(); // the number of code lines in the manual merged file
-      int autoMergedLOC = Utils.computeFileLOC(toFilePath);
+          Utils.readFileToLines(fromFilePath)
+              .size(); // the number of code lines in the manual merged file
+      int autoMergedLOC = Utils.readFileToLines(toFilePath).size();
       totalManualMergedLOC += manualLOC;
       totalAutoMergedLOC += autoMergedLOC;
 
@@ -332,20 +307,20 @@ public class Evaluator {
       DiffParser parser = new UnifiedDiffParser();
       List<Diff> diffs = parser.parse(new ByteArrayInputStream(diffOutput.getBytes()));
       for (Diff diff : diffs) { // usually 1, since only two files are compared here
-        // keep the true positive hunks
+        // remove false negative diff hunks, like empty lines, moved code
         List<Hunk> visitedHunks = new ArrayList<>();
         for (Hunk hunk : diff.getHunks()) {
           // if there are two hunk with the same line count but opposite direction (+/-), compare
-          // the lines to counteract possibly moved hunks
-//          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
-//            visitedHunks.add(hunk);
-//          }
-          visitedHunks.add(hunk);
+          //           the lines to counteract possibly moved hunks
+          if (!removeMovingCausedHunks(hunk, visitedHunks)) {
+            visitedHunks.add(hunk);
+          }
+          //          visitedHunks.add(hunk);
         }
         // double check the diff hunks
-//        removeHunksInvolvingConflicts(visitedHunks);
-//        visitedHunks = removeFormatCausedHunks(visitedHunks);
-        // save the true positive hunks into mongodb
+        //        removeHunksInvolvingConflicts(visitedHunks);
+        //        visitedHunks = removeFormatCausedHunks(visitedHunks);
+        // if there is no `real` diff hunks, mark it as the same file
         numberOfDiffFiles += visitedHunks.size() > 0 ? 1 : 0;
 
         for (Hunk hunk : visitedHunks) {
@@ -377,12 +352,12 @@ public class Evaluator {
         if (autoMergedLOC > 0) {
           filePrecision = sameLOCMerged / (double) autoMergedLOC;
         } else {
-          filePrecision = 1.0;
+          filePrecision = 0.0;
         }
-        if (autoMergedLOC > 0) {
+        if (manualLOC > 0) {
           fileRecall = sameLOCManual / (double) manualLOC;
         } else {
-          fileRecall = 1.0;
+          fileRecall = 0.0;
         }
         Document fileDocument =
             new Document("file_relative_path", relativePath)
@@ -483,14 +458,14 @@ public class Evaluator {
         .collect(Collectors.toList());
   }
 
-//  private static List<Hunk> removeHunksInvolvingConflicts(List<Hunk> hunks) {
-//    return hunks.stream()
-//            .filter(
-//                    hunk ->
-//                            getHunkContent(hunk, Line.LineType.FROM, true).concat(
-//                            (getHunkContent(hunk, Line.LineType.TO, true))).contains("<<<<<<")
-//            .collect(Collectors.toList());
-//  }
+  //  private static List<Hunk> removeHunksInvolvingConflicts(List<Hunk> hunks) {
+  //    return hunks.stream()
+  //            .filter(
+  //                    hunk ->
+  //                            getHunkContent(hunk, Line.LineType.FROM, true).concat(
+  //                            (getHunkContent(hunk, Line.LineType.TO, true))).contains("<<<<<<")
+  //            .collect(Collectors.toList());
+  //  }
 
   /**
    * Get the corresponding content from hunk by line type (FROM/TO/NEUTRAL)

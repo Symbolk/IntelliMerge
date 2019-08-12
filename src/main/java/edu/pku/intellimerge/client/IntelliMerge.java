@@ -7,6 +7,7 @@ import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.SemanticGraphBuilder2;
 import edu.pku.intellimerge.core.ThreewayGraphMerger;
 import edu.pku.intellimerge.exception.RangeNullException;
+import edu.pku.intellimerge.io.SemanticGraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -183,8 +184,7 @@ public class IntelliMerge {
     // 1. Collect diff java files and imported files between ours/theirs commit and base commit
     // Collect source files to be analyzed in the system temp dir
     // For Windows: C:\Users\USERNAME\AppData\Local\Temp\IntelliMerge\
-    String collectedDir =
-        System.getProperty("java.io.tmpdir") + "IntelliMerge" + File.separator;
+    String collectedDir = System.getProperty("java.io.tmpdir") + "IntelliMerge2" + File.separator;
 
     SourceFileCollector collector = new SourceFileCollector(repoPath, branchNames, collectedDir);
 
@@ -217,12 +217,19 @@ public class IntelliMerge {
     ThreewayGraphMerger merger =
         new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
+    SemanticGraphExporter.printAsDot(baseGraph, false);
     // 3. Match nodes and merge programs with the 3-way graphs
     stopwatch.reset().start();
     merger.threewayMap();
     stopwatch.stop();
 
     logger.info("({}ms) Done matching graphs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+    // save the detected refactorings into csv for human validation and debugging
+    String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
+    String b2tCsvFilePath = outputPath + File.separator + "theirs_refactorings.csv";
+    saveAlignment(b2oCsvFilePath, merger.b2oMatching);
+    saveAlignment(b2tCsvFilePath, merger.b2tMatching);
 
     // 4. Print the merged graph into files, keeping the original format and directory structure
     stopwatch.reset().start();
@@ -231,12 +238,12 @@ public class IntelliMerge {
     logger.info("({}ms) Done merging programs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     // Clear and remove temp directory
-    Utils.removeDir(collectedDir);
+    //    Utils.removeDir(collectedDir);
     return mergedFilePaths;
   }
 
   /**
-   * Analyze all java files under the target directory, as if they are collected from merge scenario
+   * Merge directories in the order <left> <base> <right> and return merged file paths
    *
    * @return merging results
    * @throws Exception
@@ -293,6 +300,76 @@ public class IntelliMerge {
     logger.info("Overall time cost: {}ms.", overall);
 
     return mergedFilePaths;
+  }
+
+  /**
+   * Merge directories in the order <left> <base> <right> and return time cost for each phase
+   *
+   * @param directoryPaths
+   * @param outputPath
+   * @param hasSubModule
+   * @return
+   * @throws Exception
+   */
+  public List<Long> mergeDirectories(
+      List<String> directoryPaths, String outputPath, boolean hasSubModule) throws Exception {
+
+    ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+    // 1. Build graphs from given directories
+    Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(directoryPaths.get(0), Side.OURS, hasSubModule));
+    Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(directoryPaths.get(1), Side.BASE, hasSubModule));
+    Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
+        executorService.submit(
+            new SemanticGraphBuilder2(directoryPaths.get(2), Side.THEIRS, hasSubModule));
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
+    Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
+    Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
+
+    stopwatch.stop();
+    executorService.shutdown();
+    long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done building graphs.", buildingTime);
+
+    Utils.prepareDir(outputPath);
+    ThreewayGraphMerger merger =
+        new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+
+    // 2. Match nodes across the 3-way graphs.
+    stopwatch.reset().start();
+    merger.threewayMap();
+    stopwatch.stop();
+    long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done matching graphs.", matchingTime);
+
+    // save the detected refactorings into csv for human validation and debugging
+    String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
+    String b2tCsvFilePath = outputPath + File.separator + "theirs_refactorings.csv";
+    saveAlignment(b2oCsvFilePath, merger.b2oMatching);
+    saveAlignment(b2tCsvFilePath, merger.b2tMatching);
+
+    // 3. Merge programs with the 3-way graphs, keeping the original format and directory structure
+    stopwatch.reset().start();
+    List<String> mergedFilePaths = merger.threewayMerge();
+    stopwatch.stop();
+    long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done merging programs.", matchingTime);
+
+    long overall = buildingTime + matchingTime + mergingTime;
+    logger.info("Overall time cost: {}ms.", overall);
+
+    List<Long> runtimes = new ArrayList<>();
+    runtimes.add(buildingTime);
+    runtimes.add(matchingTime);
+    runtimes.add(mergingTime);
+    runtimes.add(overall);
+    return runtimes;
   }
 
   /**
