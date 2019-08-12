@@ -110,12 +110,12 @@ public class Graph2CodePrinter {
     }
     StringBuilder builder = new StringBuilder();
     if (node instanceof TerminalNode) {
-      builder.append(node.getComment().isEmpty() ? "" : node.getComment());
+      builder.append(node.getComment().isEmpty() ? "" : (node.getComment().trim() + System.lineSeparator()));
       builder.append(
           node.getAnnotations().isEmpty()
               ? ""
-              : node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
-                  + System.lineSeparator());
+              : (node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
+                  + System.lineSeparator()));
       builder.append(node.getModifiers().stream().collect(Collectors.joining(" "))).append(" ");
       if (node.getNodeType().equals(NodeType.INITIALIZER_BLOCK)) {
         builder.append(node.getOriginalSignature().contains("static") ? "static" : "");
@@ -125,7 +125,8 @@ public class Graph2CodePrinter {
       builder.append(((TerminalNode) node).getBody());
     } else if (node instanceof CompositeNode) {
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append(node.getComment().isEmpty() ? "" : node.getComment());
+        builder.append(
+            node.getComment().isEmpty() ? "" : (node.getComment().trim() + System.lineSeparator()));
         builder.append(
             node.getAnnotations().isEmpty()
                 ? ""

@@ -638,7 +638,7 @@ public class Utils {
     repoNames.add("javaparser");
     repoNames.add("gradle");
     repoNames.add("error-prone");
-    //    repoNames.add("antlr4");
+    repoNames.add("antlr4");
     repoNames.add("deeplearning4j");
     repoNames.add("cassandra");
     repoNames.add("elasticsearch");

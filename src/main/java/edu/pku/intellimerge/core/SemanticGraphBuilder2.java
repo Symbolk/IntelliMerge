@@ -219,7 +219,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     /*
      * build the graph by analyzing every COMPILATION_UNIT
      */
-    logger.info("({}) CUs in {}", compilationUnits.size(), side);
+    logger.info("({}) compilationUnits in {}", compilationUnits.size(), side);
     for (CompilationUnit cu : compilationUnits) {
       processCompilationUnit(cu);
     }
@@ -565,7 +565,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .map(String::trim)
                   .collect(Collectors.toList());
           for (VariableDeclarator field : fd.getVariables()) {
-            displayName = field.toString().trim();
+            displayName = field.getNameAsString().trim();
             qualifiedName = qualifiedTypeName + "." + displayName;
             originalSignature = (field.getTypeAsString() + " " + field.getNameAsString()).trim();
             body =
@@ -718,8 +718,11 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
 
-          body = getCallableBody(md);
-          body = body.length() > 0 ? body : ";";
+          if (md.getBody().isPresent()) {
+            body = getCallableBody(md);
+          } else {
+            body = ";";
+          }
           MethodDeclNode mdNode =
               new MethodDeclNode(
                   nodeCount++,
