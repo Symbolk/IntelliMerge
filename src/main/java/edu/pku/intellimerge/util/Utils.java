@@ -426,29 +426,28 @@ public class Utils {
   }
 
   /**
-   * Extract merge conflicts from the file, in diff3 or diff2 style
+   * Extract merge conflicts from the input file and write result into the output file, return a
+   * list of conflict blocks
    *
-   * @param path
+   * @param inputPath
    * @param diff3Style
-   * @param removeConflicts
    * @return
    */
   public static List<ConflictBlock> extractConflictBlocks(
-      String path, boolean diff3Style, boolean removeConflicts) {
+      String inputPath, String outputPath, boolean diff3Style) {
     return diff3Style
-        ? extractConflictBlocksDiff3(path, removeConflicts)
-        : extractConflictBlocksDiff2(path, removeConflicts);
+        ? extractConflictBlocksDiff3(inputPath, outputPath)
+        : extractConflictBlocksDiff2(inputPath, outputPath);
   }
 
   /**
-   * Extract merge conflicts from the file
+   * Extract merge conflicts and generate file without conflicts
    *
-   * @param path
-   * @param removeConflicts whether to remove conflict blocks while extracting
+   * @param inputPath
    * @return list of merge conflicts
    */
   public static List<ConflictBlock> extractConflictBlocksDiff2(
-      String path, boolean removeConflicts) {
+      String inputPath, String outputPath) {
     String leftConflictingContent = "";
     String rightConflictingContent = "";
     boolean isConflictOpen = false;
@@ -458,7 +457,7 @@ public class Utils {
     int endLOC = 0;
 
     List<ConflictBlock> mergeConflicts = new ArrayList<>();
-    List<String> lines = readFileToLines(path);
+    List<String> lines = readFileToLines(inputPath);
     Iterator<String> iterator = lines.iterator();
     while (iterator.hasNext()) {
       String line = iterator.next();
@@ -467,22 +466,16 @@ public class Utils {
         isConflictOpen = true;
         isLeftContent = true;
         startLOC = lineCounter;
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
       } else if (line.contains(CONFLICT_RIGHT_BEGIN)) {
         isLeftContent = false;
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
       } else if (line.contains(CONFLICT_RIGHT_END)) {
         endLOC = lineCounter;
         ConflictBlock mergeConflict =
             new ConflictBlock(leftConflictingContent, rightConflictingContent, startLOC, endLOC);
         mergeConflicts.add(mergeConflict);
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
         // reset the flags
         isConflictOpen = false;
         isLeftContent = false;
@@ -495,27 +488,24 @@ public class Utils {
           } else {
             rightConflictingContent += line + "\n";
           }
-          if (removeConflicts) {
-            iterator.remove();
-          }
+          iterator.remove();
         }
       }
     }
-    if (mergeConflicts.size() > 0 && removeConflicts) {
-      writeLinesToFile(path, lines);
+    if (!outputPath.isEmpty()) {
+      writeLinesToFile(outputPath, lines);
     }
     return mergeConflicts;
   }
 
   /**
-   * Extract merge conflicts from the file
+   * Extract merge conflicts and generate file without conflicts
    *
-   * @param path
-   * @param removeConflicts whether to remove conflict blocks while extracting
+   * @param inputPath
    * @return list of merge conflicts
    */
   public static List<ConflictBlock> extractConflictBlocksDiff3(
-      String path, boolean removeConflicts) {
+      String inputPath, String outputPath) {
     // diff3 conflict style
     String leftConflictingContent = "";
     String baseConflictingContent = "";
@@ -528,7 +518,7 @@ public class Utils {
     int endLOC = 0;
 
     List<ConflictBlock> mergeConflicts = new ArrayList<>();
-    List<String> lines = readFileToLines(path);
+    List<String> lines = readFileToLines(inputPath);
     Iterator<String> iterator = lines.iterator();
     while (iterator.hasNext()) {
       String line = iterator.next();
@@ -537,20 +527,14 @@ public class Utils {
         isConflictOpen = true;
         isLeftContent = true;
         startLOC = lineCounter;
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
       } else if (line.contains(CONFLICT_BASE_BEGIN)) {
         isLeftContent = false;
         isBaseContent = true;
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
       } else if (line.contains(CONFLICT_RIGHT_BEGIN)) {
         isBaseContent = false;
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
       } else if (line.contains(CONFLICT_RIGHT_END)) {
         endLOC = lineCounter;
         ConflictBlock mergeConflict =
@@ -561,9 +545,7 @@ public class Utils {
                 startLOC,
                 endLOC);
         mergeConflicts.add(mergeConflict);
-        if (removeConflicts) {
-          iterator.remove();
-        }
+        iterator.remove();
 
         // reset the flags
         isConflictOpen = false;
@@ -581,14 +563,12 @@ public class Utils {
           } else {
             rightConflictingContent += line + "\n";
           }
-          if (removeConflicts) {
-            iterator.remove();
-          }
+          iterator.remove();
         }
       }
     }
-    if (mergeConflicts.size() > 0 && removeConflicts) {
-      writeLinesToFile(path, lines);
+    if (!outputPath.isEmpty()) {
+      writeLinesToFile(outputPath, lines);
     }
     return mergeConflicts;
   }

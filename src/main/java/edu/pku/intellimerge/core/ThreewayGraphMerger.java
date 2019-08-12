@@ -148,30 +148,35 @@ public class ThreewayGraphMerger {
                 theirsCU.getPackageStatement()));
 
         // conservative strategy: remove no imports in case of latent bugs
-        //        Set<String> union = new LinkedHashSet<>(theirsCU.getImportStatements());
-        //        union.addAll(oursCU.getImportStatements());
-        //        mergedCU.setImportStatements(union);
-        //        List<String> oursList = new ArrayList<>(oursCU.getImportStatements());
-        //        List<String> baseList = new ArrayList<>(((CompilationUnitNode)
-        // node).getImportStatements());
-        //        List<String> theirsList = new ArrayList<>(theirsCU.getImportStatements());
-        //        List<String> mergedList =
-        //            Stream.of(oursList, baseList, theirsList)
-        //                .flatMap(Collection::stream)
-        //                .distinct()
-        //                .collect(Collectors.toList());
-        //        mergedCU.setImportStatements(new LinkedHashSet<>(mergedList));
-        String oursString =
-            oursCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        String baseString =
-            ((CompilationUnitNode) node)
-                .getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        String theirsString =
-            theirsCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        LinkedHashSet<String> mergedSet =
-            new LinkedHashSet<>(
-                Arrays.asList(mergeTextually(oursString, baseString, theirsString).split("\n")));
-        mergedCU.setImportStatements(new LinkedHashSet<>(mergedSet));
+        Set<String> union = new LinkedHashSet<>(oursCU.getImportStatements());
+        union.addAll(theirsCU.getImportStatements());
+        mergedCU.setImportStatements(union);
+        //                List<String> oursList = new ArrayList<>(oursCU.getImportStatements());
+        //                List<String> baseList = new ArrayList<>(((CompilationUnitNode)
+        //         node).getImportStatements());
+        //                List<String> theirsList = new ArrayList<>(theirsCU.getImportStatements());
+        //                List<String> mergedList =
+        //                    Stream.of(oursList, baseList, theirsList)
+        //                        .flatMap(Collection::stream)
+        //                        .distinct()
+        //                        .collect(Collectors.toList());
+        //                mergedCU.setImportStatements(new LinkedHashSet<>(mergedList));
+        //
+        //        String oursString =
+        //
+        // oursCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        //        String baseString =
+        //            ((CompilationUnitNode) node)
+        //
+        // .getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        //        String theirsString =
+        //
+        // theirsCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
+        //        LinkedHashSet<String> mergedSet =
+        //            new LinkedHashSet<>(
+        //                Arrays.asList(mergeTextually(oursString, baseString,
+        // theirsString).split("\n")));
+        //        mergedCU.setImportStatements(new LinkedHashSet<>(mergedSet));
 
         return mergedCU;
       }
@@ -221,7 +226,9 @@ public class ThreewayGraphMerger {
             mergeTextually(
                 oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
         mergedTerminal.setComment(mergedComment);
-        mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
+        if (mergedAnnotations.length() > 0) {
+          mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
+        }
         mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
@@ -252,8 +259,12 @@ public class ThreewayGraphMerger {
                 node.getOriginalSignature(),
                 theirsNode.getOriginalSignature());
         mergedNonTerminal.setComment(mergedComment);
-        mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
-        mergedNonTerminal.setModifiers(mergedModifiers);
+        if (mergedAnnotations.length() > 0) {
+          mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
+        }
+        if (mergedAnnotations.length() > 0) {
+          mergedNonTerminal.setModifiers(mergedModifiers);
+        }
         mergedNonTerminal.setOriginalSignature(mergedSignature);
 
         // iteratively merge its children
@@ -267,12 +278,16 @@ public class ThreewayGraphMerger {
         // consider unmatched nodes as added ones
         // if parent matched, insert it into the children of parent, between nearest neighbors
         // handle possible duplicate added nodes to avoid semantic conflicts
-        Map<NodeType, List<SemanticNode>> addedOurs = b2oMatching.unmatchedNodes2;
-        Map<NodeType, List<SemanticNode>> addedTheirs = b2tMatching.unmatchedNodes2;
+        List<SemanticNode> addedOurs = filterAddedNodes(node, b2oMatching);
+        List<SemanticNode> addedTheirs = filterAddedNodes(node, b2tMatching);
         Pair<List<SemanticNode>, List<SemanticNode>> pair =
-            removeDuplicateAddedNodes(addedOurs, addedTheirs);
-        mergeUnmatchedNodes(node, mergedNonTerminal, b2oMatching, pair.getLeft());
-        mergeUnmatchedNodes(node, mergedNonTerminal, b2tMatching, pair.getRight());
+            removeDuplicates(addedOurs, addedTheirs);
+        if (!pair.getLeft().isEmpty()) {
+          mergeUnmatchedNodes(mergedNonTerminal, pair.getLeft());
+        }
+        if (!pair.getRight().isEmpty()) {
+          mergeUnmatchedNodes(mergedNonTerminal, pair.getRight());
+        }
 
         return mergedNonTerminal;
       } else {
@@ -283,32 +298,56 @@ public class ThreewayGraphMerger {
   }
 
   /**
-   * Handle duplicate added nodes to avoid semantic conflicts, rare but still possible
+   * Get the added node under the composite node
+   *
+   * @param node
+   * @param matching
+   * @return
+   */
+  private List<SemanticNode> filterAddedNodes(SemanticNode node, TwowayMatching matching) {
+    Map<NodeType, List<SemanticNode>> unmatchedNodes = matching.unmatchedNodes2;
+    // for each type of newly added nodes
+    List<SemanticNode> addedNodes = new ArrayList<>();
+    List<SemanticNode> results = new ArrayList<>();
+    for (Map.Entry<NodeType, List<SemanticNode>> entry : unmatchedNodes.entrySet()) {
+      addedNodes.addAll(entry.getValue());
+    }
+    SemanticNode matchedParentNode = matching.one2oneMatchings.getOrDefault(node, null);
+    if (matchedParentNode != null) {
+      for (SemanticNode newlyAdded : addedNodes) {
+        SemanticNode parent = newlyAdded.getParent();
+        if (parent != null && parent.equals(matchedParentNode)) {
+          results.add(newlyAdded);
+        }
+      }
+    }
+
+    results =
+        new ArrayList(
+            results.stream()
+                .sorted(Comparator.comparing(SemanticNode::getNodeID))
+                .collect(Collectors.toList()));
+    return results;
+  }
+  /**
+   * Remove same nodes added in both sides
    *
    * @param addedOurs
    * @param addedTheirs
    */
-  private Pair<List<SemanticNode>, List<SemanticNode>> removeDuplicateAddedNodes(
-      Map<NodeType, List<SemanticNode>> addedOurs, Map<NodeType, List<SemanticNode>> addedTheirs) {
-    // for each type of newly added nodes
-    List<SemanticNode> nodes1 = new ArrayList<>();
-    List<SemanticNode> nodes2 = new ArrayList<>();
-    for (Map.Entry<NodeType, List<SemanticNode>> entry : addedOurs.entrySet()) {
-      nodes1.addAll(entry.getValue());
-    }
-    for (Map.Entry<NodeType, List<SemanticNode>> entry : addedTheirs.entrySet()) {
-      nodes2.addAll(entry.getValue());
-    }
-    List<SemanticNode> nodes2Copy = new ArrayList<>(nodes2);
-    for (SemanticNode n1 : nodes1) {
+  private Pair<List<SemanticNode>, List<SemanticNode>> removeDuplicates(
+      List<SemanticNode> addedOurs, List<SemanticNode> addedTheirs) {
+
+    List<SemanticNode> nodes2Copy = new ArrayList<>(addedTheirs);
+    for (SemanticNode n1 : addedOurs) {
       for (SemanticNode n2 : nodes2Copy) {
         if (n1.getOriginalSignature().equals(n2.getOriginalSignature())) {
           // if the signature is duplicate, remove one of them
-          nodes2.remove(n2);
+          addedTheirs.remove(n2);
         }
       }
     }
-    return Pair.of(nodes1, nodes2);
+    return Pair.of(addedOurs, addedTheirs);
   }
 
   /**
@@ -395,22 +434,17 @@ public class ThreewayGraphMerger {
   /**
    * Merge unmatched nodes (added) from ours and theirs
    *
-   * @param node parent node to add into
    * @param mergedNonTerminal
    */
-  private void mergeUnmatchedNodes(
-      SemanticNode node,
-      CompositeNode mergedNonTerminal,
-      TwowayMatching matching,
-      List<SemanticNode> addedNodes) {
-    SemanticNode matchedParentNode = matching.one2oneMatchings.getOrDefault(node, null);
-    if (matchedParentNode != null) {
-      for (SemanticNode newlyAdded : addedNodes) {
-        SemanticNode parent = newlyAdded.getParent();
-        if (parent != null && parent.equals(matchedParentNode)) {
-          insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
-        }
-      }
+  private void mergeUnmatchedNodes(CompositeNode mergedNonTerminal, List<SemanticNode> addedNodes) {
+    //    for(Map.Entry<SemanticNode, SemanticNode > entry : matching.one2oneMatchings.entrySet()){
+    //      if(entry.getValue().getDisplayName().contains("annotationMatchers")){
+    //        System.out.println(entry);
+    //      }
+    //    }
+    for (SemanticNode newlyAdded : addedNodes) {
+      SemanticNode parent = newlyAdded.getParent();
+      insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
     }
   }
   /**

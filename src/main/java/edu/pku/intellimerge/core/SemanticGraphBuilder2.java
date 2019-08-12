@@ -570,7 +570,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             originalSignature = (field.getTypeAsString() + " " + field.getNameAsString()).trim();
             body =
                 field.getInitializer().isPresent()
-                    ? " = " + field.getInitializer().get().toString() + ";"
+                    ? field.getTokenRange().get().toString().replaceFirst(displayName, "")
+                        + ";"
                     : ";";
 
             annotations =

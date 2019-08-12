@@ -15,7 +15,7 @@ public class TestConflictBlockExtraction {
         Utils.getProjectRootDir()
             + "/src/test/resources/Rename/RenameMethod/BothSides/gitMerged/SourceRoot.java";
 
-    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff3(path, false);
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff3(path, "");
     assertThat(conflictBlocks.size()).isOne();
     assertThat(conflictBlocks.get(0).getBase())
         .contains("Map<Path, ParseResult<CompilationUnit>> tryToParse(JavaParser parser)");
@@ -30,7 +30,7 @@ public class TestConflictBlockExtraction {
         Utils.getProjectRootDir()
             + "/src/test/resources/Extract/ExtractMethod/gitMerged/SourceRoot.java";
 
-    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff2(path, false);
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocksDiff2(path, "");
     assertThat(conflictBlocks.size()).isEqualTo(4);
     assertThat(conflictBlocks.get(0).getBase().length()).isZero();
     assertThat(conflictBlocks.get(1).getRight())
