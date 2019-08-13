@@ -907,7 +907,7 @@ public class Utils {
   }
 
   /**
-   * Compute the lines of code in a file, without comments or blanck lines
+   * Compute the lines of code in a file, ignore blank lines
    *
    * @param path
    * @return

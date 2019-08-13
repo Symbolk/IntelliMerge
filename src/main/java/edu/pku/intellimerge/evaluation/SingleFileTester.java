@@ -2,7 +2,9 @@ package edu.pku.intellimerge.evaluation;
 
 import br.ufpe.cin.app.JFSTMerge;
 import edu.pku.intellimerge.client.IntelliMerge;
+import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.util.Utils;
 import org.apache.log4j.PropertyConfigurator;
 
 import java.io.File;
@@ -20,28 +22,53 @@ public class SingleFileTester {
   public static void main(String[] args) throws Exception {
     PropertyConfigurator.configure("log4j.properties");
 
-//    String mergeCommit = "f4682ce2558cdca60d12fbef39e9ca0370eba592";
-//    String sourceDir = "D:\\github\\ref_conflicts\\" + REPO_NAME + File.separator + mergeCommit;
-//    String intelliMergedDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
-//
-//    String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
-//    String manualMergedDir =
-//        sourceDir + File.separator + Side.MANUAL.asString() + "_Formatted" + File.separator;
-//
-//    String targetDir = "D:\\github\\test";
-//    List<String> relativePaths = new ArrayList<>();
+    testMerge();
+    //    testPAndR();
+  }
 
-    // Test Copying
-//    relativePaths.add("src/test/java/org/junit/tests/running/classes/TestClassTest.java");
-    //                Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
-    //    Utils.removeAllComments(intelliMergedDir);
-    //    Utils.removeAllComments(manualMergedDir);
-    //    Utils.removeAllComments(jfstMergedDir);
-
-    // Test Merging
+  private static void testMerge() throws Exception {
     String dirToMerge = "D:\\github\\test";
     mergeWithIntelli(dirToMerge);
     mergeWithJFST(dirToMerge);
+  }
+
+  private static void testCopy() {
+    String mergeCommit = "f4682ce2558cdca60d12fbef39e9ca0370eba592";
+    String sourceDir = "D:\\github\\ref_conflicts\\" + REPO_NAME + File.separator + mergeCommit;
+    String intelliMergedDir = sourceDir + File.separator + Side.INTELLI.asString() + File.separator;
+
+    String jfstMergedDir = sourceDir + File.separator + Side.JFST.asString() + File.separator;
+    String manualMergedDir =
+        sourceDir + File.separator + Side.MANUAL.asString() + "_Formatted" + File.separator;
+
+    String targetDir = "D:\\github\\test";
+    List<String> relativePaths = new ArrayList<>();
+
+    //     Test Copying
+    relativePaths.add("src/test/java/org/junit/tests/running/classes/TestClassTest.java");
+    Utils.copyAllVersions(sourceDir, relativePaths, targetDir);
+    Utils.removeAllComments(intelliMergedDir);
+    Utils.removeAllComments(manualMergedDir);
+    Utils.removeAllComments(jfstMergedDir);
+  }
+
+
+  private static void testPAndR() throws Exception {
+    String manualMergedDir =
+        "D:\\github\\ref_conflicts_diff2\\junit4\\02fc1f509a670de3632417bbf33168989bfcf872\\manualMerged";
+    ArrayList<SourceFile> temp = new ArrayList<>();
+    ArrayList<SourceFile> manualMergedResults =
+        Utils.scanJavaSourceFiles(manualMergedDir, temp, manualMergedDir);
+
+    ComparisonResult intelliVSmanual =
+        Evaluator.compareAutoMerged(
+            "D:\\github\\ref_conflicts_diff2\\junit4\\02fc1f509a670de3632417bbf33168989bfcf872\\intelliMerged_auto",
+            manualMergedResults);
+    ComparisonResult jfstVSmanual =
+        Evaluator.compareAutoMerged(
+            "D:\\github\\ref_conflicts_diff2\\junit4\\02fc1f509a670de3632417bbf33168989bfcf872\\jfstMerged_auto",
+            manualMergedResults);
+    System.out.println(intelliVSmanual);
   }
 
   private static void mergeWithIntelli(String sourceDir) throws Exception {

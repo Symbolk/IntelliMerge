@@ -24,9 +24,9 @@ public class Statistics {
     PropertyConfigurator.configure("log4j.properties");
     MongoClientURI connectionString = new MongoClientURI("mongodb://localhost:27017");
     MongoClient mongoClient = new MongoClient(connectionString);
-    MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual2");
-    MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual2");
-    MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual2");
+    MongoDatabase intelliDB = mongoClient.getDatabase("IntelliVSManual");
+    MongoDatabase gitDB = mongoClient.getDatabase("GitVSManual");
+    MongoDatabase jfstDB = mongoClient.getDatabase("JFSTVSManual");
 
     // rq3
     String runtimeCSVPath = "D:\\github\\temp\\runtimes.csv";
@@ -47,16 +47,16 @@ public class Statistics {
         false);
 
     List<String> repoNames = new ArrayList<>();
-    repoNames.add("junit4");
-//    repoNames.add("javaparser");
-//    repoNames.add("gradle");
-//    repoNames.add("error-prone");
-//    repoNames.add("antlr4");
-//    repoNames.add("deeplearning4j");
-//    repoNames.add("cassandra");
-//    repoNames.add("elasticsearch");
-//    repoNames.add("realm-java");
-//    repoNames.add("storm");
+//    repoNames.add("junit4");
+    //    repoNames.add("javaparser");
+    //    repoNames.add("gradle");
+        repoNames.add("error-prone");
+    //    repoNames.add("antlr4");
+    //    repoNames.add("deeplearning4j");
+    //    repoNames.add("cassandra");
+    //    repoNames.add("elasticsearch");
+    //    repoNames.add("realm-java");
+    //    repoNames.add("storm");
 
     for (String repoName : repoNames) {
       StringBuilder numBuilder = new StringBuilder();
@@ -124,7 +124,7 @@ public class Statistics {
   }
 
   /**
-   * Calculate the precision and the recall for one repo
+   * Calculate the precision and the recall at the repo level
    *
    * @param collection
    * @return
@@ -155,7 +155,7 @@ public class Statistics {
       repoPrecision = 0.0;
     }
     if (manualMergeLOC > 0) {
-      repoRecall = sameLOC2 / manualMergeLOC.doubleValue();
+      repoRecall = sameLOC1 / manualMergeLOC.doubleValue();
     } else {
       repoRecall = 0.0;
     }

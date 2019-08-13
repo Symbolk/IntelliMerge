@@ -167,20 +167,35 @@ public class ThreewayGraphMerger {
         List<String> baseImports =
             new ArrayList<>(((CompilationUnitNode) node).getImportStatements());
         List<String> oursImports = new ArrayList<>(oursCU.getImportStatements());
+        List<String> addedInOurs = new ArrayList<>(oursImports);
 
         for (String str : theirsCU.getImportStatements()) {
           int index = oursImports.indexOf(str);
           if (index >= 0) {
-            oursImports.set(index, "");
+            addedInOurs.set(index, "");
           }
           mergedImports.add(str);
         }
 
-        for (int i = 0; i < oursImports.size(); ++i) {
-          String str = oursImports.get(i);
+        for (int i = 0; i < addedInOurs.size(); ++i) {
+          String str = addedInOurs.get(i);
           if (!str.isEmpty() && !baseImports.contains(str)) {
-            if (i < mergedImports.size()) {
-              mergedImports.add(i, str);
+            int j = -1; // the position to insert the str
+            if (i == 0) {
+              j = 0;
+            } else {
+              // get the previous one that exist in merged imports
+              String previousImport = "";
+              for (int k = i - 1; k >= 0; k--) {
+                if (addedInOurs.get(k).equals("")) {
+                  previousImport = oursImports.get(k);
+                  break;
+                }
+              }
+              j = mergedImports.indexOf(previousImport);
+            }
+            if (j + 1 >= 0 && j + 1 < mergedImports.size()) {
+              mergedImports.add(j + 1, str);
             } else {
               mergedImports.add(str);
             }
@@ -243,6 +258,14 @@ public class ThreewayGraphMerger {
         mergedTerminal.setModifiers(mergedModifiers);
         mergedTerminal.setOriginalSignature(mergedSignature);
         mergedTerminal.setBody(mergedBody);
+
+        // update name for hash
+        mergedTerminal.setQualifiedName(
+            mergeTextually(
+                oursTerminal.getQualifiedName(),
+                baseTerminal.getQualifiedName(),
+                theirsTerminal.getQualifiedName()));
+
         return mergedTerminal;
       } else {
         // deleted in one side --> delete
@@ -277,6 +300,12 @@ public class ThreewayGraphMerger {
           mergedNonTerminal.setModifiers(mergedModifiers);
         }
         mergedNonTerminal.setOriginalSignature(mergedSignature);
+        // update name for hash
+        mergedNonTerminal.setQualifiedName(
+            mergeTextually(
+                oursNode.getQualifiedName(),
+                node.getQualifiedName(),
+                theirsNode.getQualifiedName()));
 
         // iteratively merge its children (in base order)
         List<SemanticNode> children = theirsNode.getChildren();
@@ -297,119 +326,6 @@ public class ThreewayGraphMerger {
         // insert nodes added in ours
         List<SemanticNode> addedOurs = filterAddedNodes(node, b2oMatching);
         mergeUnmatchedNodes(mergedNonTerminal, addedOurs);
-
-        return mergedNonTerminal;
-      } else {
-        // deleted in one side --> delete
-        return null;
-      }
-    }
-  }
-
-  /**
-   * Merge a single node and its children in iterative way
-   *
-   * @param node
-   * @return
-   */
-  private SemanticNode mergeSingleNode(SemanticNode node) {
-    // if node is terminal: merge and return result
-    SemanticNode mergedNode = node.shallowClone();
-    SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
-    SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
-    if (node instanceof TerminalNode) {
-      TerminalNode mergedTerminal = (TerminalNode) mergedNode;
-      if (oursNode != null && theirsNode != null) {
-        // exist in BothSides side
-        TerminalNode oursTerminal = (TerminalNode) oursNode;
-        TerminalNode baseTerminal = (TerminalNode) node;
-        TerminalNode theirsTerminal = (TerminalNode) theirsNode;
-        String mergedComment =
-            mergeTextually(
-                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
-        String mergedAnnotations =
-            mergeTextually(
-                oursNode.getAnnotationsAsString(),
-                node.getAnnotationsAsString(),
-                theirsNode.getAnnotationsAsString());
-        List<String> mergedModifiers =
-            mergeListTextually(
-                oursTerminal.getModifiers(),
-                baseTerminal.getModifiers(),
-                theirsTerminal.getModifiers());
-        //        String mergedSignature = mergeComponents(oursTerminal, baseTerminal,
-        // theirsTerminal);
-        String mergedSignature =
-            mergeTextually(
-                oursTerminal.getOriginalSignature(),
-                baseTerminal.getOriginalSignature(),
-                theirsTerminal.getOriginalSignature());
-        String mergedBody =
-            mergeTextually(
-                oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
-        mergedTerminal.setComment(mergedComment);
-        if (mergedAnnotations.length() > 0) {
-          mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
-        }
-        mergedTerminal.setModifiers(mergedModifiers);
-        mergedTerminal.setOriginalSignature(mergedSignature);
-        mergedTerminal.setBody(mergedBody);
-        return mergedTerminal;
-      } else {
-        // deleted in one side --> delete
-        return null;
-      }
-    } else {
-      // nonterminal
-      if (oursNode != null && theirsNode != null) {
-        CompositeNode mergedNonTerminal = (CompositeNode) mergedNode;
-
-        // merge the comment and signature
-        String mergedComment =
-            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
-        String mergedAnnotations =
-            mergeTextually(
-                oursNode.getAnnotationsAsString(),
-                node.getAnnotationsAsString(),
-                theirsNode.getAnnotationsAsString());
-        List<String> mergedModifiers =
-            mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
-        //        String mergedSignature = mergeComponents(oursNode, node, theirsNode);
-        String mergedSignature =
-            mergeTextually(
-                oursNode.getOriginalSignature(),
-                node.getOriginalSignature(),
-                theirsNode.getOriginalSignature());
-        mergedNonTerminal.setComment(mergedComment);
-        if (mergedAnnotations.length() > 0) {
-          mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
-        }
-        if (mergedAnnotations.length() > 0) {
-          mergedNonTerminal.setModifiers(mergedModifiers);
-        }
-        mergedNonTerminal.setOriginalSignature(mergedSignature);
-
-        // iteratively merge its children (in base order)
-        List<SemanticNode> children = node.getChildren();
-        for (SemanticNode child : children) {
-          SemanticNode mergedChild = mergeSingleNode(child);
-          if (mergedChild != null) {
-            mergedNonTerminal.appendChild(mergedChild);
-          }
-        }
-        // consider unmatched nodes as added ones
-        // if parent matched, insert it into the children of parent, between nearest neighbors
-        // handle possible duplicate added nodes to avoid semantic conflicts
-        List<SemanticNode> addedOurs = filterAddedNodes(node, b2oMatching);
-        List<SemanticNode> addedTheirs = filterAddedNodes(node, b2tMatching);
-        Pair<List<SemanticNode>, List<SemanticNode>> pair =
-            removeDuplicates(addedOurs, addedTheirs);
-        if (!pair.getLeft().isEmpty()) {
-          mergeUnmatchedNodes(mergedNonTerminal, pair.getLeft());
-        }
-        if (!pair.getRight().isEmpty()) {
-          mergeUnmatchedNodes(mergedNonTerminal, pair.getRight());
-        }
 
         return mergedNonTerminal;
       } else {
@@ -623,6 +539,13 @@ public class ThreewayGraphMerger {
    */
   private String mergeTextually(String leftContent, String baseContent, String rightContent) {
     String textualMergeResult = null;
+    // jgit has bug with single side change
+    if (leftContent.equals(baseContent)) {
+      return rightContent;
+    }
+    if (rightContent.equals(baseContent)) {
+      return leftContent;
+    }
     try {
       // TODO merge with git-merge for diff3 conflict style
       RawTextComparator textComparator = RawTextComparator.WS_IGNORE_ALL; //  ignoreWhiteSpaces

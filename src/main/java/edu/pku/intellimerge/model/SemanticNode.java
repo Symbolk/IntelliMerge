@@ -124,6 +124,10 @@ public abstract class SemanticNode {
     return displayName;
   }
 
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
+
   public String getQualifiedName() {
     return qualifiedName;
   }

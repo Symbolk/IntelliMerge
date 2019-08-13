@@ -1,9 +1,6 @@
 package edu.pku.intellimerge.core;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.JavaToken;
-import com.github.javaparser.ParseResult;
-import com.github.javaparser.TokenRange;
+import com.github.javaparser.*;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
@@ -458,6 +455,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
         (List<String>)
             td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
 
+    Optional<Range> range = td.getRange();
     String originalSignature = getTypeOriginalSignature(td);
 
     TypeDeclNode tdNode =
@@ -474,7 +472,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             modifiers,
             nodeType.asString(),
             displayName,
-            td.getRange());
+            range);
     return tdNode;
   }
 
@@ -733,18 +731,23 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           // md.getDeclarationAsString() cannot return type parameters, so we need to insert type
           // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
           if (typeParameters.size() > 0) {
-                        String typeParametersAsString =
-                            "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
-            originalSignature = typeParametersAsString;
+            String typeParametersAsString =
+                "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
+            originalSignature =
+                typeParametersAsString + " " + md.getDeclarationAsString(false, true, true);
           } else {
             // directly get token range to preserve spaces
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
 
           String temp = md.removeComment().getTokenRange().get().toString();
-          int startIndex = temp.indexOf(originalSignature.split(" ")[0]);
+          String[] tokens = originalSignature.split(" ");
+          int startIndex = temp.indexOf(tokens[0]);
           startIndex = startIndex >= 0 ? startIndex : 0;
-          originalSignature = temp.substring(startIndex, temp.indexOf(")") + 1);
+          int endIndex =
+              temp.indexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
+          endIndex = endIndex >= 0 ? endIndex : 0;
+          originalSignature = temp.substring(startIndex, endIndex);
 
           mdNode.setOriginalSignature(originalSignature);
           graph.addVertex(mdNode);
@@ -883,16 +886,24 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
   private String getTypeOriginalSignature(TypeDeclaration typeDeclaration) {
     // remove comment if there is in string representation
     //        String source = removeComment(typeDeclaration.toString());
-    String source = typeDeclaration.removeComment().toString();
     // if the comment bug in JavaParser is triggered, the comment is not completely removed
     //    List<String> lines = Arrays.asList(source.split("\n"));
     //    source = lines.stream().filter(line ->
     // !line.startsWith("\\s\\*")).collect(Collectors.joining("\n"));
+    String code = typeDeclaration.removeComment().getTokenRange().get().toString();
+    // remove annotations
+    String result = "";
+    String[] temp = code.split("\\r?\\n");
+    for (int i = 0; i < temp.length; ++i) {
+      if (!temp[i].startsWith("@")) {
+        result = result + temp[i] + "\n";
+      }
+    }
 
-    if (source.indexOf("{") > 0) {
-      return source.substring(0, source.indexOf("{")).trim();
+    if (result.indexOf("{") > 0) {
+      return result.substring(0, result.indexOf("{")).trim();
     } else {
-      return source.trim();
+      return result.trim();
     }
   }
 
