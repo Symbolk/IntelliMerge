@@ -148,37 +148,46 @@ public class ThreewayGraphMerger {
                 oursCU.getPackageStatement(),
                 mergedCU.getPackageStatement(),
                 theirsCU.getPackageStatement()));
+        // conservative strategy: simply union the imports
+        //        Set<String> union = new LinkedHashSet<>(oursCU.getImportStatements());
+        //        union.addAll(theirsCU.getImportStatements());
+        //        mergedCU.setImportStatements(union);
+        //        List<String> oursList = new ArrayList<>(oursCU.getImportStatements());
+        //        List<String> baseList = new ArrayList<>(((CompilationUnitNode)
+        // node).getImportStatements());
+        //        List<String> theirsList = new ArrayList<>(theirsCU.getImportStatements());
+        //        List<String> mergedList =
+        //            Stream.of(baseList, oursList, theirsList)
+        //                .flatMap(Collection::stream)
+        //                .distinct()
+        //                .collect(Collectors.toList());
+        //        mergedCU.setImportStatements(new LinkedHashSet<>(mergedList));
+        // proactive way: apply changes to base
+        List<String> mergedImports = new ArrayList<>();
+        List<String> baseImports =
+            new ArrayList<>(((CompilationUnitNode) node).getImportStatements());
+        List<String> oursImports = new ArrayList<>(oursCU.getImportStatements());
 
-        // conservative strategy: remove no imports in case of latent bugs
-        Set<String> union = new LinkedHashSet<>(oursCU.getImportStatements());
-        union.addAll(theirsCU.getImportStatements());
-        mergedCU.setImportStatements(union);
-        //                List<String> oursList = new ArrayList<>(oursCU.getImportStatements());
-        //                List<String> baseList = new ArrayList<>(((CompilationUnitNode)
-        //         node).getImportStatements());
-        //                List<String> theirsList = new ArrayList<>(theirsCU.getImportStatements());
-        //                List<String> mergedList =
-        //                    Stream.of(oursList, baseList, theirsList)
-        //                        .flatMap(Collection::stream)
-        //                        .distinct()
-        //                        .collect(Collectors.toList());
-        //                mergedCU.setImportStatements(new LinkedHashSet<>(mergedList));
-        //
-        //        String oursString =
-        //
-        // oursCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        //        String baseString =
-        //            ((CompilationUnitNode) node)
-        //
-        // .getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        //        String theirsString =
-        //
-        // theirsCU.getImportStatements().stream().distinct().collect(Collectors.joining("\n"));
-        //        LinkedHashSet<String> mergedSet =
-        //            new LinkedHashSet<>(
-        //                Arrays.asList(mergeTextually(oursString, baseString,
-        // theirsString).split("\n")));
-        //        mergedCU.setImportStatements(new LinkedHashSet<>(mergedSet));
+        for (String str : theirsCU.getImportStatements()) {
+          int index = oursImports.indexOf(str);
+          if (index >= 0) {
+            oursImports.set(index, "");
+          }
+          mergedImports.add(str);
+        }
+
+        for (int i = 0; i < oursImports.size(); ++i) {
+          String str = oursImports.get(i);
+          if (!str.isEmpty() && !baseImports.contains(str)) {
+            if (i < mergedImports.size()) {
+              mergedImports.add(i, str);
+            } else {
+              mergedImports.add(str);
+            }
+          }
+        }
+
+        mergedCU.setImportStatements(new LinkedHashSet<>(mergedImports));
 
         return mergedCU;
       }

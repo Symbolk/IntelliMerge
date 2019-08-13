@@ -1,8 +1,5 @@
 package edu.pku.intellimerge.io;
 
-import com.google.googlejavaformat.FormatterDiagnostic;
-import com.google.googlejavaformat.java.Formatter;
-import com.google.googlejavaformat.java.FormatterException;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
@@ -48,53 +45,6 @@ public class Graph2CodePrinter {
     //    String reformattedCode = Utils.formatCodeWithConflicts(builder.toString(), false);
     Utils.writeContent(resultFilePath, builder.toString(), false);
     return resultFilePath;
-  }
-
-  /**
-   * Reformat the printed code in google-java-format
-   *
-   * @param code
-   * @return
-   * @deprecated
-   * @see Utils#formatCodeWithConflicts(String, boolean)
-   */
-  private static String reformatCode(String code) {
-    String reformattedCode = "";
-    try {
-      // comment all conflict symbols because it causes exceptions for the formatter
-      reformattedCode =
-          code.replaceAll(
-                  "<<<<<<< " + Side.OURS.asString(), "/* <<<<<<< " + Side.OURS.asString() + " */")
-              .replaceAll("=======", "/* ======= */")
-              .replaceAll(
-                  ">>>>>>> " + Side.THEIRS.asString(),
-                  "/* >>>>>>> " + Side.THEIRS.asString() + " */");
-
-      reformattedCode = new Formatter().formatSource(reformattedCode);
-    } catch (FormatterException e) {
-      // print +/- 5 lines as the context around the line that causes the exception
-      // to avoid output disaster
-      for (FormatterDiagnostic diagnostic : e.diagnostics()) {
-        List<String> lines = Arrays.asList(reformattedCode.split("\\r?\\n"));
-        int lineNumber = diagnostic.line();
-        int contextStart = lineNumber >= 5 ? lineNumber - 5 : 0;
-        int contextEnd = lineNumber + 5 < lines.size() ? lineNumber + 5 : lines.size();
-        for (int i = contextStart; i < contextEnd; ++i) {
-          System.err.println(lines.get(i));
-        }
-      }
-      e.printStackTrace();
-      return reformattedCode;
-    }
-    reformattedCode =
-        reformattedCode
-            .replaceAll(
-                "/\\* <<<<<<< " + Side.OURS.asString() + " \\*/", "<<<<<<< " + Side.OURS.asString())
-            .replaceAll("/\\* ======= \\*/", "=======")
-            .replaceAll(
-                "/\\* >>>>>>> " + Side.THEIRS.asString() + " \\*/",
-                ">>>>>>> " + Side.THEIRS.asString());
-    return reformattedCode;
   }
 
   /**

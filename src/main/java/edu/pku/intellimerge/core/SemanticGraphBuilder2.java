@@ -39,7 +39,6 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Build Semantic Graph for one merge scenario, with fuzzy matching instead of symbolsolving */
@@ -734,23 +733,18 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           // md.getDeclarationAsString() cannot return type parameters, so we need to insert type
           // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
           if (typeParameters.size() > 0) {
-            String typeParametersAsString =
-                "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
-            originalSignature =
-                md.getDeclarationAsString(false, true, true)
-                    .trim()
-                    .replaceFirst(
-                        Pattern.quote(md.getTypeAsString()),
-                        typeParametersAsString + " " + md.getTypeAsString());
+                        String typeParametersAsString =
+                            "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
+            originalSignature = typeParametersAsString;
           } else {
             // directly get token range to preserve spaces
             originalSignature = md.getDeclarationAsString(false, true, true);
-
-            String temp = md.removeComment().getTokenRange().get().toString();
-            int startIndex = temp.indexOf(originalSignature.split(" ")[0]);
-            startIndex = startIndex >= 0 ? startIndex : 0;
-            originalSignature = temp.substring(startIndex, temp.indexOf(")") + 1);
           }
+
+          String temp = md.removeComment().getTokenRange().get().toString();
+          int startIndex = temp.indexOf(originalSignature.split(" ")[0]);
+          startIndex = startIndex >= 0 ? startIndex : 0;
+          originalSignature = temp.substring(startIndex, temp.indexOf(")") + 1);
 
           mdNode.setOriginalSignature(originalSignature);
           graph.addVertex(mdNode);
