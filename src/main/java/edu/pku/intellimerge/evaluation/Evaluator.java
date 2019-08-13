@@ -300,6 +300,7 @@ public class Evaluator {
               "--ignore-blank-lines",
               "--ignore-space-change",
               "--no-index",
+              "--patience",
               "-U0",
               fromFilePath,
               toFilePath);

@@ -570,8 +570,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             originalSignature = (field.getTypeAsString() + " " + field.getNameAsString()).trim();
             body =
                 field.getInitializer().isPresent()
-                    ? field.getTokenRange().get().toString().replaceFirst(displayName, "")
-                        + ";"
+                    ? field.getTokenRange().get().toString().replaceFirst(displayName, "") + ";"
                     : ";";
 
             annotations =
@@ -704,26 +703,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   .map(ReferenceType::toString)
                   .collect(Collectors.toList());
 
-          // md.getDeclarationAsString() does not include type parameters, so we need to insert type
-          // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
-          if (typeParameters.size() > 0) {
-            String typeParametersAsString =
-                "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
-            originalSignature =
-                md.getDeclarationAsString(false, true, true)
-                    .trim()
-                    .replaceFirst(
-                        Pattern.quote(md.getTypeAsString()),
-                        typeParametersAsString + " " + md.getTypeAsString());
-          } else {
-            originalSignature = md.getDeclarationAsString(false, true, true);
-          }
-
           if (md.getBody().isPresent()) {
             body = getCallableBody(md);
           } else {
             body = ";";
           }
+
           MethodDeclNode mdNode =
               new MethodDeclNode(
                   nodeCount++,
@@ -731,7 +716,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   NodeType.METHOD,
                   displayName,
                   qualifiedName,
-                  originalSignature,
+                  "",
                   comment,
                   annotations,
                   access,
@@ -745,6 +730,29 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   body,
                   md.getRange());
           mdNode.setParameterList(parameterList);
+
+          // md.getDeclarationAsString() cannot return type parameters, so we need to insert type
+          // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
+          if (typeParameters.size() > 0) {
+            String typeParametersAsString =
+                "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
+            originalSignature =
+                md.getDeclarationAsString(false, true, true)
+                    .trim()
+                    .replaceFirst(
+                        Pattern.quote(md.getTypeAsString()),
+                        typeParametersAsString + " " + md.getTypeAsString());
+          } else {
+            // directly get token range to preserve spaces
+            originalSignature = md.getDeclarationAsString(false, true, true);
+
+            String temp = md.removeComment().getTokenRange().get().toString();
+            int startIndex = temp.indexOf(originalSignature.split(" ")[0]);
+            startIndex = startIndex >= 0 ? startIndex : 0;
+            originalSignature = temp.substring(startIndex, temp.indexOf(")") + 1);
+          }
+
+          mdNode.setOriginalSignature(originalSignature);
           graph.addVertex(mdNode);
 
           tdNode.appendChild(mdNode);

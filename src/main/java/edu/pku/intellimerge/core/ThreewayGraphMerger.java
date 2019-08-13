@@ -1,5 +1,6 @@
 package edu.pku.intellimerge.core;
 
+import com.google.common.collect.BiMap;
 import edu.pku.intellimerge.io.Graph2CodePrinter;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
@@ -110,7 +111,8 @@ public class ThreewayGraphMerger {
     for (ThreewayMapping mapping : mapping) {
       if (mapping.baseNode.isPresent()) {
         // merge the COMPILATION_UNIT by merging its content
-        SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
+        //        SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
+        SemanticNode mergedCU = mergeSingleNodeV2(mapping.baseNode.get());
         // merge the package declaration and imports
         CompilationUnitNode mergedPackageAndImports = mergeCUHeader(mapping.baseNode.get());
         if (mergedCU != null && mergedPackageAndImports != null) {
@@ -182,6 +184,117 @@ public class ThreewayGraphMerger {
       }
     }
     return null;
+  }
+
+  /**
+   * Merge single node but in favor of the node order of the last version (usually theirs)
+   *
+   * @param node
+   * @return
+   */
+  private SemanticNode mergeSingleNodeV2(SemanticNode node) {
+    // if node is terminal: merge and return result
+    SemanticNode mergedNode = node.shallowClone();
+    SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
+    SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
+    if (node instanceof TerminalNode) {
+      TerminalNode mergedTerminal = (TerminalNode) mergedNode;
+      if (oursNode != null && theirsNode != null) {
+        // exist in BothSides side
+        TerminalNode oursTerminal = (TerminalNode) oursNode;
+        TerminalNode baseTerminal = (TerminalNode) node;
+        TerminalNode theirsTerminal = (TerminalNode) theirsNode;
+        String mergedComment =
+            mergeTextually(
+                oursTerminal.getComment(), baseTerminal.getComment(), theirsTerminal.getComment());
+        String mergedAnnotations =
+            mergeTextually(
+                oursNode.getAnnotationsAsString(),
+                node.getAnnotationsAsString(),
+                theirsNode.getAnnotationsAsString());
+        List<String> mergedModifiers =
+            mergeListTextually(
+                oursTerminal.getModifiers(),
+                baseTerminal.getModifiers(),
+                theirsTerminal.getModifiers());
+        //        String mergedSignature = mergeComponents(oursTerminal, baseTerminal,
+        // theirsTerminal);
+        String mergedSignature =
+            mergeTextually(
+                oursTerminal.getOriginalSignature(),
+                baseTerminal.getOriginalSignature(),
+                theirsTerminal.getOriginalSignature());
+        String mergedBody =
+            mergeTextually(
+                oursTerminal.getBody(), baseTerminal.getBody(), theirsTerminal.getBody());
+        mergedTerminal.setComment(mergedComment);
+        if (mergedAnnotations.length() > 0) {
+          mergedTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
+        }
+        mergedTerminal.setModifiers(mergedModifiers);
+        mergedTerminal.setOriginalSignature(mergedSignature);
+        mergedTerminal.setBody(mergedBody);
+        return mergedTerminal;
+      } else {
+        // deleted in one side --> delete
+        return null;
+      }
+    } else {
+      // nonterminal
+      if (oursNode != null && theirsNode != null) {
+        CompositeNode mergedNonTerminal = (CompositeNode) mergedNode;
+
+        // merge the comment and signature
+        String mergedComment =
+            mergeTextually(oursNode.getComment(), node.getComment(), theirsNode.getComment());
+        String mergedAnnotations =
+            mergeTextually(
+                oursNode.getAnnotationsAsString(),
+                node.getAnnotationsAsString(),
+                theirsNode.getAnnotationsAsString());
+        List<String> mergedModifiers =
+            mergeByUnion(oursNode.getModifiers(), node.getModifiers(), theirsNode.getModifiers());
+        //        String mergedSignature = mergeComponents(oursNode, node, theirsNode);
+        String mergedSignature =
+            mergeTextually(
+                oursNode.getOriginalSignature(),
+                node.getOriginalSignature(),
+                theirsNode.getOriginalSignature());
+        mergedNonTerminal.setComment(mergedComment);
+        if (mergedAnnotations.length() > 0) {
+          mergedNonTerminal.setAnnotations(Arrays.asList(mergedAnnotations.split("\n")));
+        }
+        if (mergedAnnotations.length() > 0) {
+          mergedNonTerminal.setModifiers(mergedModifiers);
+        }
+        mergedNonTerminal.setOriginalSignature(mergedSignature);
+
+        // iteratively merge its children (in base order)
+        List<SemanticNode> children = theirsNode.getChildren();
+        for (SemanticNode child : children) {
+          BiMap<SemanticNode, SemanticNode> inversedMatching = b2tMatching.one2oneMatchings;
+          inversedMatching = inversedMatching.inverse();
+          SemanticNode childInBase = inversedMatching.getOrDefault(child, null);
+          if (childInBase == null) {
+            // insert nodes added in theirs
+            mergedNonTerminal.appendChild(child);
+          } else {
+            SemanticNode mergedChild = mergeSingleNodeV2(childInBase);
+            if (mergedChild != null) {
+              mergedNonTerminal.appendChild(mergedChild);
+            }
+          }
+        }
+        // insert nodes added in ours
+        List<SemanticNode> addedOurs = filterAddedNodes(node, b2oMatching);
+        mergeUnmatchedNodes(mergedNonTerminal, addedOurs);
+
+        return mergedNonTerminal;
+      } else {
+        // deleted in one side --> delete
+        return null;
+      }
+    }
   }
 
   /**
@@ -267,7 +380,7 @@ public class ThreewayGraphMerger {
         }
         mergedNonTerminal.setOriginalSignature(mergedSignature);
 
-        // iteratively merge its children
+        // iteratively merge its children (in base order)
         List<SemanticNode> children = node.getChildren();
         for (SemanticNode child : children) {
           SemanticNode mergedChild = mergeSingleNode(child);
@@ -329,8 +442,9 @@ public class ThreewayGraphMerger {
                 .collect(Collectors.toList()));
     return results;
   }
+
   /**
-   * Remove same nodes added in both sides
+   * Remove nodes with the same signature but added in both sides
    *
    * @param addedOurs
    * @param addedTheirs
@@ -437,11 +551,6 @@ public class ThreewayGraphMerger {
    * @param mergedNonTerminal
    */
   private void mergeUnmatchedNodes(CompositeNode mergedNonTerminal, List<SemanticNode> addedNodes) {
-    //    for(Map.Entry<SemanticNode, SemanticNode > entry : matching.one2oneMatchings.entrySet()){
-    //      if(entry.getValue().getDisplayName().contains("annotationMatchers")){
-    //        System.out.println(entry);
-    //      }
-    //    }
     for (SemanticNode newlyAdded : addedNodes) {
       SemanticNode parent = newlyAdded.getParent();
       insertBetweenNeighbors(mergedNonTerminal, getNeighbors(parent, newlyAdded));
