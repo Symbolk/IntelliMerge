@@ -757,9 +757,14 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           int startIndex = temp.indexOf(tokens[0]);
           startIndex = startIndex >= 0 ? startIndex : 0;
           int endIndex =
-              temp.indexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
+              temp.lastIndexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
           endIndex = endIndex >= 0 ? endIndex : 0;
-          originalSignature = temp.substring(startIndex, endIndex);
+          if (startIndex <= endIndex) {
+            originalSignature = temp.substring(startIndex, endIndex);
+          }else{
+            originalSignature = md.getDeclarationAsString(false, true, true);
+          }
+
           mdNode.setOriginalSignature(originalSignature);
 
           mdNode.followingEOL = getFollowingEOL(md);

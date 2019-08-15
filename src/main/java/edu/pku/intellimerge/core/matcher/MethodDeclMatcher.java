@@ -50,7 +50,7 @@ public class MethodDeclMatcher {
     }
     // bipartite / to match most likely renamed methods
     // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
-        biPartite.edgeSet();
+//        biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -66,8 +66,6 @@ public class MethodDeclMatcher {
             sourceNode, targetNode, RefactoringType.CHANGE_METHOD_SIGNATURE, confidence);
       }
     }
-    matching.unmatchedNodes1.get(NodeType.METHOD);
-    matching.unmatchedNodes2.get(NodeType.METHOD);
   }
 
   /**

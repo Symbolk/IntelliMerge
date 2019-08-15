@@ -64,7 +64,5 @@ public class ConstructorDeclMatcher {
             sourceNode, targetNode, RefactoringType.CHANGE_CONSTRUCTOR_SIGNATURE, confidence);
       }
     }
-    matching.unmatchedNodes1.get(NodeType.CONSTRUCTOR);
-    matching.unmatchedNodes2.get(NodeType.CONSTRUCTOR);
   }
 }

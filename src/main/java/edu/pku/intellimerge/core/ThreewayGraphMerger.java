@@ -10,7 +10,6 @@ import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.*;
 import edu.pku.intellimerge.util.Utils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -166,11 +165,13 @@ public class ThreewayGraphMerger {
         List<String> mergedImports = new ArrayList<>();
         List<String> baseImports =
             new ArrayList<>(((CompilationUnitNode) node).getImportStatements());
+
         List<String> oursImports = new ArrayList<>(oursCU.getImportStatements());
-        List<String> addedInOurs = new ArrayList<>(oursImports);
+
+        List<String> addedInOurs = new ArrayList<>(oursCU.getImportStatements());
 
         for (String str : theirsCU.getImportStatements()) {
-          int index = oursImports.indexOf(str);
+          int index = getChildIndexTrimed(oursImports, str);
           if (index >= 0) {
             addedInOurs.set(index, "");
           }
@@ -179,7 +180,7 @@ public class ThreewayGraphMerger {
 
         for (int i = 0; i < addedInOurs.size(); ++i) {
           String str = addedInOurs.get(i);
-          if (!str.isEmpty() && !baseImports.contains(str)) {
+          if (!str.isEmpty() && getChildIndexTrimed(baseImports, str) < 0) {
             int j = -1; // the position to insert the str
             if (i == 0) {
               j = 0;
@@ -188,11 +189,18 @@ public class ThreewayGraphMerger {
               String previousImport = "";
               for (int k = i - 1; k >= 0; k--) {
                 if (addedInOurs.get(k).equals("")) {
+                  // "" should have been in mergedImports
                   previousImport = oursImports.get(k);
+                  j = getChildIndexTrimed(mergedImports, previousImport);
                   break;
+                } else {
+                  previousImport = addedInOurs.get(k);
+                  j = getChildIndexTrimed(mergedImports, previousImport);
+                  if (j >= 0) {
+                    break;
+                  }
                 }
               }
-              j = mergedImports.indexOf(previousImport);
             }
             if (j + 1 >= 0 && j + 1 < mergedImports.size()) {
               mergedImports.add(j + 1, str);
@@ -208,6 +216,15 @@ public class ThreewayGraphMerger {
       }
     }
     return null;
+  }
+
+  private int getChildIndexTrimed(List<String> list, String s) {
+    for (int i = 0; i < list.size(); ++i) {
+      if (list.get(i).trim().equals(s.trim())) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   /**
@@ -327,7 +344,9 @@ public class ThreewayGraphMerger {
           }
         }
         // insert nodes added in ours
-        List<SemanticNode> addedOurs = filterAddedNodes(node, b2oMatching);
+        List<SemanticNode> addedOurs =
+            removeDuplicates(
+                filterAddedNodes(node, b2oMatching), filterAddedNodes(node, b2tMatching));
         mergeUnmatchedNodes(mergedNonTerminal, addedOurs);
 
         return mergedNonTerminal;
@@ -377,19 +396,19 @@ public class ThreewayGraphMerger {
    * @param addedOurs
    * @param addedTheirs
    */
-  private Pair<List<SemanticNode>, List<SemanticNode>> removeDuplicates(
+  private List<SemanticNode> removeDuplicates(
       List<SemanticNode> addedOurs, List<SemanticNode> addedTheirs) {
 
-    List<SemanticNode> nodes2Copy = new ArrayList<>(addedTheirs);
-    for (SemanticNode n1 : addedOurs) {
+    List<SemanticNode> nodes2Copy = new ArrayList<>(addedOurs);
+    for (SemanticNode n1 : addedTheirs) {
       for (SemanticNode n2 : nodes2Copy) {
         if (n1.getOriginalSignature().equals(n2.getOriginalSignature())) {
           // if the signature is duplicate, remove one of them
-          addedTheirs.remove(n2);
+          addedOurs.remove(n2);
         }
       }
     }
-    return Pair.of(addedOurs, addedTheirs);
+    return addedOurs;
   }
 
   /**

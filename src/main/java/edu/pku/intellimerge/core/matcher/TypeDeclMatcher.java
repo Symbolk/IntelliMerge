@@ -61,8 +61,6 @@ public class TypeDeclMatcher {
                 matching.markRefactoring(sourceNode, targetNode, RefactoringType.CHANGE_TYPE_SIGNATURE, confidence);
             }
         }
-        matching.unmatchedNodes1.get(NodeType.CLASS);
-        matching.unmatchedNodes2.get(NodeType.CLASS);
     }
 
 }
