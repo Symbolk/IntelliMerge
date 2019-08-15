@@ -2,6 +2,7 @@ package edu.pku.intellimerge.evaluation;
 
 import br.ufpe.cin.app.JFSTMerge;
 import edu.pku.intellimerge.client.IntelliMerge;
+import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.util.Utils;
@@ -22,14 +23,22 @@ public class SingleFileTester {
   public static void main(String[] args) throws Exception {
     PropertyConfigurator.configure("log4j.properties");
 
-    testMerge();
+        testMerge();
     //    testPAndR();
+//    testExtractConflicts();
   }
 
   private static void testMerge() throws Exception {
     String dirToMerge = "D:\\github\\test";
     mergeWithIntelli(dirToMerge);
-    mergeWithJFST(dirToMerge);
+//    mergeWithJFST(dirToMerge);
+  }
+
+  private static void testExtractConflicts() {
+    String inputPath = "D:\\github\\test\\jfstMerged\\JUnit4TestAdapterCache.java";
+    String outputPath = inputPath.replace(".java", "_auto.java");
+    List<ConflictBlock> conflictBlocks = Utils.extractConflictBlocks(inputPath, outputPath, false);
+    System.out.println(conflictBlocks);
   }
 
   private static void testCopy() {
@@ -51,7 +60,6 @@ public class SingleFileTester {
     Utils.removeAllComments(manualMergedDir);
     Utils.removeAllComments(jfstMergedDir);
   }
-
 
   private static void testPAndR() throws Exception {
     String manualMergedDir =

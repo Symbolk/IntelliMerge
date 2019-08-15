@@ -11,12 +11,43 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /** Check whether the manually resolved&committed files are valid in syntax */
 public class ManualResultsChecker {
   private static final Logger logger = LoggerFactory.getLogger(ManualResultsChecker.class);
 
   public static void main(String[] args) {
+    checkIncorrectFiles();
+    replaceIncorrectFiles();
+  }
+
+  private static void replaceIncorrectFiles() {
+    String dataDir = "D:/github/ref_conflicts/";
+    String repoName = "error-prone";
+    String repoDir = "D:\\github\\repos\\" + repoName;
+    String mergeCommit = "d51253011690def06db835d5ad605ca134c94d84";
+    List<String> relativePaths = new ArrayList<>();
+    relativePaths.add(
+        "core/src/test/resources/com/google/errorprone/bugpatterns/ArrayToStringPositiveCases.java");
+
+    // get the next commit of merge commit with my customized git command
+    // "!bash -c 'git log --format=%H --reverse --ancestry-path ${1:-HEAD}..${2:\"$(git rev-parse
+    // --abbrev-ref HEAD)\"} | head -1' -"
+    String nextCommit = Utils.runSystemCommand(repoDir, "git", "child");
+    for (String path : relativePaths) {
+      String output = Utils.runSystemCommand(repoDir, "git", "show", nextCommit + ":" + path);
+      // deleted at merge commit
+      if (output.contains("fatal:")) {
+        output = " ";
+      }
+      Utils.writeContent(
+          dataDir + File.separator + repoName + Side.MANUAL.asString() + File.separator + path,
+          output);
+    }
+  }
+
+  private static void checkIncorrectFiles() {
     String inputPath = "D:\\github\\ref_conflicts\\";
     String repoName = "cassandra";
     String outputPath = "D:\\github\\incorrect_ground_truth\\";
@@ -44,11 +75,11 @@ public class ManualResultsChecker {
               File javaFile = new File(sourceFile.getAbsolutePath());
               if (javaFile.exists()) {
                 String commitID = f.getName();
-//                    f.getAbsolutePath()
-//                        .trim()
-//                        .substring(
-//                            f.getAbsolutePath().lastIndexOf(File.separator) + 1,
-//                            f.getAbsolutePath().length());
+                //                    f.getAbsolutePath()
+                //                        .trim()
+                //                        .substring(
+                //                            f.getAbsolutePath().lastIndexOf(File.separator) + 1,
+                //                            f.getAbsolutePath().length());
                 File dstFile =
                     new File(
                         outputPath
@@ -80,10 +111,5 @@ public class ManualResultsChecker {
     } catch (Exception e) {
       e.printStackTrace();
     }
-
-    // try to parse all merged files
-
-    // collect files with syntax errors after merged3
-
   }
 }

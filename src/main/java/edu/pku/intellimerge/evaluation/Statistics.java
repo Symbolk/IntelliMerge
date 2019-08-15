@@ -47,16 +47,17 @@ public class Statistics {
         false);
 
     List<String> repoNames = new ArrayList<>();
-//    repoNames.add("junit4");
-        repoNames.add("javaparser");
-    //    repoNames.add("gradle");
-//        repoNames.add("error-prone");
+    repoNames.add("junit4");
+    repoNames.add("error-prone");
+    repoNames.add("javaparser");
+    repoNames.add("storm");
+    repoNames.add("realm-java");
+    repoNames.add("gradle");
+
     //    repoNames.add("antlr4");
     //    repoNames.add("deeplearning4j");
     //    repoNames.add("cassandra");
     //    repoNames.add("elasticsearch");
-    //    repoNames.add("realm-java");
-    //    repoNames.add("storm");
 
     for (String repoName : repoNames) {
       StringBuilder numBuilder = new StringBuilder();
@@ -155,7 +156,7 @@ public class Statistics {
       repoPrecision = 0.0;
     }
     if (manualMergeLOC > 0) {
-      repoRecall = sameLOC1 / manualMergeLOC.doubleValue();
+      repoRecall = sameLOC2 / manualMergeLOC.doubleValue();
     } else {
       repoRecall = 0.0;
     }

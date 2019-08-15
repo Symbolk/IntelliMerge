@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "javaparser";
+  private static final String REPO_NAME = "deeplearning4j";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String DATA_DIR =
       "D:\\github\\ref_conflicts_diff2\\"
@@ -54,6 +54,10 @@ public class Evaluator {
       MongoCollection<Document> intelliDBCollection = intelliDB.getCollection(REPO_NAME);
       MongoCollection<Document> gitDBCollection = gitDB.getCollection(REPO_NAME);
       MongoCollection<Document> jfstDBCollection = jfstDB.getCollection(REPO_NAME);
+      // drop the existing collection
+      intelliDBCollection.drop();
+      gitDBCollection.drop();
+      jfstDBCollection.drop();
 
       // replay the collected merge scenario with IntelliMerge and jFSTMerge, save the data on disk
       // and mongodb
@@ -63,6 +67,8 @@ public class Evaluator {
         if (f.isDirectory()) {
           String sourceDir = f.getAbsolutePath();
           String mergeCommit = f.getName();
+
+          logger.info("Begin with {}:{}", REPO_NAME, mergeCommit);
 
           // dirs to save merged files by 3 tools
           String intelliMergedDir =
@@ -80,6 +86,8 @@ public class Evaluator {
           }
           File manualDirFile = new File(manualMergedDir);
           if (!manualDirFile.exists()) {
+            // in case of python script fails to collect manual again from the original repo
+//            collectManualFromRepo(REPO_DIR, mergeCommit, baseDir, manualMergedDir);
             continue;
           }
 
@@ -104,17 +112,21 @@ public class Evaluator {
           long jfstRuntime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
           logger.info("JFSTMerge done in {}ms.", jfstRuntime);
 
-          // 2. remove all comments and format the manual results
-          //          Utils.removeAllComments(intelliMergedDir);
-          //          Utils.removeAllComments(gitMergedDir);
-          //          Utils.removeAllComments(jfstMergedDir);
-          //          Utils.removeAllComments(manualMergedDir);
+          // folders that only contains auto-merged code
+          String intelliAutoMergedDir = intelliMergedDir.replaceFirst("Merged", "Merged_auto");
+          String jfstAutoMergedDir = jfstMergedDir.replaceFirst("Merged", "Merged_auto");
+          String gitAutoMergedDir = gitMergedDir.replaceFirst("Merged", "Merged_auto");
+          //          String manualNoCommentDir = manualMergedDir.replaceFirst("Merged",
+          // "Merged_no_comment");
+
+          //          Utils.copyDir(manualMergedDir, manualNoCommentDir);
+          //          Utils.removeAllComments(manualNoCommentDir);
           // in order to alleviate format caused diffs, compare git-merge and jfst with unformatted
           // manual
           // in order to alleviate format caused diffs, compare intelli with formatted manual
-          //          Utils.copyDir(manualMergedDir, manualMergedFormattedDir);
           //          String manualMergedFormattedDir = sourceDir + File.separator +
           // Side.MANUAL.asString() + "_Formatted" + File.separator;
+          //                    Utils.copyDir(manualMergedDir, manualMergedFormattedDir);
           //          Utils.formatAllJavaFiles(manualMergedFormattedDir);
 
           // 3. compare merge results with manual results
@@ -135,12 +147,13 @@ public class Evaluator {
           }
           Pair<Integer, List<Document>> intelliMergeConflicts =
               extractMergeConflicts(intelliMergedDir, false);
+          //          Utils.removeAllComments(intelliAutoMergedDir);
+
           scenarioDoc.append("conflicts_num", intelliMergeConflicts.getLeft());
           scenarioDoc.append("conflict_blocks", intelliMergeConflicts.getRight());
           // compare only auto merged part
           ComparisonResult intelliVSmanual =
-              compareAutoMerged(
-                  intelliMergedDir.replaceFirst("Merged", "Merged_auto"), manualMergedResults);
+              compareAutoMerged(intelliAutoMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", intelliVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", intelliVSmanual.getTotalManualMergeLOC());
           scenarioDoc.append(
@@ -159,11 +172,11 @@ public class Evaluator {
                   .append("time_overall", jfstRuntime);
           Pair<Integer, List<Document>> jfstMergeConflicts =
               extractMergeConflicts(jfstMergedDir, false);
+          //          Utils.removeAllComments(jfstAutoMergedDir);
+
           scenarioDoc.append("conflicts_num", jfstMergeConflicts.getLeft());
           scenarioDoc.append("conflict_blocks", jfstMergeConflicts.getRight());
-          ComparisonResult jfstVSmanual =
-              compareAutoMerged(
-                  jfstMergedDir.replaceFirst("Merged", "Merged_auto"), manualMergedResults);
+          ComparisonResult jfstVSmanual = compareAutoMerged(jfstAutoMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", jfstVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", jfstVSmanual.getTotalManualMergeLOC());
           scenarioDoc.append("correct_loc_in_auto_merged", jfstVSmanual.getTotalSameAutoMergeLOC());
@@ -180,11 +193,11 @@ public class Evaluator {
           scenarioDoc = new Document("repo_name", REPO_NAME).append("merge_commit", mergeCommit);
           Pair<Integer, List<Document>> gitMergeConflicts =
               extractMergeConflicts(gitMergedDir, false);
+          //          Utils.removeAllComments(gitAutoMergedDir);
+
           scenarioDoc.append("conflicts_num", gitMergeConflicts.getLeft());
           scenarioDoc.append("conflict_blocks", gitMergeConflicts.getRight());
-          ComparisonResult gitVSmanual =
-              compareAutoMerged(
-                  gitMergedDir.replaceFirst("Merged", "Merged_auto"), manualMergedResults);
+          ComparisonResult gitVSmanual = compareAutoMerged(gitAutoMergedDir, manualMergedResults);
           scenarioDoc.append("auto_merge_loc", gitVSmanual.getTotalAutoMergeLOC());
           scenarioDoc.append("manual_merge_loc", gitVSmanual.getTotalManualMergeLOC());
           scenarioDoc.append("correct_loc_in_auto_merged", gitVSmanual.getTotalSameAutoMergeLOC());
@@ -287,9 +300,9 @@ public class Evaluator {
       double fileRecall = 0.0;
 
       int autoMergedLOC = Utils.readFileToLines(fromFilePath).size();
-      int manualLOC = Utils.readFileToLines(toFilePath).size();
       //      int autoMergedLOC = Utils.computeFileLOC(fromFilePath);
-      //      int manualLOC = Utils.computeFileLOC(toFilePath);
+      int manualLOC = Utils.readFileToLines(toFilePath).size();
+      //            int manualLOC = Utils.computeFileLOC(toFilePath);
 
       totalAutoMergedLOC += autoMergedLOC;
       totalManualMergedLOC += manualLOC;
@@ -334,8 +347,8 @@ public class Evaluator {
           int toStartLine = hunk.getToFileRange().getLineStart();
           String fromContent = getHunkContent(hunk, Line.LineType.FROM, false);
           String toContent = getHunkContent(hunk, Line.LineType.TO, false);
-          int fromLOC = fromContent.isEmpty() ? 1 : hunk.getFromFileRange().getLineCount();
-          int toLOC = toContent.isEmpty() ? 1 : hunk.getToFileRange().getLineCount();
+          int fromLOC = hunk.getFromFileRange().getLineCount();
+          int toLOC = hunk.getToFileRange().getLineCount();
           Document diffHunkDoc =
               new Document("from_start_line", fromStartLine)
                   .append("from_loc", fromLOC)
@@ -351,9 +364,9 @@ public class Evaluator {
       // if there exists differences, create one document to save the diffs for the file
       if (diffHunkDocs.size() > 0) {
         // from file: auto-merged (--) to file: manual (++)
-        int sameLOCMerged = autoMergedLOC > 0 ? autoMergedLOC - fromDiffLoc - toDiffLoc : 0;
-        int sameLOCManual = autoMergedLOC > 0 ? manualLOC - toDiffLoc : 0;
-        sameLOCMerged = sameLOCMerged > 0 ? sameLOCMerged : sameLOCManual;
+        int sameLOCMerged = autoMergedLOC > 0 ? autoMergedLOC - fromDiffLoc : 0;
+        int sameLOCManual = autoMergedLOC > 0 ? manualLOC - fromDiffLoc - toDiffLoc : 0;
+        sameLOCMerged = sameLOCMerged > 0 ? sameLOCMerged : 0;
         totalSameLOCMerged += sameLOCMerged;
         totalSameLOCManual += sameLOCManual;
 
@@ -363,7 +376,7 @@ public class Evaluator {
           filePrecision = 0.0;
         }
         if (manualLOC > 0) {
-          fileRecall = sameLOCMerged / (double) manualLOC;
+          fileRecall = sameLOCManual / (double) manualLOC;
         } else {
           fileRecall = 0.0;
         }
@@ -396,7 +409,7 @@ public class Evaluator {
       autoMergePrecision = 1.0;
     }
     if (numberOfDiffFiles > 0) {
-      autoMergeRecall = totalSameLOCMerged / totalManualMergedLOC.doubleValue();
+      autoMergeRecall = totalSameLOCManual / totalManualMergedLOC.doubleValue();
     } else {
       // if auto_merge parts in all files are identical with manual, precision is 1.0
       autoMergePrecision = 1.0;
@@ -434,10 +447,12 @@ public class Evaluator {
       String visitedHunkFromContent = getHunkContent(visitedHunk, Line.LineType.FROM, true);
       String hunkToContent = getHunkContent(hunk, Line.LineType.TO, true);
       String visitedHunkToContent = getHunkContent(visitedHunk, Line.LineType.TO, true);
-      if (hunkFromContent.equals(visitedHunkToContent)
-          && hunkToContent.equals(visitedHunkFromContent)) {
-        visitedHunks.remove(visitedHunk);
-        return true;
+      if (!hunkFromContent.isEmpty() && !hunkToContent.isEmpty()) {
+        if (hunkFromContent.equals(visitedHunkToContent)
+            && hunkToContent.equals(visitedHunkFromContent)) {
+          visitedHunks.remove(visitedHunk);
+          return true;
+        }
       }
       //      }
     }
@@ -466,15 +481,6 @@ public class Evaluator {
         .collect(Collectors.toList());
   }
 
-  //  private static List<Hunk> removeHunksInvolvingConflicts(List<Hunk> hunks) {
-  //    return hunks.stream()
-  //            .filter(
-  //                    hunk ->
-  //                            getHunkContent(hunk, Line.LineType.FROM, true).concat(
-  //                            (getHunkContent(hunk, Line.LineType.TO, true))).contains("<<<<<<")
-  //            .collect(Collectors.toList());
-  //  }
-
   /**
    * Get the corresponding content from hunk by line type (FROM/TO/NEUTRAL)
    *
@@ -492,5 +498,30 @@ public class Evaluator {
             .collect(Collectors.joining("\n"));
 
     return ignoreEmptyChars ? Utils.flattenString(content).trim() : content.trim();
+  }
+
+  //  private static List<Hunk> removeHunksInvolvingConflicts(List<Hunk> hunks) {
+  //    return hunks.stream()
+  //            .filter(
+  //                    hunk ->
+  //                            getHunkContent(hunk, Line.LineType.FROM, true).concat(
+  //                            (getHunkContent(hunk, Line.LineType.TO, true))).contains("<<<<<<")
+  //            .collect(Collectors.toList());
+  //  }
+
+  private static void collectManualFromRepo(
+      String repoDir, String mergeCommit, String baseDir, String manualMergedDir) throws Exception {
+    ArrayList<SourceFile> temp = new ArrayList<>();
+    ArrayList<SourceFile> files = Utils.scanJavaSourceFiles(baseDir, temp, baseDir);
+    for (SourceFile file : files) {
+      String output =
+          Utils.runSystemCommand(
+              repoDir, "git", "show", mergeCommit + ":" + file.getRelativePath());
+      // deleted at merge commit
+      if (output.contains("fatal:")) {
+        output = " ";
+      }
+      Utils.writeContent(manualMergedDir + File.separator + file.getRelativePath(), output);
+    }
   }
 }
