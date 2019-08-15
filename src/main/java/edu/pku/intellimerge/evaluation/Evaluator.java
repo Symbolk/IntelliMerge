@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class Evaluator {
   private static final Logger logger = LoggerFactory.getLogger(Evaluator.class);
 
-  private static final String REPO_NAME = "error-prone";
+  private static final String REPO_NAME = "javaparser";
   private static final String REPO_DIR = "D:\\github\\repos\\" + REPO_NAME;
   private static final String DATA_DIR =
       "D:\\github\\ref_conflicts_diff2\\"

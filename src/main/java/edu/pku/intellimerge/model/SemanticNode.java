@@ -12,14 +12,13 @@ import java.util.stream.Collectors;
 public abstract class SemanticNode {
   // context info
   public NodeContext context;
-
+  // mainly for preserving the original format
+  public int followingEOL = 1;
   // self attributes
   // signature
   private Boolean needToMerge;
-
   private SemanticNode parent;
   private List<SemanticNode> children;
-
   private Integer nodeID;
   private NodeType nodeType;
   private String displayName;

@@ -306,6 +306,8 @@ public class ThreewayGraphMerger {
                 oursNode.getQualifiedName(),
                 node.getQualifiedName(),
                 theirsNode.getQualifiedName()));
+        // follow the format of the right side
+        mergedNonTerminal.followingEOL = theirsNode.followingEOL;
 
         // iteratively merge its children (in base order)
         List<SemanticNode> children = theirsNode.getChildren();
@@ -319,6 +321,7 @@ public class ThreewayGraphMerger {
           } else {
             SemanticNode mergedChild = mergeSingleNodeV2(childInBase);
             if (mergedChild != null) {
+              mergedChild.followingEOL = child.followingEOL;
               mergedNonTerminal.appendChild(mergedChild);
             }
           }

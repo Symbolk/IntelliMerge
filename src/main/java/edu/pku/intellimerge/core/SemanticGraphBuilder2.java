@@ -473,6 +473,8 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             nodeType.asString(),
             displayName,
             range);
+    tdNode.beforeFirstChildEOL = getChildrenLeadingEOL(td);
+    tdNode.followingEOL = getFollowingEOL(td);
     return tdNode;
   }
 
@@ -542,6 +544,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   comment,
                   body,
                   ecd.getRange());
+          ecdNode.followingEOL = getFollowingEOL(ecd);
           graph.addVertex(ecdNode);
 
           // add edge between field and class
@@ -590,6 +593,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                     field.getNameAsString(),
                     body,
                     fd.getRange());
+            fdNode.followingEOL = getFollowingEOL(fd);
             graph.addVertex(fdNode);
 
             // add edge between field and class
@@ -648,6 +652,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                   displayName,
                   body,
                   cd.getRange());
+          cdNode.followingEOL = getFollowingEOL(cd);
           graph.addVertex(cdNode);
 
           tdNode.appendChild(cdNode);
@@ -656,7 +661,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
 
           processBodyContent(cd, cdNode);
         }
-        // 6. terminalNodeSimilarity
+        // 6. MethodDeclaration
         if (child instanceof MethodDeclaration) {
           MethodDeclaration md = (MethodDeclaration) child;
           if (md.getAnnotations().size() > 0) {
@@ -748,8 +753,9 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
               temp.indexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
           endIndex = endIndex >= 0 ? endIndex : 0;
           originalSignature = temp.substring(startIndex, endIndex);
-
           mdNode.setOriginalSignature(originalSignature);
+
+          mdNode.followingEOL = getFollowingEOL(md);
           graph.addVertex(mdNode);
 
           tdNode.appendChild(mdNode);
@@ -780,6 +786,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 id.isStatic(),
                 id.getBody().toString(),
                 id.getRange());
+        idNode.followingEOL = getFollowingEOL(id);
         graph.addVertex(idNode);
 
         tdNode.appendChild(idNode);
@@ -804,7 +811,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             amd.toString().contains("default")
                 ? amd.toString().substring(amd.toString().indexOf("default")).trim()
                 : ";";
-        AnnotationMemberNode idNode =
+        AnnotationMemberNode amNode =
             new AnnotationMemberNode(
                 nodeCount++,
                 isInChangedFile,
@@ -817,13 +824,14 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
                 new ArrayList<>(), // no modifiers
                 body,
                 amd.getRange());
-        graph.addVertex(idNode);
 
-        tdNode.appendChild(idNode);
+        amNode.followingEOL = getFollowingEOL(amd);
+        graph.addVertex(amNode);
+        tdNode.appendChild(amNode);
         graph.addEdge(
-            tdNode, idNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, idNode));
+            tdNode, amNode, new SemanticEdge(edgeCount++, EdgeType.DEFINE, tdNode, amNode));
 
-        processBodyContent(amd, idNode);
+        processBodyContent(amd, amNode);
       }
     }
   }
@@ -848,7 +856,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     }
 
     // 2 field access
-    // TODO support self field access
+    // TODO support this.* access
     List<FieldAccessExpr> fieldAccessExprs = cd.findAll(FieldAccessExpr.class);
     List<FieldAccessExpr> readFieldExprs = new ArrayList<>();
     List<FieldAccessExpr> writeFieldExprs = new ArrayList<>();
@@ -945,25 +953,68 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private String getCallableBody(CallableDeclaration declaration) {
-    boolean endWithBlankLine = false;
+    return " "
+        + removeSignature(
+            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""));
+  }
+
+  /**
+   * Count the number of following blank lines after a node
+   *
+   * @param node
+   * @return
+   */
+  private int getFollowingEOL(Node node) {
+    int count = 0;
+    // every line has at least one '\n'
     Optional<JavaToken> nextToken =
-        declaration
-            .getTokenRange()
+        node.getTokenRange()
             .map(TokenRange::getEnd)
             .map(JavaToken::getNextToken)
             .orElse(Optional.empty());
-    if (nextToken.isPresent()) {
+    while (nextToken.isPresent()) {
       if (nextToken.get().getCategory().isEndOfLine()) {
-        Optional<JavaToken> nextNextToken = nextToken.get().getNextToken();
-        if (nextNextToken.isPresent()) {
-          endWithBlankLine = nextNextToken.get().getCategory().isEndOfLine();
-        }
+        count++;
+        nextToken = nextToken.get().getNextToken();
+      } else if (nextToken.get().getCategory().isWhitespaceButNotEndOfLine()) {
+        nextToken = nextToken.get().getNextToken();
+      } else {
+        break;
       }
     }
-    return " "
-        + removeSignature(
-            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""))
-        + (endWithBlankLine ? System.lineSeparator() + System.lineSeparator() : "");
+    return count;
+  }
+
+  /**
+   * Count the number of leading blank lines between the children and the {
+   *
+   * @param td
+   * @return
+   */
+  private int getChildrenLeadingEOL(TypeDeclaration td) {
+    int count = 0;
+    if (td.getMembers().size() == 0) {
+      return count;
+    } else {
+      Optional<JavaToken> previousToken =
+          td.getMember(0)
+              .getTokenRange()
+              .map(TokenRange::getBegin)
+              .map(JavaToken::getPreviousToken)
+              .orElse(Optional.empty());
+      while (previousToken.isPresent()) {
+        if (previousToken.get().getCategory().isEndOfLine()) {
+          count++;
+          previousToken = previousToken.get().getPreviousToken();
+        } else if (previousToken.get().getCategory().isWhitespaceButNotEndOfLine()
+            || previousToken.get().getCategory().isWhitespace()) {
+          previousToken = previousToken.get().getPreviousToken();
+        } else {
+          break;
+        }
+      }
+      return count;
+    }
   }
 
   private String removeSignature(String string) {

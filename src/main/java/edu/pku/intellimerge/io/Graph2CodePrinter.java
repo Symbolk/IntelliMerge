@@ -2,7 +2,6 @@ package edu.pku.intellimerge.io;
 
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
-import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.CompositeNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
@@ -13,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,6 +72,9 @@ public class Graph2CodePrinter {
         builder.append(node.getOriginalSignature());
       }
       builder.append(((TerminalNode) node).getBody());
+      for (int i = 0; i < node.followingEOL; ++i) {
+        builder.append(System.lineSeparator());
+      }
     } else if (node instanceof CompositeNode) {
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
         builder.append(
@@ -85,7 +86,10 @@ public class Graph2CodePrinter {
                         .collect(Collectors.joining(System.lineSeparator()))
                     + System.lineSeparator()));
         builder.append(node.getOriginalSignature());
-        builder.append(" {" + System.lineSeparator());
+        builder.append(" {");
+        for (int i = 0; i < ((CompositeNode) node).beforeFirstChildEOL; ++i) {
+          builder.append(System.lineSeparator());
+        }
       }
       if (node.getNodeType().equals(NodeType.ENUM)) {
         int childrenSize = node.getChildren().size();
@@ -108,9 +112,17 @@ public class Graph2CodePrinter {
       }
 
       if (!node.getNodeType().equals(NodeType.COMPILATION_UNIT)) {
-        builder.append("}" + System.lineSeparator());
+        builder.append("}");
+      }
+
+      // since the last child has appened on EOL
+      if (node.followingEOL > 1) {
+        for (int i = 0; i < node.followingEOL; ++i) {
+          builder.append(System.lineSeparator());
+        }
       }
     }
+
     return indentCodeLines(builder.toString(), indent);
   }
 

@@ -48,9 +48,9 @@ public class Statistics {
 
     List<String> repoNames = new ArrayList<>();
 //    repoNames.add("junit4");
-    //    repoNames.add("javaparser");
+        repoNames.add("javaparser");
     //    repoNames.add("gradle");
-        repoNames.add("error-prone");
+//        repoNames.add("error-prone");
     //    repoNames.add("antlr4");
     //    repoNames.add("deeplearning4j");
     //    repoNames.add("cassandra");

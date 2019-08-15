@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public class CompositeNode extends SemanticNode {
 
+  // number of EOLs between { and the first child
+  public int beforeFirstChildEOL = 1;
   // type decl
   public CompositeNode(
       Integer nodeID,
@@ -83,17 +85,21 @@ public class CompositeNode extends SemanticNode {
 
   @Override
   public SemanticNode shallowClone() {
-    return new CompositeNode(
-        this.getNodeID(),
-        this.needToMerge(),
-        this.getNodeType(),
-        this.getDisplayName(),
-        this.getQualifiedName(),
-        this.getOriginalSignature(),
-        this.getComment(),
-        this.getAnnotations(),
-        this.getModifiers(),
-        this.getRange());
+    CompositeNode clone =
+        new CompositeNode(
+            this.getNodeID(),
+            this.needToMerge(),
+            this.getNodeType(),
+            this.getDisplayName(),
+            this.getQualifiedName(),
+            this.getOriginalSignature(),
+            this.getComment(),
+            this.getAnnotations(),
+            this.getModifiers(),
+            this.getRange());
+    clone.beforeFirstChildEOL = this.beforeFirstChildEOL;
+    clone.followingEOL = this.followingEOL;
+    return clone;
   }
 
   @Override
