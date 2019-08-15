@@ -289,6 +289,15 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
     boolean isInChangedFile =
         mergeScenario == null ? true : mergeScenario.isInChangedFile(side, relativePath);
 
+    LinkedHashSet<String> importStatements = new LinkedHashSet();
+
+    for (ImportDeclaration importDeclaration : cu.getImports()) {
+      String temp = importDeclaration.toString().trim();
+      for (int i = 0; i < getFollowingEOL(importDeclaration); ++i) {
+        temp = temp + System.lineSeparator();
+      }
+      importStatements.add(temp);
+    }
     CompilationUnitNode cuNode =
         new CompilationUnitNode(
             nodeCount++,
@@ -302,9 +311,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
             relativePath,
             absolutePath,
             cu.getPackageDeclaration().map(PackageDeclaration::toString).orElse(""),
-            cu.getImports().stream()
-                .map(ImportDeclaration::toString)
-                .collect(Collectors.toCollection(LinkedHashSet::new)));
+            importStatements);
     graph.addVertex(cuNode);
 
     // 1. package
