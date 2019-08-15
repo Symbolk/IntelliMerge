@@ -155,6 +155,7 @@ public class Utils {
       }
     } else {
       logger.error("{} does not exist!", path);
+      return lines;
     }
     return lines;
   }
@@ -167,7 +168,7 @@ public class Utils {
    */
   public static List<String> writeLinesToFile(String path, List<String> lines) {
     String content =
-        lines.stream().filter(line -> line.length() > 0).collect(Collectors.joining("\n"));
+        lines.stream().collect(Collectors.joining(System.lineSeparator()));
     writeContent(path, content, false);
     return lines;
   }
