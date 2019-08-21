@@ -1,6 +1,6 @@
 package edu.pku.intellimerge.match;
 
-import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.core.GraphMerger;
 import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.Refactoring;
@@ -27,7 +27,7 @@ public class TestRename {
     String targetDir =
         Utils.getProjectRootDir() + "/src/test/resources/Rename/RenameMethod/BothSides/";
     String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
-    ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
+    GraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
     Set<Refactoring> refsOurs =
         merger.b2oMatching.refactorings.stream()
             .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_METHOD_SIGNATURE))
@@ -40,7 +40,7 @@ public class TestRename {
   public void testRenameFieldOneSide() throws Exception {
     String targetDir = Utils.getProjectRootDir() + "/src/test/resources/Rename/RenameField/";
     String resultDir = targetDir + Side.INTELLI.asString() + File.separator;
-    ThreewayGraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
+    GraphMerger merger = Util.matchGraphsThreeway(targetDir, resultDir);
     Set<Refactoring> refsOurs =
         merger.b2oMatching.refactorings.stream()
             .filter(edge -> edge.getRefactoringType().equals(RefactoringType.CHANGE_FIELD_SIGNATURE))

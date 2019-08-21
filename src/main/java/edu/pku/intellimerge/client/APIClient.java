@@ -1,10 +1,10 @@
 package edu.pku.intellimerge.client;
 
 import com.google.common.base.Stopwatch;
-import edu.pku.intellimerge.core.SemanticGraphBuilder2;
-import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.core.GraphBuilderV2;
+import edu.pku.intellimerge.core.GraphMerger;
 import edu.pku.intellimerge.exception.RangeNullException;
-import edu.pku.intellimerge.io.SemanticGraphExporter;
+import edu.pku.intellimerge.io.GraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -138,7 +138,7 @@ public class APIClient {
       Graph<SemanticNode, SemanticEdge> graph,
       Side side,
       String dotDir) {
-    SemanticGraphExporter.saveAsDot(
+    GraphExporter.saveAsDot(
         graph,
         dotDir
             + File.separator
@@ -178,15 +178,15 @@ public class APIClient {
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(
+            new GraphBuilderV2(
                 mergeScenario, Side.OURS, collectedFileDir, hasMultipleModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(
+            new GraphBuilderV2(
                 mergeScenario, Side.BASE, collectedFileDir, hasMultipleModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(
+            new GraphBuilderV2(
                 mergeScenario, Side.THEIRS, collectedFileDir, hasMultipleModule));
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
@@ -208,8 +208,8 @@ public class APIClient {
             + Side.INTELLI.asString()
             + File.separator;
     Utils.prepareDir(mergeResultDir);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(mergeResultDir, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger =
+        new GraphMerger(mergeResultDir, oursGraph, baseGraph, theirsGraph);
     // 3. Match node and merge the 3-way graphs
 
     merger.threewayMap();
@@ -233,12 +233,12 @@ public class APIClient {
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.OURS, targetDir, hasMultipleModules));
+        executorService.submit(new GraphBuilderV2(Side.OURS, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(new SemanticGraphBuilder2(Side.BASE, targetDir, hasMultipleModules));
+        executorService.submit(new GraphBuilderV2(Side.BASE, targetDir, hasMultipleModules));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(Side.THEIRS, targetDir, hasMultipleModules));
+            new GraphBuilderV2(Side.THEIRS, targetDir, hasMultipleModules));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
@@ -251,8 +251,8 @@ public class APIClient {
     logger.info("({}ms) Building graph done for {}.", buildingTime, targetDirName);
 
     Utils.prepareDir(resultDir);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger =
+        new GraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
     // 3. Match node and merge the 3-way graphs.
     stopwatch.reset().start();
     merger.threewayMap();

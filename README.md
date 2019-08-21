@@ -290,12 +290,13 @@ Packaged jar file will be generated in `build\libs`, with the name `IntelliMerge
 IntelliMerge   
    ├─client     
    ├─core
-   │  ├─SemanticGraphBuilder
-   │  ├─TwowayGraphMatcher
-   │  └─ThreewayGraphMerger
+   │  ├─GraphBuilder
+   │  ├─GraphMatcher
+   │  └─GraphMerger
    ├─evaluation 
    ├─exception  
-   ├─io         
+   ├─io
+   │  └─GraphExporter         
    ├─model      
    │  ├─constant
    │     ├─EdgeType

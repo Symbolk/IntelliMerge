@@ -4,10 +4,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Stopwatch;
-import edu.pku.intellimerge.core.SemanticGraphBuilder2;
-import edu.pku.intellimerge.core.ThreewayGraphMerger;
+import edu.pku.intellimerge.core.GraphBuilderV2;
+import edu.pku.intellimerge.core.GraphMerger;
 import edu.pku.intellimerge.exception.RangeNullException;
-import edu.pku.intellimerge.io.SemanticGraphExporter;
+import edu.pku.intellimerge.io.GraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -96,9 +96,9 @@ public class IntelliMerge {
   public static void checkArguments(IntelliMerge merger) {
 
     if (merger.branchNames.isEmpty() && merger.directoryPaths.isEmpty()) {
-      throw new ParameterException("Please specify ONE of the following options: -r, -d.");
+      throw new ParameterException("Please specify ONE of the following options: -r, -d, -f.");
     } else if (!merger.branchNames.isEmpty() && !merger.directoryPaths.isEmpty()) {
-      throw new ParameterException("Please specify ONE of the following options: -r, -d.");
+      throw new ParameterException("Please specify ONE of the following options: -r, -d, -f.");
     } else if (!merger.branchNames.isEmpty()) { // option: -r
       if (merger.repoPath.length() == 0) {
         throw new ParameterException("Please specify the path of the target repository.");
@@ -160,7 +160,6 @@ public class IntelliMerge {
       checkArguments(this);
       if (repoPath.length() > 0 && !branchNames.isEmpty()) {
         mergeBranches(repoPath, branchNames, outputPath, hasSubModule);
-
       } else if (!directoryPaths.isEmpty()) {
         mergeDirectories(directoryPaths, outputPath);
       }
@@ -198,13 +197,13 @@ public class IntelliMerge {
     MergeScenario mergeScenario = collector.getMergeScenario();
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.OURS, collectedDir, hasSubModule));
+            new GraphBuilderV2(mergeScenario, Side.OURS, collectedDir, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.BASE, collectedDir, hasSubModule));
+            new GraphBuilderV2(mergeScenario, Side.BASE, collectedDir, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(mergeScenario, Side.THEIRS, collectedDir, hasSubModule));
+            new GraphBuilderV2(mergeScenario, Side.THEIRS, collectedDir, hasSubModule));
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
     Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
@@ -214,10 +213,10 @@ public class IntelliMerge {
     executorService.shutdown();
 
     Utils.prepareDir(outputPath);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger =
+        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
-    SemanticGraphExporter.printAsDot(baseGraph, false);
+    GraphExporter.printAsDot(baseGraph, false);
     // 3. Match nodes and merge programs with the 3-way graphs
     stopwatch.reset().start();
     merger.threewayMap();
@@ -255,12 +254,12 @@ public class IntelliMerge {
 
     // 1. Build graphs from given directories
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(new SemanticGraphBuilder2(directoryPaths.get(0), Side.OURS, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(0), Side.OURS, false));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(new SemanticGraphBuilder2(directoryPaths.get(1), Side.BASE, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(1), Side.BASE, false));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(directoryPaths.get(2), Side.THEIRS, false));
+            new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, false));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
@@ -273,8 +272,8 @@ public class IntelliMerge {
     logger.info("({}ms) Done building graphs.", buildingTime);
 
     Utils.prepareDir(outputPath);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger =
+        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
     // 2. Match nodes across the 3-way graphs.
     stopwatch.reset().start();
@@ -294,7 +293,7 @@ public class IntelliMerge {
     List<String> mergedFilePaths = merger.threewayMerge();
     stopwatch.stop();
     long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-    logger.info("({}ms) Done merging programs.", matchingTime);
+    logger.info("({}ms) Done merging programs.", mergingTime);
 
     long overall = buildingTime + matchingTime + mergingTime;
     logger.info("Overall time cost: {}ms.", overall);
@@ -319,13 +318,13 @@ public class IntelliMerge {
     // 1. Build graphs from given directories
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(directoryPaths.get(0), Side.OURS, hasSubModule));
+            new GraphBuilderV2(directoryPaths.get(0), Side.OURS, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(directoryPaths.get(1), Side.BASE, hasSubModule));
+            new GraphBuilderV2(directoryPaths.get(1), Side.BASE, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
-            new SemanticGraphBuilder2(directoryPaths.get(2), Side.THEIRS, hasSubModule));
+            new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, hasSubModule));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
@@ -338,8 +337,8 @@ public class IntelliMerge {
     logger.info("({}ms) Done building graphs.", buildingTime);
 
     Utils.prepareDir(outputPath);
-    ThreewayGraphMerger merger =
-        new ThreewayGraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger =
+        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
     // 2. Match nodes across the 3-way graphs.
     stopwatch.reset().start();
@@ -359,7 +358,7 @@ public class IntelliMerge {
     List<String> mergedFilePaths = merger.threewayMerge();
     stopwatch.stop();
     long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-    logger.info("({}ms) Done merging programs.", matchingTime);
+    logger.info("({}ms) Done merging programs.", mergingTime);
 
     long overall = buildingTime + matchingTime + mergingTime;
     logger.info("Overall time cost: {}ms.", overall);
