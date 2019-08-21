@@ -13,13 +13,13 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class TwowayGraphMatcher implements Callable<TwowayMatching> {
+public class GraphMatcher implements Callable<TwowayMatching> {
   public TwowayMatching matching;
 
   private Graph<SemanticNode, SemanticEdge> graph1; // old graph(base)
   private Graph<SemanticNode, SemanticEdge> graph2; // new graph(ours/theirs)
 
-  public TwowayGraphMatcher(
+  public GraphMatcher(
       Graph<SemanticNode, SemanticEdge> graph1, Graph<SemanticNode, SemanticEdge> graph2) {
     this.graph1 = graph1;
     this.graph2 = graph2;

@@ -113,6 +113,20 @@ public class Utils {
     return content;
   }
 
+  // remove all blank lines of git merged dir
+  public static void removeBlankLines(String dir) throws Exception {
+    ArrayList<SourceFile> temp = new ArrayList<>();
+    ArrayList<SourceFile> sourceFiles = Utils.scanJavaSourceFiles(dir, temp, dir);
+    for (SourceFile file : sourceFiles) {
+      List<String> lines = readFileToLines(file.getAbsolutePath());
+      String content =
+          lines.stream()
+              .filter(line -> !line.trim().isEmpty())
+              .collect(Collectors.joining(System.lineSeparator()));
+      writeContent(file.getAbsolutePath(), content, false);
+    }
+  }
+
   /**
    * Read the content of a given file.
    *
@@ -167,8 +181,7 @@ public class Utils {
    * @return string content of the file, or null in case of errors.
    */
   public static List<String> writeLinesToFile(String path, List<String> lines) {
-    String content =
-        lines.stream().collect(Collectors.joining(System.lineSeparator()));
+    String content = lines.stream().collect(Collectors.joining(System.lineSeparator()));
     writeContent(path, content, false);
     return lines;
   }
@@ -615,20 +628,30 @@ public class Utils {
 
   public static void main(String[] args) {
     List<String> repoNames = new ArrayList<>();
-    repoNames.add("junit4");
-    repoNames.add("javaparser");
-    repoNames.add("gradle");
-    repoNames.add("error-prone");
+    //    repoNames.add("junit4");
+    //    repoNames.add("javaparser");
+    //    repoNames.add("gradle");
+    //    repoNames.add("error-prone");
+    //    repoNames.add("antlr4");
+    //    repoNames.add("deeplearning4j");
+    //    repoNames.add("cassandra");
+    //    repoNames.add("elasticsearch");
     repoNames.add("antlr4");
-    repoNames.add("deeplearning4j");
-    repoNames.add("cassandra");
-    repoNames.add("elasticsearch");
-    repoNames.add("realm-java");
-    repoNames.add("storm");
+    //    repoNames.add("storm");
     for (String repo : repoNames) {
-      String repoDir = "D:\\github\\ref_conflicts_diff2\\" + repo;
+      String repoDir = "D:\\github\\ref_conflicts_diff2 - Copy\\" + repo;
       try {
-        convertDiff3ToDiff2(repoDir);
+        File file = new File(repoDir);
+        File[] files = file.listFiles();
+        for (File f : files) {
+          if (f.isDirectory()) {
+            String sourceDir = f.getAbsolutePath();
+
+            String gitMergedDir = sourceDir + File.separator + Side.GIT.asString() + File.separator;
+            removeBlankLines(gitMergedDir);
+          }
+        }
+        //        convertDiff3ToDiff2(repoDir);
         System.out.println("Done with " + repo);
       } catch (Exception e) {
         e.printStackTrace();

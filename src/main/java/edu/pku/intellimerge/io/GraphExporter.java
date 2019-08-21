@@ -11,19 +11,19 @@ import java.io.Writer;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SemanticGraphExporter {
+public class GraphExporter {
   /** Export a graph into DOT format. */
-  public static String exportAsDot(Graph<SemanticNode, SemanticEdge> semanticGraph) {
+  public static String exportAsDot(Graph<SemanticNode, SemanticEdge> graph) {
     try {
       // use helper classes to define how vertices should be rendered,
       // adhering to the DOT language restrictions
       ComponentNameProvider<SemanticNode> vertexIdProvider = node -> node.getNodeID().toString();
       ComponentNameProvider<SemanticNode> vertexLabelProvider = node -> node.getDisplayName();
       ComponentNameProvider<SemanticEdge> edgeLabelProvider = edge -> edge.getEdgeType().asString();
-      GraphExporter<SemanticNode, SemanticEdge> exporter =
+      org.jgrapht.io.GraphExporter<SemanticNode, SemanticEdge> exporter =
           new DOTExporter<>(vertexIdProvider, vertexLabelProvider, edgeLabelProvider);
       Writer writer = new StringWriter();
-      exporter.exportGraph(semanticGraph, writer);
+      exporter.exportGraph(graph, writer);
       return writer.toString();
 
     } catch (ExportException e) {
@@ -32,7 +32,7 @@ public class SemanticGraphExporter {
     }
   }
 
-  public static String exportAsDotWithType(Graph<SemanticNode, SemanticEdge> semanticGraph) {
+  public static String exportAsDotWithType(Graph<SemanticNode, SemanticEdge> graph) {
     try {
 
       // use helper classes to define how vertices should be rendered,
@@ -42,7 +42,7 @@ public class SemanticGraphExporter {
       ComponentNameProvider<SemanticNode> vertexLabelProvider = node -> node.getDisplayName();
       ComponentAttributeProvider<SemanticEdge> edgeAttributeProvider = new TypeProvider();
       ComponentNameProvider<SemanticEdge> edgeLabelProvider = edge -> edge.getEdgeType().asString();
-      GraphExporter<SemanticNode, SemanticEdge> exporter =
+      org.jgrapht.io.GraphExporter<SemanticNode, SemanticEdge> exporter =
           new DOTExporter<>(
               vertexIdProvider,
               vertexLabelProvider,
@@ -50,7 +50,7 @@ public class SemanticGraphExporter {
               vertexAttributeProvider,
               edgeAttributeProvider);
       Writer writer = new StringWriter();
-      exporter.exportGraph(semanticGraph, writer);
+      exporter.exportGraph(graph, writer);
       return writer.toString();
 
     } catch (ExportException e) {

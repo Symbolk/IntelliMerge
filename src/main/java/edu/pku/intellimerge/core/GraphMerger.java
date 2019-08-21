@@ -27,17 +27,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
-public class ThreewayGraphMerger {
+public class GraphMerger {
   public TwowayMatching b2oMatching;
   public TwowayMatching b2tMatching;
   public List<ThreewayMapping> mapping;
-  private Logger logger = LoggerFactory.getLogger(ThreewayGraphMerger.class);
+  private Logger logger = LoggerFactory.getLogger(GraphMerger.class);
   private String resultDir; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
 
-  public ThreewayGraphMerger(
+  public GraphMerger(
       String resultDir,
       Graph<SemanticNode, SemanticEdge> oursGraph,
       Graph<SemanticNode, SemanticEdge> baseGraph,
@@ -52,8 +52,8 @@ public class ThreewayGraphMerger {
   /** Threeway map the CUs that need to merge */
   public void threewayMap() {
     // two way matching to get three way mapping
-    TwowayGraphMatcher b2oMatcher = new TwowayGraphMatcher(baseGraph, oursGraph);
-    TwowayGraphMatcher b2tMatcher = new TwowayGraphMatcher(baseGraph, theirsGraph);
+    GraphMatcher b2oMatcher = new GraphMatcher(baseGraph, oursGraph);
+    GraphMatcher b2tMatcher = new GraphMatcher(baseGraph, theirsGraph);
     // temporarily disable multithread, considering the debug effort with the performance
     // improvement
     //    try {
@@ -111,7 +111,7 @@ public class ThreewayGraphMerger {
       if (mapping.baseNode.isPresent()) {
         // merge the COMPILATION_UNIT by merging its content
         //        SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
-        SemanticNode mergedCU = mergeSingleNodeV2(mapping.baseNode.get());
+        SemanticNode mergedCU = mergeSingleNode(mapping.baseNode.get());
         // merge the package declaration and imports
         CompilationUnitNode mergedPackageAndImports = mergeCUHeader(mapping.baseNode.get());
         if (mergedCU != null && mergedPackageAndImports != null) {
@@ -233,7 +233,7 @@ public class ThreewayGraphMerger {
    * @param node
    * @return
    */
-  private SemanticNode mergeSingleNodeV2(SemanticNode node) {
+  private SemanticNode mergeSingleNode(SemanticNode node) {
     // if node is terminal: merge and return result
     SemanticNode mergedNode = node.shallowClone();
     SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
@@ -336,7 +336,7 @@ public class ThreewayGraphMerger {
             // insert nodes added in theirs
             mergedNonTerminal.appendChild(child);
           } else {
-            SemanticNode mergedChild = mergeSingleNodeV2(childInBase);
+            SemanticNode mergedChild = mergeSingleNode(childInBase);
             if (mergedChild != null) {
               mergedChild.followingEOL = child.followingEOL;
               mergedNonTerminal.appendChild(mergedChild);

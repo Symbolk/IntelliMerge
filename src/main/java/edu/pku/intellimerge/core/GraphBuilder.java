@@ -43,8 +43,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /** Build Semantic Graph for one merge scenario */
-public class SemanticGraphBuilder {
-  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder.class);
+public class GraphBuilder {
+  private static final Logger logger = LoggerFactory.getLogger(GraphBuilder.class);
   private Graph<SemanticNode, SemanticEdge> graph;
   private JavaSymbolSolver symbolSolver;
   private JavaParserFacade javaParserFacade;
@@ -71,7 +71,7 @@ public class SemanticGraphBuilder {
   //  the context files for symbolsolving, i.e. the source folder of this java project
   private String sourceDir;
 
-  public SemanticGraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
+  public GraphBuilder(MergeScenario mergeScenario, Side side, String collectedFilePath) {
     this.mergeScenario = mergeScenario;
     this.side = side;
     this.collectedFilePath = collectedFilePath;
@@ -713,7 +713,7 @@ public class SemanticGraphBuilder {
    * @return
    */
   private int buildEdges(
-      Graph<SemanticNode, SemanticEdge> semanticGraph,
+      Graph<SemanticNode, SemanticEdge> graph,
       int edgeCount,
       Map<SemanticNode, List<String>> edges,
       EdgeType edgeType,
@@ -722,7 +722,7 @@ public class SemanticGraphBuilder {
       return edgeCount;
     }
 
-    Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+    Set<SemanticNode> vertexSet = graph.vertexSet();
     for (Map.Entry<SemanticNode, List<String>> entry : edges.entrySet()) {
       SemanticNode sourceNode = entry.getKey();
       List<String> targetNodeNames = entry.getValue();
@@ -732,12 +732,12 @@ public class SemanticGraphBuilder {
           // if the edge was added to the graph, returns true; if the edges already exists, returns
           // false
           boolean isSuccessful =
-              semanticGraph.addEdge(
+              graph.addEdge(
                   sourceNode,
                   targetNode,
                   new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
           if (!isSuccessful) {
-            SemanticEdge edge = semanticGraph.getEdge(sourceNode, targetNode);
+            SemanticEdge edge = graph.getEdge(sourceNode, targetNode);
             edge.setWeight(edge.getWeight() + 1);
           }
         }

@@ -39,8 +39,8 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /** Build Semantic Graph for one merge scenario, with fuzzy matching instead of symbolsolving */
-public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, SemanticEdge>> {
-  private static final Logger logger = LoggerFactory.getLogger(SemanticGraphBuilder2.class);
+public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge>> {
+  private static final Logger logger = LoggerFactory.getLogger(GraphBuilderV2.class);
   private Graph<SemanticNode, SemanticEdge> graph;
   // incremental id, unique in one side's graph
   private int nodeCount;
@@ -74,7 +74,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param side
    * @param targetDir
    */
-  public SemanticGraphBuilder2(String targetDir, Side side, boolean hasMultiModule) {
+  public GraphBuilderV2(String targetDir, Side side, boolean hasMultiModule) {
     this.mergeScenario = null;
     this.side = side;
     this.targetDir = targetDir;
@@ -93,7 +93,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param targetDir
    * @param hasMultiModule
    */
-  public SemanticGraphBuilder2(Side side, String targetDir, boolean hasMultiModule) {
+  public GraphBuilderV2(Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = null;
     this.side = side;
     this.targetDir = targetDir;
@@ -113,7 +113,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param targetDir
    * @param hasMultiModule
    */
-  public SemanticGraphBuilder2(
+  public GraphBuilderV2(
       MergeScenario mergeScenario, Side side, String targetDir, boolean hasMultiModule) {
     this.mergeScenario = mergeScenario;
     this.side = side;
@@ -133,7 +133,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @param targetDir
    * @param fileRelativePaths
    */
-  public SemanticGraphBuilder2(Side side, String targetDir, List<String> fileRelativePaths) {
+  public GraphBuilderV2(Side side, String targetDir, List<String> fileRelativePaths) {
     this.mergeScenario = null;
     this.side = side;
     this.targetDir = targetDir;
@@ -757,7 +757,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           int startIndex = temp.indexOf(tokens[0]);
           startIndex = startIndex >= 0 ? startIndex : 0;
           int endIndex =
-              temp.lastIndexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
+              temp.indexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
           endIndex = endIndex >= 0 ? endIndex : 0;
           if (startIndex <= endIndex) {
             originalSignature = temp.substring(startIndex, endIndex);
@@ -1193,7 +1193,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
    * @return
    */
   private int buildEdges(
-      Graph<SemanticNode, SemanticEdge> semanticGraph,
+      Graph<SemanticNode, SemanticEdge> graph,
       int edgeCount,
       Map<SemanticNode, List<String>> edges,
       EdgeType edgeType,
@@ -1202,7 +1202,7 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
       return edgeCount;
     }
 
-    Set<SemanticNode> vertexSet = semanticGraph.vertexSet();
+    Set<SemanticNode> vertexSet = graph.vertexSet();
     for (Map.Entry<SemanticNode, List<String>> entry : edges.entrySet()) {
       SemanticNode sourceNode = entry.getKey();
       List<String> targetNodeNames = entry.getValue();
@@ -1219,12 +1219,12 @@ public class SemanticGraphBuilder2 implements Callable<Graph<SemanticNode, Seman
           // if the edge was added to the graph, returns true; if the edges already exists, returns
           // false
           boolean isSuccessful =
-              semanticGraph.addEdge(
+              graph.addEdge(
                   sourceNode,
                   targetNode,
                   new SemanticEdge(edgeCount++, edgeType, sourceNode, targetNode));
           if (!isSuccessful) {
-            SemanticEdge edge = semanticGraph.getEdge(sourceNode, targetNode);
+            SemanticEdge edge = graph.getEdge(sourceNode, targetNode);
             if (edge != null) {
               edge.setWeight(edge.getWeight() + 1);
             }

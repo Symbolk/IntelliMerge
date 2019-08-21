@@ -1,9 +1,9 @@
 package edu.pku.intellimerge.match;
 
 import com.google.common.base.Stopwatch;
-import edu.pku.intellimerge.core.SemanticGraphBuilder2;
-import edu.pku.intellimerge.core.ThreewayGraphMerger;
-import edu.pku.intellimerge.core.TwowayGraphMatcher;
+import edu.pku.intellimerge.core.GraphBuilderV2;
+import edu.pku.intellimerge.core.GraphMerger;
+import edu.pku.intellimerge.core.GraphMatcher;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
@@ -30,7 +30,7 @@ public class Util {
    * @return
    * @throws Exception
    */
-  public static ThreewayGraphMerger matchGraphsThreeway(String targetDir, String resultDir) {
+  public static GraphMerger matchGraphsThreeway(String targetDir, String resultDir) {
     String targetDirName = Utils.getDirSimpleName(targetDir);
     try {
       Stopwatch stopwatch = Stopwatch.createStarted();
@@ -39,13 +39,13 @@ public class Util {
 
       Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
           executorService.submit(
-              new SemanticGraphBuilder2(null, Side.OURS, targetDir, hasMultipleModule));
+              new GraphBuilderV2(null, Side.OURS, targetDir, hasMultipleModule));
       Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
           executorService.submit(
-              new SemanticGraphBuilder2(null, Side.BASE, targetDir, hasMultipleModule));
+              new GraphBuilderV2(null, Side.BASE, targetDir, hasMultipleModule));
       Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
           executorService.submit(
-              new SemanticGraphBuilder2(null, Side.THEIRS, targetDir, hasMultipleModule));
+              new GraphBuilderV2(null, Side.THEIRS, targetDir, hasMultipleModule));
       Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
       Graph<SemanticNode, SemanticEdge> baseGraph = baseBuilder.get();
       Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
@@ -60,8 +60,8 @@ public class Util {
       logger.info("Building graph done for {}", targetDir);
 
       Utils.prepareDir(resultDir);
-      ThreewayGraphMerger merger =
-          new ThreewayGraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
+      GraphMerger merger =
+          new GraphMerger(resultDir, oursGraph, baseGraph, theirsGraph);
       merger.threewayMap();
       logger.info("Matching done for {}", targetDir);
       return merger;
@@ -78,7 +78,7 @@ public class Util {
    * @param resultDir
    */
   public static List<String> mergeGraphsThreeway(String targetDir, String resultDir) {
-    ThreewayGraphMerger merger = matchGraphsThreeway(targetDir, resultDir);
+    GraphMerger merger = matchGraphsThreeway(targetDir, resultDir);
     List<String> mergedFilePaths = merger.threewayMerge();
     logger.info("Merging done for {}", targetDir);
     return mergedFilePaths;
@@ -99,10 +99,10 @@ public class Util {
 
       Future<Graph<SemanticNode, SemanticEdge>> builder1 =
           executorService.submit(
-              new SemanticGraphBuilder2(null, side1, targetDir, hasMultipleModule));
+              new GraphBuilderV2(null, side1, targetDir, hasMultipleModule));
       Future<Graph<SemanticNode, SemanticEdge>> builder2 =
           executorService.submit(
-              new SemanticGraphBuilder2(null, side2, targetDir, hasMultipleModule));
+              new GraphBuilderV2(null, side2, targetDir, hasMultipleModule));
       Graph<SemanticNode, SemanticEdge> graph1 = builder1.get();
       Graph<SemanticNode, SemanticEdge> graph2 = builder2.get();
 
@@ -115,7 +115,7 @@ public class Util {
           stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
       logger.info("Building graph done for {}", targetDir);
-      TwowayGraphMatcher matcher = new TwowayGraphMatcher(graph1, graph2);
+      GraphMatcher matcher = new GraphMatcher(graph1, graph2);
       matcher.topDownMatch();
       matcher.bottomUpMatch();
       logger.info("Matching done for {}", targetDir);

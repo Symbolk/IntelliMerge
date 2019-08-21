@@ -9,7 +9,7 @@ import java.util.List;
 public class MergeScenario {
   public String repoName;
   public String repoPath;
-  public String srcPath; // only needed in SemanticGraphBuilderV1 for symbolsolving
+  public String srcPath; // only needed in GraphBuilderV1 for symbolsolving
   public String mergeCommitID; // optional
   public String oursCommitID;
   public String baseCommitID;

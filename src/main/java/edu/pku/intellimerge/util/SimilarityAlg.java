@@ -38,10 +38,10 @@ public class SimilarityAlg {
     // naive average in all dimensions of context(incoming and outgoing edges)
     similarity += contextSimilarity2(n1, n2);
     // naive string similarity of terminalNodeSimilarity signature
-    similarity += 4 * stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
-    similarity += 4 * stringSimilarity(n1.getOriginalSignature(), n2.getOriginalSignature());
+    similarity += stringSimilarity(n1.getQualifiedName(), n2.getQualifiedName());
+    similarity += stringSimilarity(n1.getOriginalSignature(), n2.getOriginalSignature());
     similarity += bodyASTSimilarity(n1.getBody(), n2.getBody());
-    similarity /= 10;
+    similarity /= 4;
     return similarity;
   }
 

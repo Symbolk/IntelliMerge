@@ -232,7 +232,7 @@ public class SourceFileCollector {
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.ADD)) {
         relativePath = diffEntry.getNewPath();
       } else {
-        // e.g. src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
+        // e.g. src/main/java/edu/pku/intellimerge/core/GraphBuilder.java
         relativePath = diffEntry.getOldPath();
       }
       diffFilePaths.add(relativePath);
@@ -319,7 +319,7 @@ public class SourceFileCollector {
     for (SimpleDiffEntry diffEntry : diffEntries) {
       // only care about BothSides modified files now
       if (diffEntry.getChangeType().equals(DiffEntry.ChangeType.MODIFY)) {
-        // src/main/java/edu/pku/intellimerge/core/SemanticGraphBuilder.java
+        // src/main/java/edu/pku/intellimerge/core/GraphBuilder.java
         String relativePath = diffEntry.getOldPath();
         //        logger.info(
         //            "{} : {} -> {}",
