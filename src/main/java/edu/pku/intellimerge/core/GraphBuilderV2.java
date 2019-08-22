@@ -480,6 +480,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
             nodeType.asString(),
             displayName,
             range);
+
     tdNode.curlyBracePrefix = getCurlyBracePrefix(td, originalSignature);
     tdNode.beforeFirstChildEOL = getChildrenLeadingEOL(td);
     tdNode.followingEOL = getFollowingEOL(td);
@@ -513,7 +514,18 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
         });
 
     for (Node child : orderedChildNodes) {
-      if (child instanceof TypeDeclaration) {
+      // catch orphan comments
+      if (child instanceof Comment) {
+        Comment c = (Comment) child;
+        if (c.isOrphan()) {
+          String content = c.getTokenRange().map(TokenRange::toString).orElse("");
+          OrphanCommentNode ocNode =
+              new OrphanCommentNode(nodeCount++, content, content, content, c.getRange());
+          ocNode.followingEOL = getFollowingEOL(child);
+          graph.addVertex(ocNode);
+          tdNode.appendChild(ocNode);
+        }
+      } else if (child instanceof TypeDeclaration) {
         TypeDeclaration childTD = (TypeDeclaration) child;
         if (childTD.isNestedType()) {
           // add edge from the parent td to the nested td
@@ -1031,7 +1043,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
   private int getChildrenLeadingEOL(TypeDeclaration td) {
     int count = 0;
     if (td.getMembers().size() == 0) {
-      return count;
+      return 0;
     } else {
       Optional<JavaToken> previousToken =
           td.getMember(0)

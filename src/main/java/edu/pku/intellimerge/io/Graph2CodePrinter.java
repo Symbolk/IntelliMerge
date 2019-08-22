@@ -4,6 +4,7 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.node.CompilationUnitNode;
 import edu.pku.intellimerge.model.node.CompositeNode;
+import edu.pku.intellimerge.model.node.OrphanCommentNode;
 import edu.pku.intellimerge.model.node.TerminalNode;
 import edu.pku.intellimerge.util.Utils;
 
@@ -121,6 +122,11 @@ public class Graph2CodePrinter {
         for (int i = 0; i < node.followingEOL; ++i) {
           builder.append(System.lineSeparator());
         }
+      }
+    } else if (node instanceof OrphanCommentNode) {
+      builder.append(node.getOriginalSignature());
+      for (int i = 0; i < node.followingEOL; ++i) {
+        builder.append(System.lineSeparator());
       }
     }
 

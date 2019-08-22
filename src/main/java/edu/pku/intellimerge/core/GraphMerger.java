@@ -328,9 +328,9 @@ public class GraphMerger {
 
         // iteratively merge its children (in base order)
         List<SemanticNode> children = theirsNode.getChildren();
+        BiMap<SemanticNode, SemanticNode> inversedMatching = b2tMatching.one2oneMatchings;
+        inversedMatching = inversedMatching.inverse();
         for (SemanticNode child : children) {
-          BiMap<SemanticNode, SemanticNode> inversedMatching = b2tMatching.one2oneMatchings;
-          inversedMatching = inversedMatching.inverse();
           SemanticNode childInBase = inversedMatching.getOrDefault(child, null);
           if (childInBase == null) {
             // insert nodes added in theirs
