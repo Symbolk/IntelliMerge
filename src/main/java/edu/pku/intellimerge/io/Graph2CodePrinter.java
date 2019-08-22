@@ -31,7 +31,10 @@ public class Graph2CodePrinter {
         Utils.formatPathSeparator(resultDir + File.separator + cu.getRelativePath());
     // merged package imports
     StringBuilder builder = new StringBuilder();
-    builder.append(cu.getComment().isEmpty() ? "" : cu.getComment() + System.lineSeparator());
+    builder.append(
+        cu.getComment().isEmpty()
+            ? ""
+            : cu.getComment() + System.lineSeparator() + System.lineSeparator());
     builder.append(cu.getPackageStatement());
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
     // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
@@ -83,7 +86,8 @@ public class Graph2CodePrinter {
                         .collect(Collectors.joining(System.lineSeparator()))
                     + System.lineSeparator()));
         builder.append(node.getOriginalSignature());
-        builder.append(" {");
+        builder.append(((CompositeNode) node).curlyBracePrefix);
+        builder.append("{");
         for (int i = 0; i < ((CompositeNode) node).beforeFirstChildEOL; ++i) {
           builder.append(System.lineSeparator());
         }

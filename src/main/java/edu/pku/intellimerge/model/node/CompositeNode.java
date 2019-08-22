@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public class CompositeNode extends SemanticNode {
 
+  // prefix strings before '{'
+  public String curlyBracePrefix = "";
   // number of EOLs between { and the first child
   public int beforeFirstChildEOL = 1;
   // type decl
@@ -97,6 +99,7 @@ public class CompositeNode extends SemanticNode {
             this.getAnnotations(),
             this.getModifiers(),
             this.getRange());
+    clone.curlyBracePrefix = this.curlyBracePrefix;
     clone.beforeFirstChildEOL = this.beforeFirstChildEOL;
     clone.followingEOL = this.followingEOL;
     return clone;

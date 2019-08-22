@@ -480,6 +480,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
             nodeType.asString(),
             displayName,
             range);
+    tdNode.curlyBracePrefix = getCurlyBracePrefix(td, originalSignature);
     tdNode.beforeFirstChildEOL = getChildrenLeadingEOL(td);
     tdNode.followingEOL = getFollowingEOL(td);
     return tdNode;
@@ -761,7 +762,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           endIndex = endIndex >= 0 ? endIndex : 0;
           if (startIndex <= endIndex) {
             originalSignature = temp.substring(startIndex, endIndex);
-          }else{
+          } else {
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
 
@@ -965,9 +966,18 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
    * @return
    */
   private String getCallableBody(CallableDeclaration declaration) {
-    return " "
-        + removeSignature(
-            declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse(""));
+    String originalCode =
+        declaration.removeComment().getTokenRange().map(TokenRange::toString).orElse("");
+    if (originalCode.length() > 0) {
+      int i = originalCode.indexOf("{");
+      if (i > 0) {
+        int j = originalCode.substring(0, i).lastIndexOf(")");
+        if (j > 0) {
+          return originalCode.substring(j + 1);
+        }
+      }
+    }
+    return " " + removeSignature(originalCode);
   }
 
   /**
@@ -995,6 +1005,21 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
       }
     }
     return count;
+  }
+
+  private String getCurlyBracePrefix(TypeDeclaration td, String originalSignature) {
+    String tdCodeNoComment =
+        td.removeComment().getTokenRange().map(TokenRange::toString).orElse("");
+    if (tdCodeNoComment.length() > 0) {
+      String tdCodeNoAnnotation =
+          tdCodeNoComment.substring(tdCodeNoComment.indexOf(originalSignature));
+      int i = tdCodeNoAnnotation.indexOf("{");
+      if (i > 0) {
+        return tdCodeNoAnnotation.substring(
+            tdCodeNoAnnotation.indexOf(originalSignature) + originalSignature.length(), i);
+      }
+    }
+    return "";
   }
 
   /**
