@@ -234,13 +234,21 @@ public class GraphMerger {
    * @return
    */
   private SemanticNode mergeSingleNode(SemanticNode node) {
-    // if node is terminal: merge and return result
     SemanticNode mergedNode = node.shallowClone();
     SemanticNode oursNode = b2oMatching.one2oneMatchings.getOrDefault(node, null);
     SemanticNode theirsNode = b2tMatching.one2oneMatchings.getOrDefault(node, null);
-    if (node instanceof TerminalNode) {
-      TerminalNode mergedTerminal = (TerminalNode) mergedNode;
-      if (oursNode != null && theirsNode != null) {
+    if (oursNode != null && theirsNode != null) {
+      // for orphan comment, merge if matched
+      if (node instanceof OrphanCommentNode) {
+        mergedNode.setOriginalSignature(
+            mergeTextually(
+                oursNode.getOriginalSignature(),
+                node.getOriginalSignature(),
+                theirsNode.getOriginalSignature()));
+        return mergedNode;
+      } else if (node instanceof TerminalNode) {
+        // for terminal: merge each part and return merged node
+        TerminalNode mergedTerminal = (TerminalNode) mergedNode;
         // exist in BothSides side
         TerminalNode oursTerminal = (TerminalNode) oursNode;
         TerminalNode baseTerminal = (TerminalNode) node;
@@ -285,12 +293,7 @@ public class GraphMerger {
 
         return mergedTerminal;
       } else {
-        // deleted in one side --> delete
-        return null;
-      }
-    } else {
-      // nonterminal
-      if (oursNode != null && theirsNode != null) {
+        // for composite: merge comment/annotation/signature, and then children
         CompositeNode mergedNonTerminal = (CompositeNode) mergedNode;
 
         // merge the comment and signature
@@ -350,11 +353,11 @@ public class GraphMerger {
         mergeUnmatchedNodes(mergedNonTerminal, addedOurs);
 
         return mergedNonTerminal;
-      } else {
-        // deleted in one side --> delete
-        return null;
       }
-    }
+    } else {
+      // if delete in one side, delete it
+      return null;
+    } 
   }
 
   /**
