@@ -357,7 +357,7 @@ public class GraphMerger {
     } else {
       // if delete in one side, delete it
       return null;
-    } 
+    }
   }
 
   /**

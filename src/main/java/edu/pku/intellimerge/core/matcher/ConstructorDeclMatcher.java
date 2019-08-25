@@ -41,13 +41,13 @@ public class ConstructorDeclMatcher {
         partition2.add(node2);
         biPartite.addEdge(node1, node2);
         double similarity =
-            SimilarityAlg.terminalNodeSimilarity(
+            SimilarityAlg.terminal(
                 (ConstructorDeclNode) node1, (ConstructorDeclNode) node2);
         biPartite.setEdgeWeight(node1, node2, similarity);
       }
     }
     // bipartite / to match most likely renamed methods
-    // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
+    // find the maximum /, one terminal cannot be renamed to two
     //    biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);

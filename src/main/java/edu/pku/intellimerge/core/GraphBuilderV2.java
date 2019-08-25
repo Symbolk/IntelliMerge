@@ -488,7 +488,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
   }
 
   /**
-   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type
+   * Process members (child nodes that are field, constructor or terminal) of type
    * declaration
    *
    * @param td
@@ -542,7 +542,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           processMemebers(childTD, childTDNode, qualifiedTypeName, isInChangedFile);
         }
       } else {
-        // for other members (constructor, field, terminalNodeSimilarity), create the node
+        // for other members (constructor, field, terminal), create the node
         // add the edge from the parent td to the member
         if (child instanceof EnumConstantDeclaration) {
           EnumConstantDeclaration ecd = (EnumConstantDeclaration) child;
@@ -686,7 +686,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           MethodDeclaration md = (MethodDeclaration) child;
           if (md.getAnnotations().size() > 0) {
             if (md.isAnnotationPresent("Override")) {
-              // search the terminalNodeSimilarity signature in its superclass or interface
+              // search the terminal signature in its superclass or interface
             }
           }
           comment = getComment(md);
@@ -754,7 +754,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           mdNode.setParameterList(parameterList);
 
           // md.getDeclarationAsString() cannot return type parameters, so we need to insert type
-          // [<type parameters>] [return type] [terminalNodeSimilarity name] [parameter type]
+          // [<type parameters>] [return type] [terminal name] [parameter type]
           if (typeParameters.size() > 0) {
             String typeParametersAsString =
                 "<" + typeParameters.stream().collect(Collectors.joining(",")) + ">";
@@ -862,7 +862,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminal
    * or constructor) body
    *
    * @param cd
@@ -905,7 +905,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
     if (writeFieldExprs.size() > 0) {
       writeFieldEdges.put(node, writeFieldExprs);
     }
-    // 3 terminalNodeSimilarity call
+    // 3 terminal call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
     this.methodCallExprs.put(node, methodCallExprs);
   }
@@ -1145,7 +1145,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
    */
   private int buildEdgesForMethodCall(
       int edgeCount, Map<SemanticNode, List<MethodCallExpr>> methodCallExprs) {
-    // for every terminalNodeSimilarity call, find its declaration by terminalNodeSimilarity name
+    // for every terminal call, find its declaration by terminal name
     // and paramater num
     for (Map.Entry<SemanticNode, List<MethodCallExpr>> entry : methodCallExprs.entrySet()) {
       SemanticNode caller = entry.getKey();
@@ -1329,7 +1329,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
               fieldAccessString.lastIndexOf("."), fieldAccessString.length());
     }
     String displayName = fieldAccessString;
-    // for terminalNodeSimilarity, match by terminalNodeSimilarity name and paramater num
+    // for terminal, match by terminal name and paramater num
     Optional<SemanticNode> targetNodeOpt = Optional.empty();
     if (targetNodeType.equals(NodeType.FIELD)) {
 

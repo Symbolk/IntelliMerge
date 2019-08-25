@@ -49,7 +49,7 @@ public class MethodDeclNode extends TerminalNode {
         annotations,
         modifiers,
         body,
-        range); // block or ""(abstract terminalNodeSimilarity or interface)
+        range); // block or ""(abstract terminal or interface)
     this.access = access;
     this.typeParameters = typeParameters;
     this.returnType = returnType;

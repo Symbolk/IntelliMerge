@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MethodDeclMatcher {
-  private static final Double MIN_SIMI= 0.618D;
+  private static final Double MIN_SIMI = 0.618D;
   /**
    * Match methods that are unmatched for signature change, including many kinds of refactorings
    *
@@ -34,23 +34,25 @@ public class MethodDeclMatcher {
     DefaultUndirectedWeightedGraph<SemanticNode, DefaultWeightedEdge> biPartite =
         new DefaultUndirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    for (SemanticNode node1 : unmatchedMethods1) {
-      for (SemanticNode node2 : unmatchedMethods2) {
-        biPartite.addVertex(node1);
-        partition1.add(node1);
-        biPartite.addVertex(node2);
-        partition2.add(node2);
-        biPartite.addEdge(node1, node2);
-        //        double similarity = SimilarityAlg.terminalNodeSimilarity((MethodDeclNode) node1,
-        // (MethodDeclNode) node2);
-        double similarity =
-            SimilarityAlg.terminalNodeSimilarity((MethodDeclNode) node1, (MethodDeclNode) node2);
-        biPartite.setEdgeWeight(node1, node2, similarity);
+    for (SemanticNode n1 : unmatchedMethods1) {
+      for (SemanticNode n2 : unmatchedMethods2) {
+        // filter improbable pairs by qualified name (including package, type and its name)
+        if (SimilarityAlg.string(n1.getQualifiedName(), n2.getQualifiedName())
+            > MIN_SIMI) {
+          biPartite.addVertex(n1);
+          partition1.add(n1);
+          biPartite.addVertex(n2);
+          partition2.add(n2);
+          biPartite.addEdge(n1, n2);
+          double similarity =
+              SimilarityAlg.terminal((MethodDeclNode) n1, (MethodDeclNode) n2);
+          biPartite.setEdgeWeight(n1, n2, similarity);
+        }
       }
     }
     // bipartite / to match most likely renamed methods
-    // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
-//        biPartite.edgeSet();
+    // find the maximum /, one terminal cannot be renamed to two
+            biPartite.edgeSet();
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();
@@ -71,13 +73,13 @@ public class MethodDeclMatcher {
   /**
    * Match possible extracted methods from unmatched methods
    *
-   * @param matching  * @param unmatchedMethods
+   * @param matching * @param unmatchedMethods
    */
   public void matchExtractMethod(TwowayMatching matching, List<SemanticNode> unmatchedMethods) {
     //    BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();
     //    // Rule: one of callers in the / && original caller's parent==current parent&&union
     //    // context confidence > confidence before
-    //    // The added terminalNodeSimilarity is called by an existing terminalNodeSimilarity in the
+    //    // The added terminal is called by an existing terminal in the
     // same
     //    // class
     //    Map<MethodDeclNode, List<MethodDeclNode>> candidates = new HashMap<>();
@@ -95,7 +97,7 @@ public class MethodDeclMatcher {
     //        candidates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
     //      }
     //    }
-    //    // try to inline the new terminalNodeSimilarity to the caller
+    //    // try to inline the new terminal to the caller
     //    // if the similarity improves, consider it as extracted from the caller
     //    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : candidates.entrySet()) {
     //      MethodDeclNode callee = alternate.getKey();
@@ -103,8 +105,8 @@ public class MethodDeclMatcher {
     //      for (MethodDeclNode caller : callers) {
     //        MethodDeclNode callerBase = (MethodDeclNode) reversedMatching.get(caller);
     //        double similarityBefore =
-    //            SimilarityAlg.contextSimilarity(caller.incomingEdges, callerBase.incomingEdges)
-    //                + SimilarityAlg.contextSimilarity(caller.outgoingEdges,
+    //            SimilarityAlg.context(caller.incomingEdges, callerBase.incomingEdges)
+    //                + SimilarityAlg.context(caller.outgoingEdges,
     // callerBase.outgoingEdges);
     //
     //        // TODO detect inline methods
@@ -121,8 +123,8 @@ public class MethodDeclMatcher {
     //        caller.outgoingEdges = outUnion;
     //        // combine the body
     //        double similarityAfter =
-    //            SimilarityAlg.contextSimilarity(caller.incomingEdges, callerBase.incomingEdges)
-    //                + SimilarityAlg.contextSimilarity(caller.outgoingEdges,
+    //            SimilarityAlg.context(caller.incomingEdges, callerBase.incomingEdges)
+    //                + SimilarityAlg.context(caller.outgoingEdges,
     // callerBase.outgoingEdges);
     //
     //        if (similarityAfter > similarityBefore) {

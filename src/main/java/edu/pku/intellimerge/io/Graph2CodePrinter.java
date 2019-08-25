@@ -38,7 +38,7 @@ public class Graph2CodePrinter {
             : cu.getComment() + System.lineSeparator() + System.lineSeparator());
     builder.append(cu.getPackageStatement());
     cu.getImportStatements().forEach(importStatement -> builder.append(importStatement));
-    // merged content, field-constructor-terminalNodeSimilarity, and reformat in google-java-format
+    // merged content, field-constructor-terminal, and reformat in google-java-format
     builder.append(printNode(node));
     //    String reformattedCode = reformatCode(builder.toString());
     //    String reformattedCode = Utils.formatCodeWithConflicts(builder.toString(), false);

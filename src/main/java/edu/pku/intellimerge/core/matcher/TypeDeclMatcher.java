@@ -4,7 +4,6 @@ import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.RefactoringType;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
-import edu.pku.intellimerge.model.node.MethodDeclNode;
 import edu.pku.intellimerge.model.node.TypeDeclNode;
 import edu.pku.intellimerge.util.SimilarityAlg;
 import org.jgrapht.alg.matching.MaximumWeightBipartiteMatching;
@@ -41,12 +40,12 @@ public class TypeDeclMatcher {
                 biPartite.addVertex(node2);
                 partition2.add(node2);
                 biPartite.addEdge(node1, node2);
-                double similarity = SimilarityAlg.compositeNodeSimilarity((TypeDeclNode) node1, (TypeDeclNode) node2);
+                double similarity = SimilarityAlg.composite((TypeDeclNode) node1, (TypeDeclNode) node2);
                 biPartite.setEdgeWeight(node1, node2, similarity);
             }
         }
         // bipartite / to match most likely renamed methods
-        // find the maximum /, one terminalNodeSimilarity cannot be renamed to two
+        // find the maximum /, one terminal cannot be renamed to two
         MaximumWeightBipartiteMatching matcher =
                 new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
         Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();

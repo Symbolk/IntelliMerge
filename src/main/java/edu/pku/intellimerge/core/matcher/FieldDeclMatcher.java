@@ -44,7 +44,7 @@ public class FieldDeclMatcher {
       }
     }
     // bipartite matching to match most likely renamed methods
-    // find the maximum matching, one terminalNodeSimilarity cannot be renamed to two
+    // find the maximum matching, one terminal cannot be renamed to two
     MaximumWeightBipartiteMatching matcher =
         new MaximumWeightBipartiteMatching(biPartite, partition1, partition2);
     Set<DefaultWeightedEdge> edges = matcher.getMatching().getEdges();

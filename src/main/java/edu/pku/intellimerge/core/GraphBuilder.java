@@ -358,7 +358,7 @@ public class GraphBuilder {
   }
 
   /**
-   * Process members (child nodes that are field, constructor or terminalNodeSimilarity) of type
+   * Process members (child nodes that are field, constructor or terminal) of type
    * declaration
    *
    * @param td
@@ -388,7 +388,7 @@ public class GraphBuilder {
           processMemebers(childTD, childTDNode, packageName, isInChangedFile);
         }
       } else {
-        // for other members (constructor, field, terminalNodeSimilarity), create the node
+        // for other members (constructor, field, terminal), create the node
         // add the edge from the parent td to the member
         // 4. field
         if (child instanceof FieldDeclaration) {
@@ -487,12 +487,12 @@ public class GraphBuilder {
 
           processMethodOrConstructorBody(cd, cdNode);
         }
-        // 6. terminalNodeSimilarity
+        // 6. terminal
         if (child instanceof MethodDeclaration) {
           MethodDeclaration md = (MethodDeclaration) child;
           if (md.getAnnotations().size() > 0) {
             if (md.isAnnotationPresent("Override")) {
-              // search the terminalNodeSimilarity signature in its superclass or interface
+              // search the terminal signature in its superclass or interface
             }
           }
           displayName = md.getSignature().toString();
@@ -553,7 +553,7 @@ public class GraphBuilder {
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. terminalNodeSimilarity
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminal
    * or constructor) body
    *
    * @param cd
@@ -639,7 +639,7 @@ public class GraphBuilder {
     if (writeFieldNames.size() > 0) {
       writeFieldEdges.put(node, writeFieldNames);
     }
-    // 3 terminalNodeSimilarity call
+    // 3 terminal call
     List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
     List<String> methodCalledNames = new ArrayList<>();
     for (MethodCallExpr methodCallExpr : methodCallExprs) {
