@@ -24,6 +24,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /** Only the diff file/cu needs to be merged */
@@ -56,47 +60,47 @@ public class GraphMerger {
     GraphMatcher b2tMatcher = new GraphMatcher(baseGraph, theirsGraph);
     // temporarily disable multithread, considering the debug effort with the performance
     // improvement
-    //    try {
-    //      ExecutorService executorService = Executors.newFixedThreadPool(2);
-    //      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
-    //      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
+    try {
+      ExecutorService executorService = Executors.newFixedThreadPool(2);
+      Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
+      Future<TwowayMatching> task2 = executorService.submit(b2tMatcher);
 
-    //      b2oMatching = task1.get();
-    //      b2tMatching = task2.get();
+      b2oMatching = task1.get();
+      b2tMatching = task2.get();
 
-    //      executorService.shutdown();
-    b2oMatcher.topDownMatch();
-    b2oMatcher.bottomUpMatch();
-    b2tMatcher.topDownMatch();
-    b2tMatcher.bottomUpMatch();
-    b2oMatching = b2oMatcher.matching;
-    b2tMatching = b2tMatcher.matching;
+      executorService.shutdown();
+      //    b2oMatcher.topDownMatch();
+      //    b2oMatcher.bottomUpMatch();
+      //    b2tMatcher.topDownMatch();
+      //    b2tMatcher.bottomUpMatch();
+      //    b2oMatching = b2oMatcher.matching;
+      //    b2tMatching = b2tMatcher.matching;
 
-    // collect COMPILATION_UNIT mapping that need to merge
-    Set<SemanticNode> internalAndNeedToMergeNodes =
-        baseGraph.vertexSet().stream()
-            .filter(SemanticNode::isInternal)
-            .filter(SemanticNode::needToMerge)
-            .collect(Collectors.toSet());
-    for (SemanticNode node : internalAndNeedToMergeNodes) {
-      if (node instanceof CompilationUnitNode) {
-        CompilationUnitNode cu = (CompilationUnitNode) node;
-        if (cu.needToMerge() == true) {
-          // temporarily keep the mapping of cus
-          ThreewayMapping mapping =
-              new ThreewayMapping(
-                  Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
-                  Optional.of(node),
-                  Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
-          this.mapping.add(mapping);
+      // collect COMPILATION_UNIT mapping that need to merge
+      Set<SemanticNode> internalAndNeedToMergeNodes =
+          baseGraph.vertexSet().stream()
+              .filter(SemanticNode::isInternal)
+              .filter(SemanticNode::needToMerge)
+              .collect(Collectors.toSet());
+      for (SemanticNode node : internalAndNeedToMergeNodes) {
+        if (node instanceof CompilationUnitNode) {
+          CompilationUnitNode cu = (CompilationUnitNode) node;
+          if (cu.needToMerge() == true) {
+            // temporarily keep the mapping of cus
+            ThreewayMapping mapping =
+                new ThreewayMapping(
+                    Optional.ofNullable(b2oMatching.one2oneMatchings.getOrDefault(node, null)),
+                    Optional.of(node),
+                    Optional.ofNullable(b2tMatching.one2oneMatchings.getOrDefault(node, null)));
+            this.mapping.add(mapping);
+          }
         }
       }
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
     }
-    //    } catch (InterruptedException e) {
-    //      e.printStackTrace();
-    //    } catch (ExecutionException e) {
-    //      e.printStackTrace();
-    //    }
   }
 
   /**
