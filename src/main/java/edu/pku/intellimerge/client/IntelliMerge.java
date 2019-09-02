@@ -14,9 +14,9 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.Refactoring;
-import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.util.GitService;
 import edu.pku.intellimerge.util.Utils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.BasicConfigurator;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
@@ -213,13 +213,12 @@ public class IntelliMerge {
     executorService.shutdown();
 
     Utils.prepareDir(outputPath);
-    GraphMerger merger =
-        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger = new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
     GraphExporter.printAsDot(baseGraph, false);
     // 3. Match nodes and merge programs with the 3-way graphs
     stopwatch.reset().start();
-    merger.threewayMap();
+    Pair<List<Refactoring>, List<Refactoring>> refactorings = merger.threewayMap();
     stopwatch.stop();
 
     logger.info("({}ms) Done matching graphs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -227,8 +226,8 @@ public class IntelliMerge {
     // save the detected refactorings into csv for human validation and debugging
     String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
     String b2tCsvFilePath = outputPath + File.separator + "theirs_refactorings.csv";
-    saveAlignment(b2oCsvFilePath, merger.b2oMatching);
-    saveAlignment(b2tCsvFilePath, merger.b2tMatching);
+    saveRefactorings(b2oCsvFilePath, refactorings.getLeft());
+    saveRefactorings(b2tCsvFilePath, refactorings.getRight());
 
     // 4. Print the merged graph into files, keeping the original format and directory structure
     stopwatch.reset().start();
@@ -258,8 +257,7 @@ public class IntelliMerge {
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
         executorService.submit(new GraphBuilderV2(directoryPaths.get(1), Side.BASE, false));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
-        executorService.submit(
-            new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, false));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
@@ -272,12 +270,11 @@ public class IntelliMerge {
     logger.info("({}ms) Done building graphs.", buildingTime);
 
     Utils.prepareDir(outputPath);
-    GraphMerger merger =
-        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger = new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
     // 2. Match nodes across the 3-way graphs.
     stopwatch.reset().start();
-    merger.threewayMap();
+    Pair<List<Refactoring>, List<Refactoring>> refactorings = merger.threewayMap();
     stopwatch.stop();
     long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Done matching graphs.", matchingTime);
@@ -285,8 +282,8 @@ public class IntelliMerge {
     // save the detected refactorings into csv for human validation and debugging
     String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
     String b2tCsvFilePath = outputPath + File.separator + "theirs_refactorings.csv";
-    saveAlignment(b2oCsvFilePath, merger.b2oMatching);
-    saveAlignment(b2tCsvFilePath, merger.b2tMatching);
+    saveRefactorings(b2oCsvFilePath, refactorings.getLeft());
+    saveRefactorings(b2tCsvFilePath, refactorings.getRight());
 
     // 3. Merge programs with the 3-way graphs, keeping the original format and directory structure
     stopwatch.reset().start();
@@ -317,11 +314,9 @@ public class IntelliMerge {
 
     // 1. Build graphs from given directories
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(
-            new GraphBuilderV2(directoryPaths.get(0), Side.OURS, hasSubModule));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(0), Side.OURS, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(
-            new GraphBuilderV2(directoryPaths.get(1), Side.BASE, hasSubModule));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(1), Side.BASE, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
         executorService.submit(
             new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, hasSubModule));
@@ -337,12 +332,11 @@ public class IntelliMerge {
     logger.info("({}ms) Done building graphs.", buildingTime);
 
     Utils.prepareDir(outputPath);
-    GraphMerger merger =
-        new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
+    GraphMerger merger = new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
     // 2. Match nodes across the 3-way graphs.
     stopwatch.reset().start();
-    merger.threewayMap();
+    Pair<List<Refactoring>, List<Refactoring>> refactorings = merger.threewayMap();
     stopwatch.stop();
     long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     logger.info("({}ms) Done matching graphs.", matchingTime);
@@ -350,8 +344,8 @@ public class IntelliMerge {
     // save the detected refactorings into csv for human validation and debugging
     String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
     String b2tCsvFilePath = outputPath + File.separator + "theirs_refactorings.csv";
-    saveAlignment(b2oCsvFilePath, merger.b2oMatching);
-    saveAlignment(b2tCsvFilePath, merger.b2tMatching);
+    saveRefactorings(b2oCsvFilePath, refactorings.getLeft());
+    saveRefactorings(b2tCsvFilePath, refactorings.getRight());
 
     // 3. Merge programs with the 3-way graphs, keeping the original format and directory structure
     stopwatch.reset().start();
@@ -375,17 +369,16 @@ public class IntelliMerge {
    * Save alignment information on disk
    *
    * @param filePath
-   * @param matching
    */
-  private void saveAlignment(String filePath, TwowayMatching matching) {
-    if (!matching.refactorings.isEmpty()) {
+  private void saveRefactorings(String filePath, List<Refactoring> refactorings) {
+    if (!refactorings.isEmpty()) {
       Utils.writeContent(
           filePath,
           "refactoring_type;node_type;confidence;before_location;before_node;after_location;after_node\n",
           false);
       try {
 
-        for (Refactoring refactoring : matching.refactorings) {
+        for (Refactoring refactoring : refactorings) {
           StringBuilder builder = new StringBuilder();
           builder.append(refactoring.getRefactoringType().getLabel()).append(";");
           builder.append(refactoring.getNodeType().asString()).append(";");

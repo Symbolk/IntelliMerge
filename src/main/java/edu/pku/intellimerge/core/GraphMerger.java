@@ -6,10 +6,12 @@ import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.constant.NodeType;
 import edu.pku.intellimerge.model.constant.Side;
+import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.model.mapping.ThreewayMapping;
 import edu.pku.intellimerge.model.mapping.TwowayMatching;
 import edu.pku.intellimerge.model.node.*;
 import edu.pku.intellimerge.util.Utils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -54,12 +56,10 @@ public class GraphMerger {
   }
 
   /** Threeway map the CUs that need to merge */
-  public void threewayMap() {
+  public Pair<List<Refactoring>, List<Refactoring>> threewayMap() {
     // two way matching to get three way mapping
     GraphMatcher b2oMatcher = new GraphMatcher(baseGraph, oursGraph);
     GraphMatcher b2tMatcher = new GraphMatcher(baseGraph, theirsGraph);
-    // temporarily disable multithread, considering the debug effort with the performance
-    // improvement
     try {
       ExecutorService executorService = Executors.newFixedThreadPool(2);
       Future<TwowayMatching> task1 = executorService.submit(b2oMatcher);
@@ -96,11 +96,13 @@ public class GraphMerger {
           }
         }
       }
+      return Pair.of(b2oMatching.refactorings, b2tMatching.refactorings);
     } catch (InterruptedException e) {
       e.printStackTrace();
     } catch (ExecutionException e) {
       e.printStackTrace();
     }
+    return Pair.of(new ArrayList<>(), new ArrayList<>());
   }
 
   /**
