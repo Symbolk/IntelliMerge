@@ -156,7 +156,9 @@ public class SimilarityAlg {
       Matcher matcher = Matchers.getInstance().getMatcher();
       MappingStore mappings = matcher.match(baseRoot, othersRoot);
       similarity = SimilarityMetrics.chawatheSimilarity(baseRoot, othersRoot, mappings);
-
+      if(Double.isNaN(similarity)){
+        similarity = 0D;
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
