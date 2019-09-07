@@ -6,9 +6,6 @@ import com.commentremover.exception.CommentRemoverException;
 import com.google.googlejavaformat.FormatterDiagnostic;
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
-import com.univocity.parsers.common.record.Record;
-import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
 import edu.pku.intellimerge.model.ConflictBlock;
 import edu.pku.intellimerge.model.SourceFile;
 import edu.pku.intellimerge.model.constant.Side;
@@ -208,33 +205,6 @@ public class Utils {
       e.printStackTrace();
     }
     return results;
-  }
-
-  /**
-   * Read csv file and return a list of records
-   *
-   * @param path
-   * @param delimiter
-   * @return
-   */
-  public static List<Record> readCSVAsRecord(String path, String delimiter) {
-    List<Record> records = new ArrayList<>();
-    CsvParserSettings settings = new CsvParserSettings();
-    settings.setHeaderExtractionEnabled(true);
-    settings.getFormat().setLineSeparator(System.getProperty("line.separator"));
-    settings.getFormat().setDelimiter(delimiter);
-    settings.selectFields("merge_commit", "parent1", "parent2", "merge_base");
-
-    CsvParser parser = new CsvParser(settings);
-
-    try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-      records = parser.parseAllRecords(reader);
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return records;
   }
 
   /**

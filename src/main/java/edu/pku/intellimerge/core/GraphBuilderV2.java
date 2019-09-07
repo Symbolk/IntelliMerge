@@ -215,7 +215,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
     /*
      * build the graph by analyzing every COMPILATION_UNIT
      */
-    logger.info("({}) compilationUnits in {}", compilationUnits.size(), side);
+    logger.info("Found ({}) files in {}.", compilationUnits.size(), side.asString());
     for (CompilationUnit cu : compilationUnits) {
       processCompilationUnit(cu);
     }
@@ -488,8 +488,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
   }
 
   /**
-   * Process members (child nodes that are field, constructor or terminal) of type
-   * declaration
+   * Process members (child nodes that are field, constructor or terminal) of type declaration
    *
    * @param td
    * @param tdNode
@@ -862,8 +861,8 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
   }
 
   /**
-   * Process interactions with other nodes inside CallableDeclaration (i.e. terminal
-   * or constructor) body
+   * Process interactions with other nodes inside CallableDeclaration (i.e. terminal or constructor)
+   * body
    *
    * @param cd
    * @param node

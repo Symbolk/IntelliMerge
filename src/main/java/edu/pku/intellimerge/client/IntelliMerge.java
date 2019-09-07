@@ -7,7 +7,6 @@ import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.GraphBuilderV2;
 import edu.pku.intellimerge.core.GraphMerger;
 import edu.pku.intellimerge.exception.RangeNullException;
-import edu.pku.intellimerge.io.GraphExporter;
 import edu.pku.intellimerge.io.SourceFileCollector;
 import edu.pku.intellimerge.model.MergeScenario;
 import edu.pku.intellimerge.model.SemanticEdge;
@@ -18,6 +17,7 @@ import edu.pku.intellimerge.util.GitService;
 import edu.pku.intellimerge.util.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,10 +75,11 @@ public class IntelliMerge {
   public IntelliMerge() {}
 
   public static void main(String[] args) {
-    // config the logger
+    // config the logger with properties files when developing
     //    PropertyConfigurator.configure("log4j.properties");
     // use basic configuration when packaging
     BasicConfigurator.configure();
+    org.apache.log4j.Logger.getRootLogger().setLevel(Level.INFO);
 
     try {
       IntelliMerge merger = new IntelliMerge();
@@ -188,7 +189,7 @@ public class IntelliMerge {
     SourceFileCollector collector = new SourceFileCollector(repoPath, branchNames, collectedDir);
 
     collector.collectFilesForAllSides();
-    logger.info("Files collected in {}", collectedDir);
+    logger.info("Done collecting files into {}", collectedDir);
 
     // 2. Build graphs from collected files
     Stopwatch stopwatch = Stopwatch.createStarted();
@@ -209,19 +210,20 @@ public class IntelliMerge {
     Graph<SemanticNode, SemanticEdge> theirsGraph = theirsBuilder.get();
 
     stopwatch.stop();
-    logger.info("({}ms) Done building graphs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    long buildingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done building graphs.", buildingTime);
     executorService.shutdown();
 
     Utils.prepareDir(outputPath);
     GraphMerger merger = new GraphMerger(outputPath, oursGraph, baseGraph, theirsGraph);
 
-    GraphExporter.printAsDot(baseGraph, false);
+    //    GraphExporter.printAsDot(baseGraph, false);
     // 3. Match nodes and merge programs with the 3-way graphs
     stopwatch.reset().start();
     Pair<List<Refactoring>, List<Refactoring>> refactorings = merger.threewayMap();
     stopwatch.stop();
-
-    logger.info("({}ms) Done matching graphs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    long matchingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done matching graphs.", matchingTime);
 
     // save the detected refactorings into csv for human validation and debugging
     String b2oCsvFilePath = outputPath + File.separator + "ours_refactorings.csv";
@@ -233,10 +235,14 @@ public class IntelliMerge {
     stopwatch.reset().start();
     List<String> mergedFilePaths = merger.threewayMerge();
     stopwatch.stop();
-    logger.info("({}ms) Done merging programs.", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    long mergingTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    logger.info("({}ms) Done merging programs.", mergingTime);
+
+    long overall = buildingTime + matchingTime + mergingTime;
+    logger.info("Merged {} files. Overall time cost: {}ms.", mergedFilePaths.size(), overall);
 
     // Clear and remove temp directory
-    //    Utils.removeDir(collectedDir);
+    Utils.removeDir(collectedDir);
     return mergedFilePaths;
   }
 
@@ -293,7 +299,7 @@ public class IntelliMerge {
     logger.info("({}ms) Done merging programs.", mergingTime);
 
     long overall = buildingTime + matchingTime + mergingTime;
-    logger.info("Overall time cost: {}ms.", overall);
+    logger.info("Merged {} files. Overall time cost: {}ms.", mergedFilePaths.size(), overall);
 
     return mergedFilePaths;
   }
@@ -355,7 +361,7 @@ public class IntelliMerge {
     logger.info("({}ms) Done merging programs.", mergingTime);
 
     long overall = buildingTime + matchingTime + mergingTime;
-    logger.info("Overall time cost: {}ms.", overall);
+    logger.info("Merged {} files. Overall time cost: {}ms.", mergedFilePaths.size(), overall);
 
     List<Long> runtimes = new ArrayList<>();
     runtimes.add(buildingTime);
