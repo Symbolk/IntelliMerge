@@ -927,7 +927,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
     String result = "";
     String[] temp = code.split("\\r?\\n");
     for (int i = 0; i < temp.length; ++i) {
-      if (!temp[i].startsWith("@")) {
+      if (!temp[i].trim().startsWith("@")) {
         result = result + temp[i] + "\n";
       }
     }
