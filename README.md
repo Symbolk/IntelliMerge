@@ -135,6 +135,7 @@ git checkout theirs
 4. Merge directories with the following command:
 
    ```bash
+   git checkout master
    java -jar IntelliMerge-VERSION.jar -d D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\left D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\base D:\github\intellimerge-sample-input\src\main\java\bad\robot\refactoring\right -o D:\github\intellimerge-sample-input\result2
    ```
 
