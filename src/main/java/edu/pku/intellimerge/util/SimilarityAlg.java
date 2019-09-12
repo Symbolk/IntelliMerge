@@ -35,12 +35,11 @@ public class SimilarityAlg {
   public static double terminal(TerminalNode n1, TerminalNode n2) {
     double similarity = 0.0;
     // naive average in all dimensions of context(incoming and outgoing edges)
-    similarity += context(n1.context.getIncomingEdges(), n2.context.getIncomingEdges());
-    similarity += context(n1.context.getOutgoingEdges(), n2.context.getOutgoingEdges());
+    similarity += context(n1.context, n2.context);
     // naive string similarity of terminal signature
     similarity += string(n1.getOriginalSignature(), n2.getOriginalSignature());
     similarity += bodyAST(n1.getBody(), n2.getBody());
-    similarity /= 4;
+    similarity /= 3;
     return similarity;
   }
 
@@ -97,8 +96,7 @@ public class SimilarityAlg {
   public static double composite(CompositeNode n1, CompositeNode n2) {
     double similarity = 0.0;
     // naive average in all dimensions of context(incoming and outgoing edges)
-    similarity += context(n1.context.getIncomingEdges(), n2.context.getIncomingEdges());
-    similarity += context(n1.context.getOutgoingEdges(), n2.context.getOutgoingEdges());
+    similarity += context(n1.context, n2.context);
     // navie string similarity of terminal signature
     similarity += string(n1.getQualifiedName(), n2.getQualifiedName());
     similarity /= 2;
@@ -123,18 +121,29 @@ public class SimilarityAlg {
    *
    * @return
    */
-  public static double context(Set<SemanticEdge> edges1, Set<SemanticEdge> edges2) {
+  public static double context(NodeContext context1, NodeContext context2) {
     Set<String> targetQNames1 =
-        edges1
-            .stream()
-            .map(edge -> edge.getTarget().getQualifiedName())
+        context1.getIncomingEdges().stream()
+            .map(edge -> edge.getSource().getQualifiedName())
             .collect(Collectors.toSet());
     Set<String> targetQNames2 =
-        edges2
-            .stream()
+        context2.getIncomingEdges().stream()
+            .map(edge -> edge.getSource().getQualifiedName())
+            .collect(Collectors.toSet());
+
+    double inSimi = jaccard(targetQNames1, targetQNames2);
+
+    targetQNames1 =
+        context1.getOutgoingEdges().stream()
             .map(edge -> edge.getTarget().getQualifiedName())
             .collect(Collectors.toSet());
-    return jaccard(targetQNames1, targetQNames2);
+    targetQNames2 =
+        context2.getOutgoingEdges().stream()
+            .map(edge -> edge.getTarget().getQualifiedName())
+            .collect(Collectors.toSet());
+
+    double outSimi = jaccard(targetQNames1, targetQNames2);
+    return (inSimi + outSimi) / 2;
   }
 
   /**
