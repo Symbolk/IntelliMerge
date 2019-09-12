@@ -76,66 +76,49 @@ public class MethodDeclMatcher {
    * @param matching * @param unmatchedMethods
    */
   public void matchExtractMethod(TwowayMatching matching, List<SemanticNode> unmatchedMethods) {
-    //    BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();
-    //    // Rule: one of callers in the / && original caller's parent==current parent&&union
-    //    // context confidence > confidence before
-    //    // The added terminal is called by an existing terminal in the
-    // same
-    //    // class
-    //    Map<MethodDeclNode, List<MethodDeclNode>> candidates = new HashMap<>();
-    //    for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
-    //      List<SemanticNode> callers = possiblyAddedMethod.incomingEdges.get(EdgeType.CALL);
-    //      List<MethodDeclNode> possiblyExtractedFromMethods = new ArrayList<>();
-    //      for (SemanticNode caller : callers) {
-    //        if (reversedMatching.containsKey(caller)
-    //            && caller.getParent().equals(possiblyAddedMethod.getParent())
-    //            && caller instanceof MethodDeclNode) {
-    //          possiblyExtractedFromMethods.add((MethodDeclNode) caller);
-    //        }
-    //      }
-    //      if (!possiblyExtractedFromMethods.isEmpty()) {
-    //        candidates.put((MethodDeclNode) possiblyAddedMethod, possiblyExtractedFromMethods);
-    //      }
-    //    }
-    //    // try to inline the new terminal to the caller
-    //    // if the similarity improves, consider it as extracted from the caller
-    //    for (Map.Entry<MethodDeclNode, List<MethodDeclNode>> alternate : candidates.entrySet()) {
-    //      MethodDeclNode callee = alternate.getKey();
-    //      List<MethodDeclNode> callers = alternate.getValue();
-    //      for (MethodDeclNode caller : callers) {
-    //        MethodDeclNode callerBase = (MethodDeclNode) reversedMatching.get(caller);
-    //        double similarityBefore =
-    //            SimilarityAlg.context(caller.incomingEdges, callerBase.incomingEdges)
-    //                + SimilarityAlg.context(caller.outgoingEdges,
-    // callerBase.outgoingEdges);
-    //
-    //        // TODO detect inline methods
-    //        // combine the context edges
-    //        Map<EdgeType, List<SemanticNode>> inUnion = new HashMap<>();
-    //        inUnion.putAll(callee.incomingEdges);
-    //        caller.incomingEdges.entrySet().stream()
-    //            .forEach(entry -> inUnion.get(entry.getKey()).addAll(entry.getValue()));
-    //        Map<EdgeType, List<SemanticNode>> outUnion = new HashMap<>();
-    //        outUnion.putAll(callee.outgoingEdges);
-    //        caller.outgoingEdges.entrySet().stream()
-    //            .forEach(entry -> outUnion.get(entry.getKey()).addAll(entry.getValue()));
-    //        caller.incomingEdges = inUnion;
-    //        caller.outgoingEdges = outUnion;
-    //        // combine the body
-    //        double similarityAfter =
-    //            SimilarityAlg.context(caller.incomingEdges, callerBase.incomingEdges)
-    //                + SimilarityAlg.context(caller.outgoingEdges,
-    // callerBase.outgoingEdges);
-    //
-    //        if (similarityAfter > similarityBefore) {
-    //          matching.markRefactoring(
-    //              callerBase, caller, RefactoringType.EXTRACT_FROM_METHOD, similarityAfter);
-    //          matching.markRefactoring(
-    //              callerBase, callee, RefactoringType.EXTRACT_TO_METHOD, similarityAfter);
-    //          // also need to be added
-    //          //          matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
-    //        }
-    //      }
-    //    }
+    BiMap<SemanticNode, SemanticNode> reversedMatching = matching.one2oneMatchings.inverse();
+    // union the context of matched callers, if the union context confidence > confidence before, consider it as an extraction
+    Map<SemanticNode, List<SemanticNode>> candidates = new HashMap<>();
+    for (SemanticNode possiblyAddedMethod : unmatchedMethods) {
+      List<SemanticNode> callers = possiblyAddedMethod.context.getIncomingEdges().stream()
+          .filter(edge -> edge.getEdgeType().equals(EdgeType.CALL)).map(
+              SemanticEdge::getSource).collect(Collectors.toList());
+      // methods or constructors
+      List<SemanticNode> extractionSources = new ArrayList<>();
+      for (SemanticNode caller : callers) {
+        if (reversedMatching.containsKey(caller)
+            && caller.getParent().equals(possiblyAddedMethod.getParent())) {
+          extractionSources.add(caller);
+        }
+      }
+      if (!extractionSources.isEmpty()) {
+        candidates.put(possiblyAddedMethod, extractionSources);
+      }
+    }
+
+    for (Map.Entry<SemanticNode, List<SemanticNode>> alternate : candidates.entrySet()) {
+      SemanticNode callee = alternate.getKey();
+      List<SemanticNode> callers = alternate.getValue();
+      for (SemanticNode caller : callers) {
+        SemanticNode callerBase = reversedMatching.get(caller);
+        NodeContext callerContext = caller.context;
+        NodeContext callerBaseContext = callerBase.context;
+        double similarityBefore =
+            SimilarityAlg.context(callerContext, callerBaseContext);
+
+        // union the context of the caller and callee
+        NodeContext callerUnionContext = callerContext.join(callee.context);
+        double similarityAfter =
+            SimilarityAlg.context(callerUnionContext, callerBaseContext);
+
+        if (similarityAfter > similarityBefore) {
+          matching.markRefactoring(
+              callerBase, caller, RefactoringType.EXTRACT_FROM_METHOD, similarityAfter);
+          matching.markRefactoring(
+              callerBase, callee, RefactoringType.EXTRACT_TO_METHOD, similarityAfter);
+          matching.unmatchedNodes2.get(NodeType.METHOD).remove(callee);
+        }
+      }
+    }
   }
 }
