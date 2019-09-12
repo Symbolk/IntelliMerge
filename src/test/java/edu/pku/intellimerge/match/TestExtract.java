@@ -22,14 +22,11 @@ public class TestExtract {
 
   @Test
   public void testExtractMethod() {
-    String targetDir =
-        Utils.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
+    String targetDir = Utils.getProjectRootDir() + "/src/test/resources/Extract/ExtractMethod/";
     TwowayMatching matching = Util.matchGraphsTwoway(targetDir, Side.BASE, Side.OURS);
     Set<Refactoring> refsOurs =
-        matching
-            .refactorings
-            .stream()
-            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.EXTRACT_TO_METHOD))
+        matching.refactorings.stream()
+            .filter(edge -> edge.getRefactoringType().equals(RefactoringType.EXTRACT_METHOD))
             .collect(Collectors.toSet());
     assertThat(refsOurs.size()).isOne();
   }

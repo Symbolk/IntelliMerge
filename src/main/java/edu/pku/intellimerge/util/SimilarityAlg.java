@@ -10,6 +10,7 @@ import com.github.gumtreediff.tree.TreeContext;
 import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.mapping.EdgeLabel;
+import edu.pku.intellimerge.model.mapping.NodeContext;
 import edu.pku.intellimerge.model.node.CompositeNode;
 import edu.pku.intellimerge.model.node.FieldDeclNode;
 import edu.pku.intellimerge.model.node.TerminalNode;

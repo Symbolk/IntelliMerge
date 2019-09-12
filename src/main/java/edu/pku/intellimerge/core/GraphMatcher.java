@@ -104,6 +104,9 @@ public class GraphMatcher implements Callable<TwowayMatching> {
     if (!unmatchedMethods1.isEmpty() && !unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchMethods(matching, unmatchedMethods1, unmatchedMethods2);
     }
+    if (!unmatchedMethods1.isEmpty()) {
+      methodDeclMatcher.matchInlineMethod(matching, unmatchedMethods1);
+    }
     if (!unmatchedMethods2.isEmpty()) {
       methodDeclMatcher.matchExtractMethod(matching, unmatchedMethods2);
     }

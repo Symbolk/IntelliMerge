@@ -12,11 +12,8 @@ public enum RefactoringType {
   CHANGE_TYPE_SIGNATURE("Change Type Signature", true),
 
   // many2many match
-  // extract terminal
-  EXTRACT_FROM_METHOD("Extract From Method", false), // from which the new terminal is extracted
-  EXTRACT_TO_METHOD("Extract To Method", false), // the newly added terminal because of extracting
-  EXTRACT_FROM_TYPE("Extract From Type", false),
-  EXTRACT_TO_TYPE("Extract To Type", false);
+  EXTRACT_METHOD("Extract Method", false),
+  INLINE_METHOD("Inline Method", false);
 
   private String label;
   private boolean isOneToOne;

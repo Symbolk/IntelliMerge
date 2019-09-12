@@ -3,6 +3,7 @@ package edu.pku.intellimerge.model.mapping;
 import edu.pku.intellimerge.model.SemanticEdge;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +39,10 @@ public class NodeContext {
     return incomingEdges;
   }
 
+  public void setOutgoingEdges(Set edges) {
+    this.outgoingEdges = edges;
+  }
+
   public Set<SemanticEdge> getOutgoingEdges() {
     return outgoingEdges;
   }
@@ -57,7 +62,7 @@ public class NodeContext {
   public void putOutgoingVector(Integer key, Integer value) {
     this.outgoingVector.put(key, value);
   }
-  
+
   public NodeContext join(NodeContext context) {
     Set<SemanticEdge> combinedIncomingEdges = new HashSet<>();
     Set<SemanticEdge> combinedOutgoingEdges = new HashSet<>();
