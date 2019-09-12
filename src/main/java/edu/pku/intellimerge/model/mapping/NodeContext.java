@@ -57,4 +57,23 @@ public class NodeContext {
   public void putOutgoingVector(Integer key, Integer value) {
     this.outgoingVector.put(key, value);
   }
+  
+  public NodeContext join(NodeContext context) {
+    Set<SemanticEdge> combinedIncomingEdges = new HashSet<>();
+    Set<SemanticEdge> combinedOutgoingEdges = new HashSet<>();
+    combinedIncomingEdges.addAll(this.incomingEdges);
+    combinedIncomingEdges.addAll(context.getIncomingEdges());
+    combinedOutgoingEdges.addAll(this.outgoingEdges);
+    combinedOutgoingEdges.addAll(context.getOutgoingEdges());
+    this.incomingEdges = combinedIncomingEdges;
+    this.outgoingEdges = combinedOutgoingEdges;
+    context
+        .getIncomingVector()
+        .forEach((key, value) -> this.incomingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+    context
+        .getOutgoingVector()
+        .forEach((key, value) -> this.outgoingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+
+    return this;
+  }
 }
