@@ -388,13 +388,16 @@ public class IntelliMerge {
           StringBuilder builder = new StringBuilder();
           builder.append(refactoring.getRefactoringType().getLabel()).append(";");
           builder.append(refactoring.getNodeType().asString()).append(";");
-          builder.append(refactoring.getConfidence()).append(";");
+          BigDecimal bigDecimal = new BigDecimal(refactoring.getConfidence())
+              .setScale(2, RoundingMode.UP);
+//          builder.append((double) Math.round(refactoring.getConfidence() * 100) / 100).append(";");
+          builder.append(bigDecimal.doubleValue()).append(";");
           builder.append(refactoring.getBeforeRange().begin.line).append("-");
           builder.append(refactoring.getBeforeRange().end.line).append(";");
-          builder.append(refactoring.getBefore().getOriginalSignature()).append(";");
+          builder.append(refactoring.getBefore().getQualifiedName()).append(";");
           builder.append(refactoring.getAfterRange().begin.line).append("-");
           builder.append(refactoring.getAfterRange().end.line).append(";");
-          builder.append(refactoring.getAfter().getOriginalSignature()).append("\n");
+          builder.append(refactoring.getAfter().getQualifiedName()).append("\n");
 
           Utils.writeContent(filePath, builder.toString(), true);
         }
