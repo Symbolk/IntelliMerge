@@ -176,7 +176,7 @@ public class MethodDeclMatcher {
    * @return
    */
   private Set<SemanticEdge> updateOutgoingEdges(NodeContext contextBase, SemanticNode callee) {
-    Set<SemanticEdge> edges = contextBase.getOutgoingEdges();
+    Set<SemanticEdge> edges = new LinkedHashSet<>(contextBase.getOutgoingEdges());
     // remove the method call to the possible inlined method
     for (SemanticEdge edge : contextBase.getOutgoingEdges()) {
       if (edge.getEdgeType().equals(EdgeType.CALL)
