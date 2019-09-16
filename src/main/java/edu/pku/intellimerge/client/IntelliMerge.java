@@ -74,7 +74,9 @@ public class IntelliMerge {
       description = "[Optional] The threshold value for heuristic rules, default: 0.618.")
   String thresholdString = "0.618";
 
-  public IntelliMerge() {}
+  public IntelliMerge() {
+    JavaParser.getStaticConfiguration().setAttributeComments(true);
+  }
 
   public static void main(String[] args) {
     // config the logger with properties files when developing
