@@ -3,6 +3,7 @@ package edu.pku.intellimerge.client;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.github.javaparser.JavaParser;
 import com.google.common.base.Stopwatch;
 import edu.pku.intellimerge.core.GraphBuilderV2;
 import edu.pku.intellimerge.core.GraphMerger;
