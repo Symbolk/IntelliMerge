@@ -7,7 +7,6 @@ import com.github.gumtreediff.matchers.Matchers;
 import com.github.gumtreediff.matchers.SimilarityMetrics;
 import com.github.gumtreediff.tree.ITree;
 import com.github.gumtreediff.tree.TreeContext;
-import edu.pku.intellimerge.model.SemanticEdge;
 import edu.pku.intellimerge.model.SemanticNode;
 import edu.pku.intellimerge.model.mapping.EdgeLabel;
 import edu.pku.intellimerge.model.mapping.NodeContext;
@@ -38,9 +37,18 @@ public class SimilarityAlg {
     // naive average in all dimensions of context(incoming and outgoing edges)
     similarity += context(n1.context, n2.context);
     // naive string similarity of terminal signature
+    similarity += string(n1.getQualifiedName(), n2.getQualifiedName());
     similarity += string(n1.getOriginalSignature(), n2.getOriginalSignature());
-    similarity += bodyAST(n1.getBody(), n2.getBody());
-    similarity /= 3;
+    if (n1 instanceof FieldDeclNode && n2 instanceof FieldDeclNode) {
+      if (!((FieldDeclNode) n1).getFieldType().equals(((FieldDeclNode) n2).getFieldType())) {
+        return 0D;
+      } else {
+        similarity += string(n1.getBody(), n2.getBody());
+      }
+    } else {
+      similarity += bodyAST(n1.getBody(), n2.getBody());
+    }
+    similarity /= 4;
     return similarity;
   }
 
@@ -166,7 +174,7 @@ public class SimilarityAlg {
       Matcher matcher = Matchers.getInstance().getMatcher();
       MappingStore mappings = matcher.match(baseRoot, othersRoot);
       similarity = SimilarityMetrics.chawatheSimilarity(baseRoot, othersRoot, mappings);
-      if(Double.isNaN(similarity)){
+      if (Double.isNaN(similarity)) {
         similarity = 0D;
       }
     } catch (IOException e) {
