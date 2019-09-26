@@ -66,7 +66,10 @@ public class Graph2CodePrinter {
               ? ""
               : (node.getAnnotations().stream().collect(Collectors.joining(System.lineSeparator()))
                   + System.lineSeparator()));
-      builder.append(node.getModifiers().stream().collect(Collectors.joining(" "))).append(" ");
+      builder.append(
+          node.getModifiers().isEmpty()
+              ? ""
+              : node.getModifiers().stream().collect(Collectors.joining(" ")) + " ");
       if (node.getNodeType().equals(NodeType.INITIALIZER_BLOCK)) {
         builder.append(node.getOriginalSignature().contains("static") ? "static" : "");
       } else {
