@@ -39,12 +39,12 @@ public class NodeContext {
     return incomingEdges;
   }
 
-  public void setOutgoingEdges(Set edges) {
-    this.outgoingEdges = edges;
-  }
-
   public Set<SemanticEdge> getOutgoingEdges() {
     return outgoingEdges;
+  }
+
+  public void setOutgoingEdges(Set edges) {
+    this.outgoingEdges = edges;
   }
 
   public Map<Integer, Integer> getIncomingVector() {
@@ -70,15 +70,17 @@ public class NodeContext {
     combinedIncomingEdges.addAll(context.getIncomingEdges());
     combinedOutgoingEdges.addAll(this.outgoingEdges);
     combinedOutgoingEdges.addAll(context.getOutgoingEdges());
-    this.incomingEdges = combinedIncomingEdges;
-    this.outgoingEdges = combinedOutgoingEdges;
+
+    Map<Integer, Integer> combinedInVec = new HashMap<>(this.incomingVector);
+    Map<Integer, Integer> combinedOutVec = new HashMap<>(this.outgoingVector);
     context
         .getIncomingVector()
-        .forEach((key, value) -> this.incomingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+        .forEach((key, value) -> combinedInVec.merge(key, value, (v1, v2) -> (v1 + v2)));
     context
         .getOutgoingVector()
-        .forEach((key, value) -> this.outgoingVector.merge(key, value, (v1, v2) -> (v1 + v2)));
+        .forEach((key, value) -> combinedOutVec.merge(key, value, (v1, v2) -> (v1 + v2)));
 
-    return this;
+    return new NodeContext(
+        combinedIncomingEdges, combinedOutgoingEdges, combinedInVec, combinedOutVec);
   }
 }
