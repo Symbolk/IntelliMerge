@@ -173,7 +173,9 @@ public abstract class SemanticNode {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((getNodeType() == null) ? 0 : getNodeType().hashCode());
-    result = prime * result + ((getSignature() == null) ? 0 : getSignature().hashCode());
+    result =
+        prime * result
+            + ((getSignature() == null) ? 0 : getSignature().replaceAll("\\s", "").hashCode());
     return result;
   }
 
