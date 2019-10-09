@@ -75,7 +75,6 @@ public class GraphBuilder {
     this.mergeScenario = mergeScenario;
     this.side = side;
     this.collectedFilePath = collectedFilePath;
-    // TODO this cause failed resolving in case of file level changes
     this.sourceDir = mergeScenario.repoPath + mergeScenario.srcPath;
 
     this.graph = initGraph();
@@ -159,7 +158,6 @@ public class GraphBuilder {
     // now vertices are fixed
 
     // build the recorded edges actually
-    // TODO import can be any type, even inner type
     edgeCount = buildEdges(graph, edgeCount, importEdges, EdgeType.IMPORT, NodeType.CLASS);
     edgeCount = buildEdges(graph, edgeCount, extendEdges, EdgeType.EXTEND, NodeType.CLASS);
     edgeCount =
@@ -326,7 +324,6 @@ public class GraphBuilder {
       nodeType = cid.isInnerClass() ? NodeType.INNER_CLASS : nodeType;
       nodeType = cid.isLocalClassDeclaration() ? NodeType.LOCAL_CLASS : nodeType;
     }
-    // TODO why the toString cannot be resolved?
     List<String> modifiers = new ArrayList<>();
     //    List<String> modifiers =
     //        td.getModifiers().stream().map(Modifier::toString).collect(Collectors.toList());
@@ -585,7 +582,6 @@ public class GraphBuilder {
     }
 
     // 2 field access
-    // TODO support self field access
     List<FieldAccessExpr> fieldAccessExprs = cd.findAll(FieldAccessExpr.class);
     List<String> readFieldNames = new ArrayList<>();
     List<String> writeFieldNames = new ArrayList<>();
@@ -611,7 +607,6 @@ public class GraphBuilder {
             ResolvedEnumConstantDeclaration resolvedEnumConstantDeclaration =
                 resolvedDeclaration.asEnumConstant();
             displayName = resolvedEnumConstantDeclaration.getName();
-            // TODO: cannot get qualified name now
             qualifiedName = resolvedEnumConstantDeclaration.getName();
           }
         } else {
