@@ -551,11 +551,23 @@ public class GraphMerger {
     SemanticNode nodeBefore = null;
     SemanticNode nodeAfter = null;
     int position = parent.getChildPosition(child);
+    
+    // find the non orphan comment neighbors
     if (position > 0) {
-      nodeBefore = parent.getChildAtPosition(position - 1);
+      for (int i = position - 1; i >= 0; --i) {
+        nodeBefore = parent.getChildAtPosition(i);
+        if (!(nodeBefore instanceof OrphanCommentNode)) {
+          break;
+        }
+      }
     }
     if (position < parent.getChildren().size() - 1) {
-      nodeAfter = parent.getChildAtPosition(position + 1);
+      for (int i = position + 1; i < parent.getChildren().size(); ++i) {
+        nodeAfter = parent.getChildAtPosition(i);
+        if (!(nodeAfter instanceof OrphanCommentNode)) {
+          break;
+        }
+      }
     }
     return Triple.of(nodeBefore, child, nodeAfter);
   }
