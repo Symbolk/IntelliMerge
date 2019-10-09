@@ -153,7 +153,7 @@ Merge two local branches of a Git repository.
 #### Parameters
 
 1. repoPath: Absolute path of the target Git repository.
-2. branchNames: Names of two **local** branches to be merged. The order should be <left> <right> to merge <right> branch to <left>.
+2. branchNames: Names of two **local** branches to be merged. The order should be \<left\> \<right\> to merge \<right\> branch to \<left\>.
 3. outputPath: Absolute path of an empty directory to save the merging results.
 4. hasSubModule: Whether the Git repository has submodules.
 
@@ -171,7 +171,7 @@ Merge three directories that contains Java files.
 
 #### Parameters
 
-1. directoryPaths: Absolute paths of three directories with Java files inside to be merged. The order should be <left> <base> <right>.
+1. directoryPaths: Absolute paths of three directories with Java files inside to be merged. The order should be \<left\> \<base\> \<right\>.
 2. outputPath: Absolute path of an empty directory to save the merging results.
 
 #### Return Value

@@ -131,6 +131,7 @@ public class GraphMatcher implements Callable<TwowayMatching> {
       constructorDeclMatcher.matchConstructors(
           matching, unmatchedConstructors1, unmatchedConstructors2);
     }
+    matching.getOne2OneRefactoring();
   }
 
   /**

@@ -460,7 +460,9 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
 
     List<String> annotations =
         (List<String>)
-            td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
+              td.getAnnotations().stream()
+                .map(anno -> ((AnnotationExpr) anno).getTokenRange().get().toString())
+                .collect(Collectors.toList());
 
     Optional<Range> range = td.getRange();
     String originalSignature = getTypeOriginalSignature(td);
@@ -586,7 +588,13 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           for (VariableDeclarator field : fd.getVariables()) {
             displayName = field.getNameAsString().trim();
             qualifiedName = qualifiedTypeName + "." + displayName;
-            originalSignature = (field.getTypeAsString() + " " + field.getNameAsString()).trim();
+            originalSignature =
+                (modifiers.stream().collect(Collectors.joining(" "))
+                        + " "
+                        + field.getType().getTokenRange().get().toString()
+                        + " "
+                        + field.getNameAsString())
+                    .trim();
             body =
                 field.getInitializer().isPresent()
                     ? field.getTokenRange().get().toString().replaceFirst(displayName, "") + ";"
@@ -684,6 +692,8 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           if (startIndex <= endIndex) {
             originalSignature = temp.substring(startIndex, endIndex);
           }
+          originalSignature =
+              modifiers.stream().collect(Collectors.joining(" ")) + " " + originalSignature;
           cdNode.setOriginalSignature(originalSignature);
 
           graph.addVertex(cdNode);
@@ -790,7 +800,8 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           } else {
             originalSignature = md.getDeclarationAsString(false, true, true);
           }
-
+          originalSignature =
+              modifiers.stream().collect(Collectors.joining(" ")) + " " + originalSignature;
           mdNode.setOriginalSignature(originalSignature);
 
           mdNode.followingEOL = getFollowingEOL(md);
@@ -907,10 +918,10 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           AssignExpr parentAssign = (AssignExpr) parent;
           if (parentAssign.getTarget().equals(fieldAccessExpr)) {
             writeFieldExprs.add(fieldAccessExpr);
-          }else{
+          } else {
             readFieldExprs.add(fieldAccessExpr);
           }
-        }else{
+        } else {
           readFieldExprs.add(fieldAccessExpr);
         }
       }
