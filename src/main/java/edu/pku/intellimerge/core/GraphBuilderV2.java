@@ -685,7 +685,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
             originalSignature = temp.substring(startIndex, endIndex);
           }
           cdNode.setOriginalSignature(originalSignature);
-          
+
           graph.addVertex(cdNode);
 
           tdNode.appendChild(cdNode);
@@ -878,12 +878,12 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
    * Process interactions with other nodes inside CallableDeclaration (i.e. terminal or constructor)
    * body
    *
-   * @param cd
+   * @param nodeWithBody
    * @param node
    */
-  private void processBodyContent(Node cd, TerminalNode node) {
+  private void processBodyContent(Node nodeWithBody, TerminalNode node) {
     // 1 new instance
-    List<ObjectCreationExpr> objectCreationExprs = cd.findAll(ObjectCreationExpr.class);
+    List<ObjectCreationExpr> objectCreationExprs = nodeWithBody.findAll(ObjectCreationExpr.class);
     List<String> createObjectNames = new ArrayList<>();
     for (ObjectCreationExpr objectCreationExpr : objectCreationExprs) {
       String typeName = objectCreationExpr.getTypeAsString();
@@ -895,7 +895,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
 
     // 2 field access
     // TODO support this.* access
-    List<FieldAccessExpr> fieldAccessExprs = cd.findAll(FieldAccessExpr.class);
+    List<FieldAccessExpr> fieldAccessExprs = nodeWithBody.findAll(FieldAccessExpr.class);
     List<FieldAccessExpr> readFieldExprs = new ArrayList<>();
     List<FieldAccessExpr> writeFieldExprs = new ArrayList<>();
     for (FieldAccessExpr fieldAccessExpr : fieldAccessExprs) {
@@ -907,10 +907,13 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
           AssignExpr parentAssign = (AssignExpr) parent;
           if (parentAssign.getTarget().equals(fieldAccessExpr)) {
             writeFieldExprs.add(fieldAccessExpr);
+          }else{
+            readFieldExprs.add(fieldAccessExpr);
           }
+        }else{
+          readFieldExprs.add(fieldAccessExpr);
         }
       }
-      readFieldExprs.add(fieldAccessExpr);
     }
     if (readFieldExprs.size() > 0) {
       readFieldEdges.put(node, readFieldExprs);
@@ -919,7 +922,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
       writeFieldEdges.put(node, writeFieldExprs);
     }
     // 3 terminal call
-    List<MethodCallExpr> methodCallExprs = cd.findAll(MethodCallExpr.class);
+    List<MethodCallExpr> methodCallExprs = nodeWithBody.findAll(MethodCallExpr.class);
     this.methodCallExprs.put(node, methodCallExprs);
   }
 
