@@ -664,7 +664,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
                   NodeType.CONSTRUCTOR,
                   displayName,
                   qualifiedName,
-                  cd.getDeclarationAsString(false, true, true),
+                  "",
                   comment,
                   annotations,
                   modifiers,
@@ -672,6 +672,20 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
                   body,
                   cd.getRange());
           cdNode.followingEOL = getFollowingEOL(cd);
+          // get the original signature of constructor
+          String temp = cd.removeComment().getTokenRange().get().toString();
+          originalSignature = cd.getDeclarationAsString(false, true, true);
+          String[] tokens = originalSignature.split(" ");
+          int startIndex = temp.indexOf(tokens[0]);
+          startIndex = startIndex >= 0 ? startIndex : 0;
+          int endIndex =
+              temp.indexOf(tokens[tokens.length - 1]) + tokens[tokens.length - 1].length();
+          endIndex = endIndex >= 0 ? endIndex : 0;
+          if (startIndex <= endIndex) {
+            originalSignature = temp.substring(startIndex, endIndex);
+          }
+          cdNode.setOriginalSignature(originalSignature);
+          
           graph.addVertex(cdNode);
 
           tdNode.appendChild(cdNode);
