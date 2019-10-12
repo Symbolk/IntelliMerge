@@ -460,7 +460,9 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
 
     List<String> annotations =
         (List<String>)
-            td.getAnnotations().stream().map(anno -> anno.toString()).collect(Collectors.toList());
+              td.getAnnotations().stream()
+                .map(anno -> ((AnnotationExpr) anno).getTokenRange().get().toString())
+                .collect(Collectors.toList());
 
     Optional<Range> range = td.getRange();
     String originalSignature = getTypeOriginalSignature(td);
