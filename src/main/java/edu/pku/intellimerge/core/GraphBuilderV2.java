@@ -589,7 +589,7 @@ public class GraphBuilderV2 implements Callable<Graph<SemanticNode, SemanticEdge
             originalSignature =
                 (modifiers.stream().collect(Collectors.joining(" "))
                         + " "
-                        + field.getTypeAsString()
+                        + field.getType().getTokenRange().get().toString()
                         + " "
                         + field.getNameAsString())
                     .trim();
