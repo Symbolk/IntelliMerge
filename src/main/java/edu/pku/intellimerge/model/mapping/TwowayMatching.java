@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 /** Stores matching relationships between two graphs */
 public class TwowayMatching {
-  private static final Logger logger = LoggerFactory.getLogger(TwowayMatching.class);
 
   // 2 kinds of matching: match by unchanged signature & signature changed but match by their roles
   public BiMap<SemanticNode, SemanticNode> one2oneMatchings; // confidence: 1
@@ -42,6 +41,7 @@ public class TwowayMatching {
    */
   public void markRefactoring(
       SemanticNode node1, SemanticNode node2, RefactoringType refactoringType, double confidence) {
+    // comment
     Refactoring refactoring =
         new Refactoring(refactoringType, node1.getNodeType(), confidence, node1, node2);
     refactorings.add(refactoring);

@@ -16,6 +16,7 @@ import edu.pku.intellimerge.model.constant.Side;
 import edu.pku.intellimerge.model.mapping.Refactoring;
 import edu.pku.intellimerge.util.GitService;
 import edu.pku.intellimerge.util.Utils;
+import org.apache.commons.lang3.builder.Diff;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -33,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-/** The class is responsible to provide CLI and API service to users */
 public class IntelliMerge {
   private static final Logger logger = LoggerFactory.getLogger(IntelliMerge.class);
   // command line options
@@ -86,20 +86,18 @@ public class IntelliMerge {
     BasicConfigurator.configure();
     org.apache.log4j.Logger.getRootLogger().setLevel(Level.INFO);
 
+    DiffEdge diffEdge = new DiffEdge(0, "0", 0D);
+
     try {
       IntelliMerge merger = new IntelliMerge();
       merger.run(args);
+      System.out.println(diffEdge.getId());
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  /**
-   * Check whether given arguments are valid before working
-   *
-   * @param merger
-   */
-  public static void checkArguments(IntelliMerge merger) {
+  public static void checkCommands(IntelliMerge merger) {
 
     if (merger.branchNames.isEmpty() && merger.directoryPaths.isEmpty()) {
       throw new ParameterException("Please specify ONE of the following options: -r, -d, -f.");
@@ -162,13 +160,15 @@ public class IntelliMerge {
   private void run(String[] args) throws Exception {
     JCommander commandLineOptions = new JCommander(this);
     try {
+      DiffEdge diffEdge = new DiffEdge(0, "0", 0D);
       commandLineOptions.parse(args);
-      checkArguments(this);
+      checkCommands(this);
       if (repoPath.length() > 0 && !branchNames.isEmpty()) {
         mergeBranches(repoPath, branchNames, outputPath, hasSubModule);
       } else if (!directoryPaths.isEmpty()) {
         mergeDirectories(directoryPaths, outputPath);
       }
+      System.out.println(diffEdge);
     } catch (ParameterException pe) {
       System.err.println(pe.getMessage());
       commandLineOptions.setProgramName("IntelliMerge");

@@ -38,17 +38,17 @@ public class GraphMerger {
   public TwowayMatching b2tMatching;
   public List<ThreewayMapping> mapping;
   private Logger logger = LoggerFactory.getLogger(GraphMerger.class);
-  private String resultDir; // merge result path
+  private String dir; // merge result path
   private Graph<SemanticNode, SemanticEdge> oursGraph;
   private Graph<SemanticNode, SemanticEdge> baseGraph;
   private Graph<SemanticNode, SemanticEdge> theirsGraph;
 
   public GraphMerger(
-      String resultDir,
+      String dir,
       Graph<SemanticNode, SemanticEdge> oursGraph,
       Graph<SemanticNode, SemanticEdge> baseGraph,
       Graph<SemanticNode, SemanticEdge> theirsGraph) {
-    this.resultDir = resultDir;
+    this.dir = dir;
     this.oursGraph = oursGraph;
     this.baseGraph = baseGraph;
     this.theirsGraph = theirsGraph;
@@ -124,7 +124,7 @@ public class GraphMerger {
           // save the merged result to file
           String resultFilePath =
               Graph2CodePrinter.printCU(
-                  mergedCU, mergedPackageAndImports, Utils.formatPathSeparator(resultDir));
+                  mergedCU, mergedPackageAndImports, Utils.formatPathSeparator(dir));
           mergedFilePaths.add(resultFilePath);
         }
       }

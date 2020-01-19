@@ -40,23 +40,9 @@ public class GraphMatcher implements Callable<TwowayMatching> {
         .filter(node -> node.getNodeType().equals(NodeType.COMPILATION_UNIT))
         .collect(Collectors.toSet());
     Map<Integer, SemanticNode> map1 =
-        nodeSet1.stream()
-            .filter(SemanticNode::needToMerge)
-            .collect(
-                Collectors.toMap(
-                    SemanticNode::hashCodeSignature,
-                    Function.identity(),
-                    (o, n) -> o,
-                    HashMap::new));
+            convertSetToMap(nodeSet1);
     Map<Integer, SemanticNode> map2 =
-        nodeSet2.stream()
-            .filter(SemanticNode::needToMerge)
-            .collect(
-                Collectors.toMap(
-                    SemanticNode::hashCodeSignature,
-                    Function.identity(),
-                    (o, n) -> o,
-                    HashMap::new));
+            convertSetToMap(nodeSet2);
     for (Entry<Integer, SemanticNode> entry : map1.entrySet()) {
       if (map2.containsKey(entry.getKey())) {
         // add the matched nodes into the matching relationships
@@ -68,6 +54,21 @@ public class GraphMatcher implements Callable<TwowayMatching> {
       }
     }
     map2.entrySet().forEach(entry -> matching.addUnmatchedNodes(entry.getValue(), false));
+  }
+
+  /**
+   * Convert a set of nodes into mapping from signature to node
+   * @param nodeSet2
+   * @return
+   */
+  private HashMap<Integer, SemanticNode> convertSetToMap(Set<SemanticNode> nodeSet2) {
+    return nodeSet2.stream()
+            .filter(SemanticNode::needToMerge)
+            .collect(Collectors.toMap(
+                          SemanticNode::hashCodeSignature,
+                          Function.identity(),
+                          (o, n) -> o,
+                          HashMap::new));
   }
 
   /** Bottom-up match unmatched nodes in the last step, considering some kinds of refactorings */

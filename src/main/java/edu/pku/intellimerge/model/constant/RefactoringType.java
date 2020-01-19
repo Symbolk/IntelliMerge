@@ -23,11 +23,7 @@ public enum RefactoringType {
     this.isOneToOne = isOneToOne;
   }
 
-  public String getLabel() {
-    return label;
-  }
+  public String getLabel() { return label;  }
 
-  public boolean isOneToOne() {
-    return isOneToOne;
-  }
+  public boolean isOneToOne() { return isOneToOne; }
 }
