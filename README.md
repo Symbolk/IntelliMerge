@@ -1,5 +1,7 @@
 # IntelliMerge
 
+> Notice: This repo is now maintained independently and privately as an industrial project since 2020, which means no updates for the open source version.
+
 #### IntelliMerge is a graph-based refactoring-aware three-way merging tool for Java programs and repositories.
 
 ## Introduction
