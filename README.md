@@ -247,7 +247,7 @@ try {
 
 ### Environment Setup
 
-1. Open the cloned repository as a project with InteliJ IDEA;
+1. Open the cloned repository as a project with IntelliJ IDEA;
 
 2. Download dependencies by clicking the refresh button in the Gradle tab of IDEA;
 
