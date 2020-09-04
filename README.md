@@ -242,7 +242,7 @@ try {
 - JDK 8
 - Git 2.18.0
 - Gradle 4.10.1
-- InteliJ IDEA (with Gradle integration)
+- IntelliJ IDEA (with Gradle integration)
 - MongoDB (only when performing evaluation)
 
 ### Environment Setup
