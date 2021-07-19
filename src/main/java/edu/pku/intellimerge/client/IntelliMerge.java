@@ -264,11 +264,11 @@ public class IntelliMerge {
 
     // 1. Build graphs from given directories
     Future<Graph<SemanticNode, SemanticEdge>> oursBuilder =
-        executorService.submit(new GraphBuilderV2(directoryPaths.get(0), Side.OURS, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(0), Side.OURS, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> baseBuilder =
-        executorService.submit(new GraphBuilderV2(directoryPaths.get(1), Side.BASE, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(1), Side.BASE, hasSubModule));
     Future<Graph<SemanticNode, SemanticEdge>> theirsBuilder =
-        executorService.submit(new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, false));
+        executorService.submit(new GraphBuilderV2(directoryPaths.get(2), Side.THEIRS, hasSubModule));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     Graph<SemanticNode, SemanticEdge> oursGraph = oursBuilder.get();
